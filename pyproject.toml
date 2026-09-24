@@ -1,0 +1,62 @@
+[build-system]
+requires = ["hatchling==1.28.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "btc-decision-agent"
+version = "1.0.0"
+description = "Local learned exposure agent operating a Binance DEMO account"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+  "pydantic==2.12.5",
+  "certifi==2026.7.22",
+  "websockets==17.0.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "hypothesis==6.151.9",
+  "mypy==1.19.1",
+  "pytest==9.0.2",
+  "pytest-cov==7.0.0",
+  "ruff==0.14.10",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/btc_decision_agent"]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers --strict-config"
+testpaths = ["tests"]
+markers = [
+  "contract: public market-data contract tests",
+  "integration: component pipeline tests",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "RUF", "SIM"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["btc_decision_agent"]
+mypy_path = "src"
+plugins = ["pydantic.mypy"]
+warn_unreachable = true
+
+[tool.coverage.run]
+branch = true
+source = ["btc_decision_agent"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

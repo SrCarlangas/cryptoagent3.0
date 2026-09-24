@@ -1,0 +1,23 @@
+[Unit]
+Description=CryptoAgent 3.0 local exposure AGENT (sole order authority, Binance DEMO)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/workplace/cryptoagent3.0
+EnvironmentFile=/home/ubuntu/workplace/cryptoagent3.0/.env
+Environment=PYTHONPATH=/home/ubuntu/workplace/cryptoagent3.0/src
+UMask=0077
+ExecStart=/home/ubuntu/workplace/cryptoagent3.0/.venv/bin/python -m scripts.run_exposure_agent --i-understand-this-is-demo --online-learning --allocation-pct 95 --max-drawdown-pct 25 --daily-loss-pct 5 --risk-per-trade-pct 2 --model-path /home/ubuntu/workplace/cryptoagent3.0/data/models/local-exposure-agent-v1.json --journal /home/ubuntu/workplace/cryptoagent3.0/data/live/exposure-agent-activity.jsonl --lock-file /home/ubuntu/workplace/cryptoagent3.0/data/live/exposure-agent.lock --state-file /home/ubuntu/workplace/cryptoagent3.0/data/live/exposure-agent-state.json --intent-db /home/ubuntu/workplace/cryptoagent3.0/data/live/exposure-agent-intents.sqlite3
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/workplace/cryptoagent3.0/data
+[Install]
+WantedBy=multi-user.target

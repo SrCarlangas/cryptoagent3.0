@@ -1,0 +1,14 @@
+{
+  "strategy_version": "EVIDENCE-V4-FROZEN-2026-09-22",
+  "parameter_version": "ev4/1",
+  "freeze_date": "2026-09-22",
+  "buy_edge_revalidated_at_execution": true,
+  "minimum_holding_seconds": 1800,
+  "cooldown_seconds": 3600,
+  "break_even_activation_fraction": "0.005",
+  "break_even_lock_fraction": "0.0025",
+  "trailing_activation_fraction": "0.01",
+  "trailing_stop_fraction": "0.025",
+  "minimum_live_observation_until": "2026-11-22",
+  "change_policy": "Any change requires a new strategy and parameter version."
+}

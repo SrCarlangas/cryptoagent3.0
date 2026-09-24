@@ -1,0 +1,3014 @@
+{
+  "chosen": {
+    "config": {
+      "cadence_hours": 24,
+      "epochs": 4,
+      "explore": true,
+      "fee_per_side": 0.001,
+      "l2": 1e-05,
+      "learning_rate": 0.02,
+      "regimes": 4,
+      "seed": 20260924
+    },
+    "folds": {
+      "fold_1_test_2023H2": {
+        "buy_and_hold_reference": {
+          "max_drawdown_pct": 22.685445996628033,
+          "net_return_pct": 105.60183221242121
+        },
+        "in_sample": {
+          "buys": 41,
+          "decision_counts": {
+            "BUY": 41,
+            "HOLD": 569,
+            "SELL": 40
+          },
+          "exposure_share": 0.5297083413108686,
+          "final_long": true,
+          "max_drawdown_pct": 73.41619334469645,
+          "mean_reward": 0.0,
+          "net_return_pct": -45.26214029772573,
+          "regime_usage": [
+            0.2751888236413187,
+            0.22742632370817512,
+            0.2481978365492416,
+            0.24918701610126465
+          ],
+          "sells": 40,
+          "skipped_gap_steps": 2,
+          "skipped_history_steps": 0,
+          "steps": 650
+        },
+        "out_of_sample": {
+          "buys": 7,
+          "decision_counts": {
+            "BUY": 7,
+            "HOLD": 352,
+            "SELL": 6
+          },
+          "exposure_share": 0.9834927140255009,
+          "final_long": true,
+          "max_drawdown_pct": 21.432517540467373,
+          "mean_reward": 0.0,
+          "net_return_pct": 107.17672257090558,
+          "regime_usage": [
+            0.24097142224301485,
+            0.13740853282321577,
+            0.28971982578280586,
+            0.3319002191509635
+          ],
+          "sells": 6,
+          "skipped_gap_steps": 0,
+          "skipped_history_steps": 0,
+          "steps": 365
+        },
+        "training_mean_reward_last_epoch": -0.0008945505281017939
+      },
+      "fold_2_test_2024H2": {
+        "buy_and_hold_reference": {
+          "max_drawdown_pct": 30.93611235818756,
+          "net_return_pct": 69.91726170823456
+        },
+        "in_sample": {
+          "buys": 49,
+          "decision_counts": {
+            "BUY": 49,
+            "HOLD": 918,
+            "SELL": 49
+          },
+          "exposure_share": 0.5653294074346706,
+          "final_long": false,
+          "max_drawdown_pct": 42.95248882495768,
+          "mean_reward": 0.0,
+          "net_return_pct": 44.72721980360437,
+          "regime_usage": [
+            0.2908996658411158,
+            0.21857031518829487,
+            0.2406759107739633,
+            0.24985410819662598
+          ],
+          "sells": 49,
+          "skipped_gap_steps": 2,
+          "skipped_history_steps": 0,
+          "steps": 1016
+        },
+        "out_of_sample": {
+          "buys": 12,
+          "decision_counts": {
+            "BUY": 12,
+            "HOLD": 341,
+            "SELL": 11
+          },
+          "exposure_share": 0.7067351598173516,
+          "final_long": true,
+          "max_drawdown_pct": 23.9653836660858,
+          "mean_reward": 0.0,
+          "net_return_pct": 49.137027819152834,
+          "regime_usage": [
+            0.29510885453109287,
+            0.17868946551170373,
+            0.25407039542843224,
+            0.27213128452877106
+          ],
+          "sells": 11,
+          "skipped_gap_steps": 0,
+          "skipped_history_steps": 0,
+          "steps": 364
+        },
+        "training_mean_reward_last_epoch": -0.00036087611363919646
+      },
+      "fold_3_test_2025H2": {
+        "buy_and_hold_reference": {
+          "max_drawdown_pct": 53.74206479139391,
+          "net_return_pct": -29.693274515832158
+        },
+        "in_sample": {
+          "buys": 63,
+          "decision_counts": {
+            "BUY": 63,
+            "HOLD": 1256,
+            "SELL": 62
+          },
+          "exposure_share": 0.578689067533797,
+          "final_long": true,
+          "max_drawdown_pct": 47.552502485431425,
+          "mean_reward": 0.0,
+          "net_return_pct": 109.51937837932716,
+          "regime_usage": [
+            0.28920304624641235,
+            0.21803177719671615,
+            0.24158412097738885,
+            0.25118105557948267
+          ],
+          "sells": 62,
+          "skipped_gap_steps": 2,
+          "skipped_history_steps": 0,
+          "steps": 1381
+        },
+        "out_of_sample": {
+          "buys": 31,
+          "decision_counts": {
+            "BUY": 31,
+            "HOLD": 380,
+            "SELL": 30
+          },
+          "exposure_share": 0.5428921568627451,
+          "final_long": true,
+          "max_drawdown_pct": 34.42020198039066,
+          "mean_reward": 0.0,
+          "net_return_pct": -9.830786914721223,
+          "regime_usage": [
+            0.286711842928749,
+            0.23423972508625848,
+            0.22619827084442648,
+            0.2528501611405661
+          ],
+          "sells": 30,
+          "skipped_gap_steps": 0,
+          "skipped_history_steps": 0,
+          "steps": 441
+        },
+        "training_mean_reward_last_epoch": -0.0001782132499906767
+      }
+    },
+    "folds_profitable": 2,
+    "folds_total": 3,
+    "label": "cadence=24h|regimes=4|lr=0.02|epochs=4",
+    "mean_out_of_sample_drawdown_pct": 26.606034395647942,
+    "mean_out_of_sample_return_pct": 48.827654491779064,
+    "worst_out_of_sample_return_pct": -9.830786914721223
+  },
+  "configurations_ranked": [
+    {
+      "config": {
+        "cadence_hours": 24,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 41,
+            "decision_counts": {
+              "BUY": 41,
+              "HOLD": 569,
+              "SELL": 40
+            },
+            "exposure_share": 0.5297083413108686,
+            "final_long": true,
+            "max_drawdown_pct": 73.41619334469645,
+            "mean_reward": 0.0,
+            "net_return_pct": -45.26214029772573,
+            "regime_usage": [
+              0.2751888236413187,
+              0.22742632370817512,
+              0.2481978365492416,
+              0.24918701610126465
+            ],
+            "sells": 40,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 650
+          },
+          "out_of_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 352,
+              "SELL": 6
+            },
+            "exposure_share": 0.9834927140255009,
+            "final_long": true,
+            "max_drawdown_pct": 21.432517540467373,
+            "mean_reward": 0.0,
+            "net_return_pct": 107.17672257090558,
+            "regime_usage": [
+              0.24097142224301485,
+              0.13740853282321577,
+              0.28971982578280586,
+              0.3319002191509635
+            ],
+            "sells": 6,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 365
+          },
+          "training_mean_reward_last_epoch": -0.0008945505281017939
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 49,
+            "decision_counts": {
+              "BUY": 49,
+              "HOLD": 918,
+              "SELL": 49
+            },
+            "exposure_share": 0.5653294074346706,
+            "final_long": false,
+            "max_drawdown_pct": 42.95248882495768,
+            "mean_reward": 0.0,
+            "net_return_pct": 44.72721980360437,
+            "regime_usage": [
+              0.2908996658411158,
+              0.21857031518829487,
+              0.2406759107739633,
+              0.24985410819662598
+            ],
+            "sells": 49,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1016
+          },
+          "out_of_sample": {
+            "buys": 12,
+            "decision_counts": {
+              "BUY": 12,
+              "HOLD": 341,
+              "SELL": 11
+            },
+            "exposure_share": 0.7067351598173516,
+            "final_long": true,
+            "max_drawdown_pct": 23.9653836660858,
+            "mean_reward": 0.0,
+            "net_return_pct": 49.137027819152834,
+            "regime_usage": [
+              0.29510885453109287,
+              0.17868946551170373,
+              0.25407039542843224,
+              0.27213128452877106
+            ],
+            "sells": 11,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 364
+          },
+          "training_mean_reward_last_epoch": -0.00036087611363919646
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 63,
+            "decision_counts": {
+              "BUY": 63,
+              "HOLD": 1256,
+              "SELL": 62
+            },
+            "exposure_share": 0.578689067533797,
+            "final_long": true,
+            "max_drawdown_pct": 47.552502485431425,
+            "mean_reward": 0.0,
+            "net_return_pct": 109.51937837932716,
+            "regime_usage": [
+              0.28920304624641235,
+              0.21803177719671615,
+              0.24158412097738885,
+              0.25118105557948267
+            ],
+            "sells": 62,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1381
+          },
+          "out_of_sample": {
+            "buys": 31,
+            "decision_counts": {
+              "BUY": 31,
+              "HOLD": 380,
+              "SELL": 30
+            },
+            "exposure_share": 0.5428921568627451,
+            "final_long": true,
+            "max_drawdown_pct": 34.42020198039066,
+            "mean_reward": 0.0,
+            "net_return_pct": -9.830786914721223,
+            "regime_usage": [
+              0.286711842928749,
+              0.23423972508625848,
+              0.22619827084442648,
+              0.2528501611405661
+            ],
+            "sells": 30,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 441
+          },
+          "training_mean_reward_last_epoch": -0.0001782132499906767
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=24h|regimes=4|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 26.606034395647942,
+      "mean_out_of_sample_return_pct": 48.827654491779064,
+      "worst_out_of_sample_return_pct": -9.830786914721223
+    },
+    {
+      "config": {
+        "cadence_hours": 24,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 13,
+            "decision_counts": {
+              "BUY": 13,
+              "HOLD": 625,
+              "SELL": 12
+            },
+            "exposure_share": 0.4699725572787032,
+            "final_long": true,
+            "max_drawdown_pct": 59.39983886012883,
+            "mean_reward": 0.0,
+            "net_return_pct": 9.31536098021497,
+            "regime_usage": [
+              0.2972429051932314,
+              0.21558714223602443,
+              0.2382396336023054,
+              0.2489303189684387
+            ],
+            "sells": 12,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 650
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 360,
+              "SELL": 2
+            },
+            "exposure_share": 0.9944216757741348,
+            "final_long": true,
+            "max_drawdown_pct": 24.651523670443503,
+            "mean_reward": 0.0,
+            "net_return_pct": 99.67154220905779,
+            "regime_usage": [
+              0.26947200590066817,
+              0.1265237740482922,
+              0.2706944867419762,
+              0.33330973330906344
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 365
+          },
+          "training_mean_reward_last_epoch": -0.0008293704950158988
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 1002,
+              "SELL": 7
+            },
+            "exposure_share": 0.5594405594405595,
+            "final_long": false,
+            "max_drawdown_pct": 28.32749023340962,
+            "mean_reward": 0.0,
+            "net_return_pct": 149.97358203850862,
+            "regime_usage": [
+              0.331852501494933,
+              0.19664040103070207,
+              0.21732924580608462,
+              0.2541778516682803
+            ],
+            "sells": 7,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1016
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 357,
+              "SELL": 3
+            },
+            "exposure_share": 0.6957762557077626,
+            "final_long": true,
+            "max_drawdown_pct": 30.662901094872367,
+            "mean_reward": 0.0,
+            "net_return_pct": 34.31590179403794,
+            "regime_usage": [
+              0.3291717952256278,
+              0.16514996700175766,
+              0.23055006718437782,
+              0.2751281705882367
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 364
+          },
+          "training_mean_reward_last_epoch": -0.00020139727538133356
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 12,
+            "decision_counts": {
+              "BUY": 12,
+              "HOLD": 1358,
+              "SELL": 11
+            },
+            "exposure_share": 0.5678499382771807,
+            "final_long": true,
+            "max_drawdown_pct": 39.58054331805195,
+            "mean_reward": 0.0,
+            "net_return_pct": 174.75845793916847,
+            "regime_usage": [
+              0.3236843799099132,
+              0.20026444049554928,
+              0.21875430534091655,
+              0.25729687425362097
+            ],
+            "sells": 11,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1381
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 434,
+              "SELL": 3
+            },
+            "exposure_share": 0.45918174962292607,
+            "final_long": true,
+            "max_drawdown_pct": 33.11823883568037,
+            "mean_reward": 0.0,
+            "net_return_pct": -7.430194957739056,
+            "regime_usage": [
+              0.2972676973495703,
+              0.22651408756795072,
+              0.21966440408538956,
+              0.25655381099708946
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 441
+          },
+          "training_mean_reward_last_epoch": -5.195781036100699e-05
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=24h|regimes=4|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 29.477554533665415,
+      "mean_out_of_sample_return_pct": 42.18574968178556,
+      "worst_out_of_sample_return_pct": -7.430194957739056
+    },
+    {
+      "config": {
+        "cadence_hours": 12,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 8,
+            "decision_counts": {
+              "BUY": 8,
+              "HOLD": 1288,
+              "SELL": 7
+            },
+            "exposure_share": 0.5748931010275066,
+            "final_long": true,
+            "max_drawdown_pct": 64.81516134123353,
+            "mean_reward": 0.0,
+            "net_return_pct": -40.96588606012942,
+            "regime_usage": [
+              0.6087744918194873,
+              0.39122550818051277
+            ],
+            "sells": 7,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1303
+          },
+          "out_of_sample": {
+            "buys": 1,
+            "decision_counts": {
+              "BUY": 1,
+              "HOLD": 730,
+              "SELL": 0
+            },
+            "exposure_share": 0.9998861566484517,
+            "final_long": true,
+            "max_drawdown_pct": 22.685445996628044,
+            "mean_reward": 0.0,
+            "net_return_pct": 105.75072715321122,
+            "regime_usage": [
+              0.7541526691281882,
+              0.2458473308718118
+            ],
+            "sells": 0,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 731
+          },
+          "training_mean_reward_last_epoch": -0.0006525159661159645
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 14,
+            "decision_counts": {
+              "BUY": 14,
+              "HOLD": 2008,
+              "SELL": 13
+            },
+            "exposure_share": 0.6034433402854456,
+            "final_long": true,
+            "max_drawdown_pct": 52.159877101338026,
+            "mean_reward": 0.0,
+            "net_return_pct": 31.45320941018832,
+            "regime_usage": [
+              0.6355205603919917,
+              0.3644794396080083
+            ],
+            "sells": 13,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2035
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 724,
+              "SELL": 2
+            },
+            "exposure_share": 0.6765981735159817,
+            "final_long": true,
+            "max_drawdown_pct": 28.0796100316412,
+            "mean_reward": 0.0,
+            "net_return_pct": 34.29632349440486,
+            "regime_usage": [
+              0.6947417752179527,
+              0.30525822478204734
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 729
+          },
+          "training_mean_reward_last_epoch": -0.00035373742007360423
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 13,
+            "decision_counts": {
+              "BUY": 13,
+              "HOLD": 2740,
+              "SELL": 12
+            },
+            "exposure_share": 0.6419173215307259,
+            "final_long": true,
+            "max_drawdown_pct": 51.30225950256258,
+            "mean_reward": 0.0,
+            "net_return_pct": 90.68357575214601,
+            "regime_usage": [
+              0.6442754492156211,
+              0.35572455078437887
+            ],
+            "sells": 12,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2765
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 876,
+              "SELL": 3
+            },
+            "exposure_share": 0.5994532428355958,
+            "final_long": true,
+            "max_drawdown_pct": 46.45556047832316,
+            "mean_reward": 0.0,
+            "net_return_pct": -24.025352775578735,
+            "regime_usage": [
+              0.6015853705961106,
+              0.3984146294038895
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 883
+          },
+          "training_mean_reward_last_epoch": -0.00027159752309605464
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=12h|regimes=2|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 32.40687216886413,
+      "mean_out_of_sample_return_pct": 38.67389929067912,
+      "worst_out_of_sample_return_pct": -24.025352775578735
+    },
+    {
+      "config": {
+        "cadence_hours": 6,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 8,
+            "decision_counts": {
+              "BUY": 8,
+              "HOLD": 2593,
+              "SELL": 7
+            },
+            "exposure_share": 0.5063501180675218,
+            "final_long": true,
+            "max_drawdown_pct": 63.66573735958379,
+            "mean_reward": 0.0,
+            "net_return_pct": -14.352675310896856,
+            "regime_usage": [
+              0.3194916170089503,
+              0.19918854356124266,
+              0.21949868395808714,
+              0.2618211554717199
+            ],
+            "sells": 7,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 2608
+          },
+          "out_of_sample": {
+            "buys": 1,
+            "decision_counts": {
+              "BUY": 1,
+              "HOLD": 1462,
+              "SELL": 0
+            },
+            "exposure_share": 0.9998861566484517,
+            "final_long": true,
+            "max_drawdown_pct": 22.685445996628044,
+            "mean_reward": 0.0,
+            "net_return_pct": 105.75072715321122,
+            "regime_usage": [
+              0.31279576949683785,
+              0.094340012922968,
+              0.227056900773477,
+              0.3658073168067171
+            ],
+            "sells": 0,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1463
+          },
+          "training_mean_reward_last_epoch": -0.0005268299315047009
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 4065,
+              "SELL": 3
+            },
+            "exposure_share": 0.6068785016153437,
+            "final_long": true,
+            "max_drawdown_pct": 40.68547992135702,
+            "mean_reward": 0.0,
+            "net_return_pct": 166.55764816206994,
+            "regime_usage": [
+              0.35225312151959726,
+              0.17020473601305736,
+              0.1882691598728319,
+              0.2892729825945135
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 4072
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 1454,
+              "SELL": 2
+            },
+            "exposure_share": 0.6896118721461187,
+            "final_long": true,
+            "max_drawdown_pct": 27.267181976265718,
+            "mean_reward": 0.0,
+            "net_return_pct": 26.805697147284246,
+            "regime_usage": [
+              0.3393032830360581,
+              0.14582531437352475,
+              0.20630516453609704,
+              0.30856623805432004
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1459
+          },
+          "training_mean_reward_last_epoch": -0.00031322262523558834
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 5525,
+              "SELL": 3
+            },
+            "exposure_share": 0.6682925360551591,
+            "final_long": true,
+            "max_drawdown_pct": 43.191348458743406,
+            "mean_reward": 0.0,
+            "net_return_pct": 244.59087306545783,
+            "regime_usage": [
+              0.356460342220291,
+              0.16726514194692882,
+              0.1813598700899409,
+              0.2949146457428393
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 5532
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 1762,
+              "SELL": 2
+            },
+            "exposure_share": 0.4450414781297134,
+            "final_long": true,
+            "max_drawdown_pct": 41.30932530336318,
+            "mean_reward": 0.0,
+            "net_return_pct": -23.902986999180165,
+            "regime_usage": [
+              0.30545939522352805,
+              0.21422425728330266,
+              0.211476410264597,
+              0.26883993722857236
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1767
+          },
+          "training_mean_reward_last_epoch": -0.0002479768837785017
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=6h|regimes=4|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 30.42065109208565,
+      "mean_out_of_sample_return_pct": 36.21781243377177,
+      "worst_out_of_sample_return_pct": -23.902986999180165
+    },
+    {
+      "config": {
+        "cadence_hours": 12,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 1294,
+              "SELL": 4
+            },
+            "exposure_share": 0.5212840640755633,
+            "final_long": true,
+            "max_drawdown_pct": 63.12274548352883,
+            "mean_reward": 0.0,
+            "net_return_pct": -10.850494527234389,
+            "regime_usage": [
+              0.620036373570717,
+              0.379963626429283
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1303
+          },
+          "out_of_sample": {
+            "buys": 1,
+            "decision_counts": {
+              "BUY": 1,
+              "HOLD": 730,
+              "SELL": 0
+            },
+            "exposure_share": 0.9998861566484517,
+            "final_long": true,
+            "max_drawdown_pct": 22.685445996628044,
+            "mean_reward": 0.0,
+            "net_return_pct": 105.75072715321122,
+            "regime_usage": [
+              0.7436728021560024,
+              0.25632719784399755
+            ],
+            "sells": 0,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 731
+          },
+          "training_mean_reward_last_epoch": -0.0005287661691008032
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 6,
+            "decision_counts": {
+              "BUY": 6,
+              "HOLD": 2024,
+              "SELL": 5
+            },
+            "exposure_share": 0.595591542959964,
+            "final_long": true,
+            "max_drawdown_pct": 37.40376896181266,
+            "mean_reward": 0.0,
+            "net_return_pct": 149.53639794431868,
+            "regime_usage": [
+              0.6723315761142474,
+              0.32766842388575257
+            ],
+            "sells": 5,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2035
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 722,
+              "SELL": 3
+            },
+            "exposure_share": 0.7012557077625571,
+            "final_long": true,
+            "max_drawdown_pct": 31.795849587166657,
+            "mean_reward": 0.0,
+            "net_return_pct": 22.604922770313294,
+            "regime_usage": [
+              0.6853673566776107,
+              0.3146326433223892
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 729
+          },
+          "training_mean_reward_last_epoch": -0.00010218406573178709
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 9,
+            "decision_counts": {
+              "BUY": 9,
+              "HOLD": 2748,
+              "SELL": 8
+            },
+            "exposure_share": 0.6050642820582303,
+            "final_long": true,
+            "max_drawdown_pct": 47.47525937753655,
+            "mean_reward": 0.0,
+            "net_return_pct": 153.8360396714471,
+            "regime_usage": [
+              0.6520358059944954,
+              0.34796419400550455
+            ],
+            "sells": 8,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2765
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 876,
+              "SELL": 3
+            },
+            "exposure_share": 0.45465686274509803,
+            "final_long": true,
+            "max_drawdown_pct": 38.00215988042197,
+            "mean_reward": 0.0,
+            "net_return_pct": -20.50508980833451,
+            "regime_usage": [
+              0.5708557690169024,
+              0.42914423098309756
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 883
+          },
+          "training_mean_reward_last_epoch": -2.7031342003247993e-05
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=12h|regimes=2|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 30.827818488072225,
+      "mean_out_of_sample_return_pct": 35.95018670506333,
+      "worst_out_of_sample_return_pct": -20.50508980833451
+    },
+    {
+      "config": {
+        "cadence_hours": 24,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 12,
+            "decision_counts": {
+              "BUY": 12,
+              "HOLD": 627,
+              "SELL": 11
+            },
+            "exposure_share": 0.5465568957814794,
+            "final_long": true,
+            "max_drawdown_pct": 63.28554361948242,
+            "mean_reward": 0.0,
+            "net_return_pct": -32.28552670158451,
+            "regime_usage": [
+              0.5936625474846,
+              0.40633745251539993
+            ],
+            "sells": 11,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 650
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 358,
+              "SELL": 3
+            },
+            "exposure_share": 0.9916894353369763,
+            "final_long": true,
+            "max_drawdown_pct": 22.059495955265547,
+            "mean_reward": 0.0,
+            "net_return_pct": 94.73724103365019,
+            "regime_usage": [
+              0.6968032065148905,
+              0.3031967934851095
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 365
+          },
+          "training_mean_reward_last_epoch": -0.0008378293519006663
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 11,
+            "decision_counts": {
+              "BUY": 11,
+              "HOLD": 995,
+              "SELL": 10
+            },
+            "exposure_share": 0.5504437083384451,
+            "final_long": true,
+            "max_drawdown_pct": 43.220531585480956,
+            "mean_reward": 0.0,
+            "net_return_pct": 75.55339560741041,
+            "regime_usage": [
+              0.6261517248915603,
+              0.37384827510843976
+            ],
+            "sells": 10,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1016
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 357,
+              "SELL": 3
+            },
+            "exposure_share": 0.6957762557077626,
+            "final_long": true,
+            "max_drawdown_pct": 29.791092707957777,
+            "mean_reward": 0.0,
+            "net_return_pct": 17.916039139327644,
+            "regime_usage": [
+              0.6796570867670298,
+              0.32034291323297015
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 364
+          },
+          "training_mean_reward_last_epoch": -0.0002906086254151852
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 16,
+            "decision_counts": {
+              "BUY": 16,
+              "HOLD": 1350,
+              "SELL": 15
+            },
+            "exposure_share": 0.5721855899798272,
+            "final_long": true,
+            "max_drawdown_pct": 47.49629141490641,
+            "mean_reward": 0.0,
+            "net_return_pct": 106.90984117327002,
+            "regime_usage": [
+              0.6237392461818345,
+              0.3762607538181654
+            ],
+            "sells": 15,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1381
+          },
+          "out_of_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 432,
+              "SELL": 4
+            },
+            "exposure_share": 0.5723039215686274,
+            "final_long": true,
+            "max_drawdown_pct": 34.548975170506445,
+            "mean_reward": 0.0,
+            "net_return_pct": -7.1310005984000835,
+            "regime_usage": [
+              0.585849601919921,
+              0.41415039808007903
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 441
+          },
+          "training_mean_reward_last_epoch": -0.0001302797436796406
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=24h|regimes=2|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 28.799854611243255,
+      "mean_out_of_sample_return_pct": 35.17409319152592,
+      "worst_out_of_sample_return_pct": -7.1310005984000835
+    },
+    {
+      "config": {
+        "cadence_hours": 6,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 55,
+            "decision_counts": {
+              "BUY": 55,
+              "HOLD": 2499,
+              "SELL": 54
+            },
+            "exposure_share": 0.5193694556129939,
+            "final_long": true,
+            "max_drawdown_pct": 68.38455476644923,
+            "mean_reward": 0.0,
+            "net_return_pct": -27.462976655202496,
+            "regime_usage": [
+              0.26849368682196645,
+              0.22636449743392578,
+              0.25093176981197535,
+              0.2542100459321324
+            ],
+            "sells": 54,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 2608
+          },
+          "out_of_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 1450,
+              "SELL": 6
+            },
+            "exposure_share": 0.995787795992714,
+            "final_long": true,
+            "max_drawdown_pct": 21.432517540467384,
+            "mean_reward": 0.0,
+            "net_return_pct": 107.91562017938708,
+            "regime_usage": [
+              0.2374270875006627,
+              0.13183663614240576,
+              0.2866982903110641,
+              0.3440379860458675
+            ],
+            "sells": 6,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1463
+          },
+          "training_mean_reward_last_epoch": -0.0005911017556961872
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 21,
+            "decision_counts": {
+              "BUY": 21,
+              "HOLD": 4031,
+              "SELL": 20
+            },
+            "exposure_share": 0.6228274649327281,
+            "final_long": true,
+            "max_drawdown_pct": 52.44329317530888,
+            "mean_reward": 0.0,
+            "net_return_pct": 89.86228063511979,
+            "regime_usage": [
+              0.29242434266149275,
+              0.2083171490209097,
+              0.23683699383478107,
+              0.2624215144828164
+            ],
+            "sells": 20,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 4072
+          },
+          "out_of_sample": {
+            "buys": 9,
+            "decision_counts": {
+              "BUY": 9,
+              "HOLD": 1442,
+              "SELL": 8
+            },
+            "exposure_share": 0.7224885844748858,
+            "final_long": true,
+            "max_drawdown_pct": 31.212225142112317,
+            "mean_reward": 0.0,
+            "net_return_pct": 24.005975734990304,
+            "regime_usage": [
+              0.30651104273884633,
+              0.16443987607272395,
+              0.24439728442969216,
+              0.2846517967587376
+            ],
+            "sells": 8,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1459
+          },
+          "training_mean_reward_last_epoch": -0.000444600253852522
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 21,
+            "decision_counts": {
+              "BUY": 21,
+              "HOLD": 5491,
+              "SELL": 20
+            },
+            "exposure_share": 0.6428205823021106,
+            "final_long": true,
+            "max_drawdown_pct": 49.0685559095407,
+            "mean_reward": 0.0,
+            "net_return_pct": 214.95103723792238,
+            "regime_usage": [
+              0.3084626458021386,
+              0.19837971083635966,
+              0.2281509956014555,
+              0.2650066477600463
+            ],
+            "sells": 20,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 5532
+          },
+          "out_of_sample": {
+            "buys": 8,
+            "decision_counts": {
+              "BUY": 8,
+              "HOLD": 1752,
+              "SELL": 7
+            },
+            "exposure_share": 0.6090686274509803,
+            "final_long": true,
+            "max_drawdown_pct": 48.722468041316695,
+            "mean_reward": 0.0,
+            "net_return_pct": -28.50962534388273,
+            "regime_usage": [
+              0.3029141190661598,
+              0.2138773953174261,
+              0.2165367698944519,
+              0.26667171572196213
+            ],
+            "sells": 7,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1767
+          },
+          "training_mean_reward_last_epoch": -0.0003992656723011694
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=6h|regimes=4|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 33.7890702412988,
+      "mean_out_of_sample_return_pct": 34.47065685683155,
+      "worst_out_of_sample_return_pct": -28.50962534388273
+    },
+    {
+      "config": {
+        "cadence_hours": 48,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 34,
+            "decision_counts": {
+              "BUY": 34,
+              "HOLD": 257,
+              "SELL": 33
+            },
+            "exposure_share": 0.4454655689578148,
+            "final_long": true,
+            "max_drawdown_pct": 55.35595886528885,
+            "mean_reward": 0.0,
+            "net_return_pct": -17.635037535098373,
+            "regime_usage": [
+              0.283698804297943,
+              0.22704778555658472,
+              0.24533647179273704,
+              0.2439169383527352
+            ],
+            "sells": 33,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 324
+          },
+          "out_of_sample": {
+            "buys": 15,
+            "decision_counts": {
+              "BUY": 15,
+              "HOLD": 153,
+              "SELL": 14
+            },
+            "exposure_share": 0.9233834244080146,
+            "final_long": true,
+            "max_drawdown_pct": 26.31316559213917,
+            "mean_reward": 0.0,
+            "net_return_pct": 88.93898817563557,
+            "regime_usage": [
+              0.2638445554711931,
+              0.1350586722769886,
+              0.2811687795581357,
+              0.31992799269368255
+            ],
+            "sells": 14,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": -0.0010999496418915896
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 23,
+            "decision_counts": {
+              "BUY": 23,
+              "HOLD": 461,
+              "SELL": 23
+            },
+            "exposure_share": 0.5398110661268556,
+            "final_long": false,
+            "max_drawdown_pct": 33.146211980392025,
+            "mean_reward": 0.0,
+            "net_return_pct": 97.46518905002507,
+            "regime_usage": [
+              0.31001006168507933,
+              0.20906227006388972,
+              0.23319711685257252,
+              0.2477305513984584
+            ],
+            "sells": 23,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 507
+          },
+          "out_of_sample": {
+            "buys": 11,
+            "decision_counts": {
+              "BUY": 11,
+              "HOLD": 161,
+              "SELL": 10
+            },
+            "exposure_share": 0.6985159817351598,
+            "final_long": true,
+            "max_drawdown_pct": 23.750268834684736,
+            "mean_reward": 0.0,
+            "net_return_pct": 35.58488192563583,
+            "regime_usage": [
+              0.305402667044993,
+              0.1783840709325585,
+              0.24847400844407896,
+              0.2677392535783694
+            ],
+            "sells": 10,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": -2.6503462496174662e-05
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 14,
+            "decision_counts": {
+              "BUY": 14,
+              "HOLD": 662,
+              "SELL": 13
+            },
+            "exposure_share": 0.5750760244482582,
+            "final_long": true,
+            "max_drawdown_pct": 44.11597633250414,
+            "mean_reward": 0.0,
+            "net_return_pct": 165.56625779679018,
+            "regime_usage": [
+              0.3174764531296406,
+              0.20948577959520245,
+              0.22520857803787064,
+              0.24782918923728633
+            ],
+            "sells": 13,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 689
+          },
+          "out_of_sample": {
+            "buys": 6,
+            "decision_counts": {
+              "BUY": 6,
+              "HOLD": 209,
+              "SELL": 5
+            },
+            "exposure_share": 0.5021681749622926,
+            "final_long": true,
+            "max_drawdown_pct": 46.15801029514996,
+            "mean_reward": 0.0,
+            "net_return_pct": -23.71318878590657,
+            "regime_usage": [
+              0.2873768834854372,
+              0.234135251381235,
+              0.22590256960572389,
+              0.2525852955276039
+            ],
+            "sells": 5,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 220
+          },
+          "training_mean_reward_last_epoch": 0.0003197410423197424
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=48h|regimes=4|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 32.07381490732462,
+      "mean_out_of_sample_return_pct": 33.60356043845494,
+      "worst_out_of_sample_return_pct": -23.71318878590657
+    },
+    {
+      "config": {
+        "cadence_hours": 48,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 11,
+            "decision_counts": {
+              "BUY": 11,
+              "HOLD": 303,
+              "SELL": 10
+            },
+            "exposure_share": 0.48835279851936947,
+            "final_long": true,
+            "max_drawdown_pct": 60.311087605656674,
+            "mean_reward": 0.0,
+            "net_return_pct": -33.74665121262088,
+            "regime_usage": [
+              0.5811910351682184,
+              0.41880896483178176
+            ],
+            "sells": 10,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 324
+          },
+          "out_of_sample": {
+            "buys": 8,
+            "decision_counts": {
+              "BUY": 8,
+              "HOLD": 167,
+              "SELL": 7
+            },
+            "exposure_share": 0.9616347905282332,
+            "final_long": true,
+            "max_drawdown_pct": 24.632172307630835,
+            "mean_reward": 0.0,
+            "net_return_pct": 88.12689676774032,
+            "regime_usage": [
+              0.6741609516093561,
+              0.32583904839064387
+            ],
+            "sells": 7,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": -0.0012500539821051404
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 16,
+            "decision_counts": {
+              "BUY": 16,
+              "HOLD": 476,
+              "SELL": 15
+            },
+            "exposure_share": 0.5367030630188525,
+            "final_long": true,
+            "max_drawdown_pct": 53.93334742405111,
+            "mean_reward": 0.0,
+            "net_return_pct": 68.92170272692499,
+            "regime_usage": [
+              0.6030175150777835,
+              0.3969824849222165
+            ],
+            "sells": 15,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 507
+          },
+          "out_of_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 173,
+              "SELL": 4
+            },
+            "exposure_share": 0.6875570776255707,
+            "final_long": true,
+            "max_drawdown_pct": 30.954175735253344,
+            "mean_reward": 0.0,
+            "net_return_pct": 31.150479906353958,
+            "regime_usage": [
+              0.639281092317215,
+              0.36071890768278503
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": -0.00013465671122315576
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 14,
+            "decision_counts": {
+              "BUY": 14,
+              "HOLD": 662,
+              "SELL": 13
+            },
+            "exposure_share": 0.5765212416824738,
+            "final_long": true,
+            "max_drawdown_pct": 55.61065235292848,
+            "mean_reward": 0.0,
+            "net_return_pct": 49.47542351154139,
+            "regime_usage": [
+              0.6053047396029222,
+              0.39469526039707786
+            ],
+            "sells": 13,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 689
+          },
+          "out_of_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 211,
+              "SELL": 4
+            },
+            "exposure_share": 0.5790912518853696,
+            "final_long": true,
+            "max_drawdown_pct": 43.355248241834474,
+            "mean_reward": 0.0,
+            "net_return_pct": -19.62629415143482,
+            "regime_usage": [
+              0.5688727017850742,
+              0.43112729821492574
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 220
+          },
+          "training_mean_reward_last_epoch": 0.00021510633596140793
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=48h|regimes=2|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 32.980532094906216,
+      "mean_out_of_sample_return_pct": 33.217027507553155,
+      "worst_out_of_sample_return_pct": -19.62629415143482
+    },
+    {
+      "config": {
+        "cadence_hours": 12,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 44,
+            "decision_counts": {
+              "BUY": 44,
+              "HOLD": 1216,
+              "SELL": 43
+            },
+            "exposure_share": 0.5274108111557854,
+            "final_long": true,
+            "max_drawdown_pct": 71.36288381616025,
+            "mean_reward": 0.0,
+            "net_return_pct": -34.27862410045858,
+            "regime_usage": [
+              0.27421038160304323,
+              0.22426863914138226,
+              0.24904384403559926,
+              0.2524771352199753
+            ],
+            "sells": 43,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1303
+          },
+          "out_of_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 722,
+              "SELL": 4
+            },
+            "exposure_share": 0.9944216757741348,
+            "final_long": true,
+            "max_drawdown_pct": 23.744208039658947,
+            "mean_reward": 0.0,
+            "net_return_pct": 98.69083422162377,
+            "regime_usage": [
+              0.2365020755510338,
+              0.13668417933767654,
+              0.290245690453774,
+              0.3365680546575157
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 731
+          },
+          "training_mean_reward_last_epoch": -0.0006810890602010012
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 44,
+            "decision_counts": {
+              "BUY": 44,
+              "HOLD": 1948,
+              "SELL": 43
+            },
+            "exposure_share": 0.5926471189629084,
+            "final_long": true,
+            "max_drawdown_pct": 49.52234322977683,
+            "mean_reward": 0.0,
+            "net_return_pct": 55.47217723761069,
+            "regime_usage": [
+              0.28611443556319227,
+              0.21626169890374014,
+              0.24373203555243403,
+              0.25389182998063353
+            ],
+            "sells": 43,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2035
+          },
+          "out_of_sample": {
+            "buys": 16,
+            "decision_counts": {
+              "BUY": 16,
+              "HOLD": 698,
+              "SELL": 15
+            },
+            "exposure_share": 0.7149543378995433,
+            "final_long": true,
+            "max_drawdown_pct": 29.510289839090397,
+            "mean_reward": 0.0,
+            "net_return_pct": 16.362479567354438,
+            "regime_usage": [
+              0.2882266141519814,
+              0.1787270925508241,
+              0.25721905671365103,
+              0.27582723658354336
+            ],
+            "sells": 15,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 729
+          },
+          "training_mean_reward_last_epoch": -0.000416353831376627
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 37,
+            "decision_counts": {
+              "BUY": 37,
+              "HOLD": 2692,
+              "SELL": 36
+            },
+            "exposure_share": 0.638665582753741,
+            "final_long": true,
+            "max_drawdown_pct": 48.71306813939864,
+            "mean_reward": 0.0,
+            "net_return_pct": 180.36230696535392,
+            "regime_usage": [
+              0.2851212298580449,
+              0.21305657743927794,
+              0.2440124173729591,
+              0.2578097753297181
+            ],
+            "sells": 36,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2765
+          },
+          "out_of_sample": {
+            "buys": 18,
+            "decision_counts": {
+              "BUY": 18,
+              "HOLD": 848,
+              "SELL": 17
+            },
+            "exposure_share": 0.6039781297134238,
+            "final_long": true,
+            "max_drawdown_pct": 41.014422664933974,
+            "mean_reward": 0.0,
+            "net_return_pct": -15.585714592021194,
+            "regime_usage": [
+              0.28429447844247036,
+              0.22795938262797966,
+              0.22886125500522506,
+              0.25888488392432485
+            ],
+            "sells": 17,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 883
+          },
+          "training_mean_reward_last_epoch": -0.0003312770370707422
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=12h|regimes=4|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 31.422973514561107,
+      "mean_out_of_sample_return_pct": 33.15586639898567,
+      "worst_out_of_sample_return_pct": -15.585714592021194
+    },
+    {
+      "config": {
+        "cadence_hours": 24,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 10,
+            "decision_counts": {
+              "BUY": 10,
+              "HOLD": 631,
+              "SELL": 9
+            },
+            "exposure_share": 0.5174548471504244,
+            "final_long": true,
+            "max_drawdown_pct": 59.618519677225315,
+            "mean_reward": 0.0,
+            "net_return_pct": -2.5582212049214403,
+            "regime_usage": [
+              0.6057728837000377,
+              0.39422711629996227
+            ],
+            "sells": 9,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 650
+          },
+          "out_of_sample": {
+            "buys": 2,
+            "decision_counts": {
+              "BUY": 2,
+              "HOLD": 362,
+              "SELL": 1
+            },
+            "exposure_share": 0.9971539162112932,
+            "final_long": true,
+            "max_drawdown_pct": 22.88705066046625,
+            "mean_reward": 0.0,
+            "net_return_pct": 97.72723161884878,
+            "regime_usage": [
+              0.7129037120451179,
+              0.28709628795488207
+            ],
+            "sells": 1,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 365
+          },
+          "training_mean_reward_last_epoch": -0.0007056500801648742
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 6,
+            "decision_counts": {
+              "BUY": 6,
+              "HOLD": 1005,
+              "SELL": 5
+            },
+            "exposure_share": 0.5533881323355008,
+            "final_long": true,
+            "max_drawdown_pct": 31.804844173577134,
+            "mean_reward": 0.0,
+            "net_return_pct": 184.94618419947656,
+            "regime_usage": [
+              0.6481108466040347,
+              0.3518891533959653
+            ],
+            "sells": 5,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1016
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 357,
+              "SELL": 3
+            },
+            "exposure_share": 0.6765981735159817,
+            "final_long": true,
+            "max_drawdown_pct": 33.978469540949014,
+            "mean_reward": 0.0,
+            "net_return_pct": 12.348533621739222,
+            "regime_usage": [
+              0.6656179164111401,
+              0.33438208358885996
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 364
+          },
+          "training_mean_reward_last_epoch": 3.168747518681866e-05
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 1368,
+              "SELL": 6
+            },
+            "exposure_share": 0.6054255863667841,
+            "final_long": true,
+            "max_drawdown_pct": 44.7233083476229,
+            "mean_reward": 0.0,
+            "net_return_pct": 170.26025950291702,
+            "regime_usage": [
+              0.6558052993484533,
+              0.3441947006515467
+            ],
+            "sells": 6,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1381
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 434,
+              "SELL": 3
+            },
+            "exposure_share": 0.45691930618401205,
+            "final_long": true,
+            "max_drawdown_pct": 39.45576204776605,
+            "mean_reward": 0.0,
+            "net_return_pct": -22.368928508594944,
+            "regime_usage": [
+              0.5563984656880415,
+              0.4436015343119584
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 441
+          },
+          "training_mean_reward_last_epoch": 0.00020425017021793516
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=24h|regimes=2|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 32.10709408306044,
+      "mean_out_of_sample_return_pct": 29.235612243997686,
+      "worst_out_of_sample_return_pct": -22.368928508594944
+    },
+    {
+      "config": {
+        "cadence_hours": 6,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 9,
+            "decision_counts": {
+              "BUY": 9,
+              "HOLD": 2591,
+              "SELL": 8
+            },
+            "exposure_share": 0.5580445465568957,
+            "final_long": true,
+            "max_drawdown_pct": 54.669579349094036,
+            "mean_reward": 0.0,
+            "net_return_pct": -2.873019806500554,
+            "regime_usage": [
+              0.626628144006597,
+              0.37337185599340306
+            ],
+            "sells": 8,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 2608
+          },
+          "out_of_sample": {
+            "buys": 1,
+            "decision_counts": {
+              "BUY": 1,
+              "HOLD": 1462,
+              "SELL": 0
+            },
+            "exposure_share": 0.9998861566484517,
+            "final_long": true,
+            "max_drawdown_pct": 22.685445996628044,
+            "mean_reward": 0.0,
+            "net_return_pct": 105.75072715321122,
+            "regime_usage": [
+              0.7612175390646833,
+              0.2387824609353167
+            ],
+            "sells": 0,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1463
+          },
+          "training_mean_reward_last_epoch": -0.0005543104516737529
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 4059,
+              "SELL": 6
+            },
+            "exposure_share": 0.6387764282501125,
+            "final_long": true,
+            "max_drawdown_pct": 48.72816311522943,
+            "mean_reward": 0.0,
+            "net_return_pct": 116.00983446897528,
+            "regime_usage": [
+              0.697358997852213,
+              0.302641002147787
+            ],
+            "sells": 6,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 4072
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 1454,
+              "SELL": 2
+            },
+            "exposure_share": 0.7183789954337899,
+            "final_long": true,
+            "max_drawdown_pct": 29.150837572025683,
+            "mean_reward": 0.0,
+            "net_return_pct": 22.068200822527473,
+            "regime_usage": [
+              0.7217675901766645,
+              0.2782324098233355
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1459
+          },
+          "training_mean_reward_last_epoch": -0.0003849468743211281
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 5525,
+              "SELL": 3
+            },
+            "exposure_share": 0.7261012254237799,
+            "final_long": true,
+            "max_drawdown_pct": 46.10958276103316,
+            "mean_reward": 0.0,
+            "net_return_pct": 305.6709522813667,
+            "regime_usage": [
+              0.7317898437246121,
+              0.2682101562753879
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 5532
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 1760,
+              "SELL": 3
+            },
+            "exposure_share": 0.618684012066365,
+            "final_long": true,
+            "max_drawdown_pct": 57.80128515042742,
+            "mean_reward": 0.0,
+            "net_return_pct": -40.12389516707333,
+            "regime_usage": [
+              0.6074847351987673,
+              0.3925152648012326
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1767
+          },
+          "training_mean_reward_last_epoch": -0.00033968258575550503
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=6h|regimes=2|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 36.54585623969371,
+      "mean_out_of_sample_return_pct": 29.231677602888453,
+      "worst_out_of_sample_return_pct": -40.12389516707333
+    },
+    {
+      "config": {
+        "cadence_hours": 12,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 1290,
+              "SELL": 6
+            },
+            "exposure_share": 0.5580445465568957,
+            "final_long": true,
+            "max_drawdown_pct": 75.38448607940774,
+            "mean_reward": 0.0,
+            "net_return_pct": -35.6091455673072,
+            "regime_usage": [
+              0.3087595989511315,
+              0.20353620971088188,
+              0.23132780908954456,
+              0.25637638224844217
+            ],
+            "sells": 6,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 1303
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 726,
+              "SELL": 2
+            },
+            "exposure_share": 0.9944216757741348,
+            "final_long": true,
+            "max_drawdown_pct": 22.63197144751775,
+            "mean_reward": 0.0,
+            "net_return_pct": 102.90859397533421,
+            "regime_usage": [
+              0.29713241146838487,
+              0.11118850582904552,
+              0.24841552398464783,
+              0.34326355871792175
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 731
+          },
+          "training_mean_reward_last_epoch": -0.0006283445117260855
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 9,
+            "decision_counts": {
+              "BUY": 9,
+              "HOLD": 2018,
+              "SELL": 8
+            },
+            "exposure_share": 0.5946100682942789,
+            "final_long": true,
+            "max_drawdown_pct": 43.1871091757272,
+            "mean_reward": 0.0,
+            "net_return_pct": 98.60267540825711,
+            "regime_usage": [
+              0.32463313515726416,
+              0.1965618689312773,
+              0.22307120149882537,
+              0.25573379441263316
+            ],
+            "sells": 8,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2035
+          },
+          "out_of_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 720,
+              "SELL": 4
+            },
+            "exposure_share": 0.7108447488584475,
+            "final_long": true,
+            "max_drawdown_pct": 31.31165023489071,
+            "mean_reward": 0.0,
+            "net_return_pct": 18.63333150724138,
+            "regime_usage": [
+              0.32794693553245685,
+              0.16325301937059253,
+              0.23292370554877112,
+              0.2758763395481795
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 729
+          },
+          "training_mean_reward_last_epoch": -0.00028574191979615374
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 9,
+            "decision_counts": {
+              "BUY": 9,
+              "HOLD": 2748,
+              "SELL": 8
+            },
+            "exposure_share": 0.6148194983891849,
+            "final_long": true,
+            "max_drawdown_pct": 45.47641802198766,
+            "mean_reward": 0.0,
+            "net_return_pct": 168.8543554599525,
+            "regime_usage": [
+              0.3392978472654117,
+              0.18863044060546166,
+              0.21039176014610864,
+              0.26167995198301797
+            ],
+            "sells": 8,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 2765
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 876,
+              "SELL": 3
+            },
+            "exposure_share": 0.5010369532428356,
+            "final_long": true,
+            "max_drawdown_pct": 51.08304312502573,
+            "mean_reward": 0.0,
+            "net_return_pct": -37.27766828448475,
+            "regime_usage": [
+              0.3008513113993838,
+              0.2181502625546122,
+              0.22072314493578182,
+              0.26027528111022213
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 883
+          },
+          "training_mean_reward_last_epoch": -0.0001988234809494997
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=12h|regimes=4|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 35.008888269144734,
+      "mean_out_of_sample_return_pct": 28.08808573269695,
+      "worst_out_of_sample_return_pct": -37.27766828448475
+    },
+    {
+      "config": {
+        "cadence_hours": 6,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 9,
+            "decision_counts": {
+              "BUY": 9,
+              "HOLD": 2591,
+              "SELL": 8
+            },
+            "exposure_share": 0.4427851171102176,
+            "final_long": true,
+            "max_drawdown_pct": 49.337834271580974,
+            "mean_reward": 0.0,
+            "net_return_pct": 24.520476502613818,
+            "regime_usage": [
+              0.6354384622948233,
+              0.3645615377051767
+            ],
+            "sells": 8,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 2608
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 1458,
+              "SELL": 2
+            },
+            "exposure_share": 0.9670992714025501,
+            "final_long": true,
+            "max_drawdown_pct": 26.886784323796753,
+            "mean_reward": 0.0,
+            "net_return_pct": 83.99784961172168,
+            "regime_usage": [
+              0.7816900763804462,
+              0.21830992361955373
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1463
+          },
+          "training_mean_reward_last_epoch": -0.00038844918178438244
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 4063,
+              "SELL": 4
+            },
+            "exposure_share": 0.6002535476219687,
+            "final_long": true,
+            "max_drawdown_pct": 37.2027736652794,
+            "mean_reward": 0.0,
+            "net_return_pct": 153.6811541224178,
+            "regime_usage": [
+              0.6878717075554207,
+              0.31212829244457935
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 4072
+          },
+          "out_of_sample": {
+            "buys": 5,
+            "decision_counts": {
+              "BUY": 5,
+              "HOLD": 1450,
+              "SELL": 4
+            },
+            "exposure_share": 0.7026255707762558,
+            "final_long": true,
+            "max_drawdown_pct": 33.556605773337424,
+            "mean_reward": 0.0,
+            "net_return_pct": 17.058568540684483,
+            "regime_usage": [
+              0.6951482315143446,
+              0.3048517684856554
+            ],
+            "sells": 4,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1459
+          },
+          "training_mean_reward_last_epoch": -0.00014882827460005097
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 5519,
+              "SELL": 6
+            },
+            "exposure_share": 0.6348718875139253,
+            "final_long": true,
+            "max_drawdown_pct": 42.12280984237983,
+            "mean_reward": 0.0,
+            "net_return_pct": 189.32092774625931,
+            "regime_usage": [
+              0.6939187641751221,
+              0.306081235824878
+            ],
+            "sells": 6,
+            "skipped_gap_steps": 3,
+            "skipped_history_steps": 0,
+            "steps": 5532
+          },
+          "out_of_sample": {
+            "buys": 3,
+            "decision_counts": {
+              "BUY": 3,
+              "HOLD": 1762,
+              "SELL": 2
+            },
+            "exposure_share": 0.4348604826546003,
+            "final_long": true,
+            "max_drawdown_pct": 37.325197266030294,
+            "mean_reward": 0.0,
+            "net_return_pct": -18.73725590781097,
+            "regime_usage": [
+              0.5792793127206162,
+              0.42072068727938383
+            ],
+            "sells": 2,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 1767
+          },
+          "training_mean_reward_last_epoch": -9.149248971670586e-05
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=6h|regimes=2|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 32.589529121054824,
+      "mean_out_of_sample_return_pct": 27.439720748198397,
+      "worst_out_of_sample_return_pct": -18.73725590781097
+    },
+    {
+      "config": {
+        "cadence_hours": 48,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.02,
+        "regimes": 4,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 39,
+            "decision_counts": {
+              "BUY": 39,
+              "HOLD": 247,
+              "SELL": 38
+            },
+            "exposure_share": 0.5159231603803689,
+            "final_long": true,
+            "max_drawdown_pct": 68.91906552260534,
+            "mean_reward": 0.0,
+            "net_return_pct": -46.30662021273459,
+            "regime_usage": [
+              0.27491239647192584,
+              0.23117387552623977,
+              0.24824063698137838,
+              0.24567309102045592
+            ],
+            "sells": 38,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 324
+          },
+          "out_of_sample": {
+            "buys": 14,
+            "decision_counts": {
+              "BUY": 14,
+              "HOLD": 155,
+              "SELL": 13
+            },
+            "exposure_share": 0.9288479052823315,
+            "final_long": true,
+            "max_drawdown_pct": 25.52471185330792,
+            "mean_reward": 0.0,
+            "net_return_pct": 69.40856932595602,
+            "regime_usage": [
+              0.24367151528993303,
+              0.1418666459304542,
+              0.2899620364039138,
+              0.32449980237569903
+            ],
+            "sells": 13,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": -0.0011225423531971083
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 47,
+            "decision_counts": {
+              "BUY": 47,
+              "HOLD": 413,
+              "SELL": 47
+            },
+            "exposure_share": 0.5653294074346706,
+            "final_long": false,
+            "max_drawdown_pct": 55.89323600517483,
+            "mean_reward": 0.0,
+            "net_return_pct": 22.481777143024615,
+            "regime_usage": [
+              0.28009152289000505,
+              0.2257671883330969,
+              0.24699524258907896,
+              0.24714604618781916
+            ],
+            "sells": 47,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 507
+          },
+          "out_of_sample": {
+            "buys": 13,
+            "decision_counts": {
+              "BUY": 13,
+              "HOLD": 157,
+              "SELL": 12
+            },
+            "exposure_share": 0.6875570776255707,
+            "final_long": true,
+            "max_drawdown_pct": 25.77015978398273,
+            "mean_reward": 0.0,
+            "net_return_pct": 24.693130196729918,
+            "regime_usage": [
+              0.28158951207838795,
+              0.18772450360615484,
+              0.26194408692022986,
+              0.26874189739522736
+            ],
+            "sells": 12,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": -0.00019626884736224638
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 49,
+            "decision_counts": {
+              "BUY": 49,
+              "HOLD": 592,
+              "SELL": 48
+            },
+            "exposure_share": 0.5823021106193358,
+            "final_long": true,
+            "max_drawdown_pct": 52.94403190384176,
+            "mean_reward": 0.0,
+            "net_return_pct": 88.43793943777005,
+            "regime_usage": [
+              0.2834238918495589,
+              0.22389869534127602,
+              0.24388987629819203,
+              0.24878753651097307
+            ],
+            "sells": 48,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 689
+          },
+          "out_of_sample": {
+            "buys": 20,
+            "decision_counts": {
+              "BUY": 20,
+              "HOLD": 181,
+              "SELL": 19
+            },
+            "exposure_share": 0.5428921568627451,
+            "final_long": true,
+            "max_drawdown_pct": 41.58402808587694,
+            "mean_reward": 0.0,
+            "net_return_pct": -22.09119710790911,
+            "regime_usage": [
+              0.2849814623169259,
+              0.2380797605687922,
+              0.2267958716749224,
+              0.25014290543935946
+            ],
+            "sells": 19,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 220
+          },
+          "training_mean_reward_last_epoch": 0.00017905679534282724
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=48h|regimes=4|lr=0.02|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 30.95963324105586,
+      "mean_out_of_sample_return_pct": 24.00350080492561,
+      "worst_out_of_sample_return_pct": -22.09119710790911
+    },
+    {
+      "config": {
+        "cadence_hours": 48,
+        "epochs": 4,
+        "explore": true,
+        "fee_per_side": 0.001,
+        "l2": 1e-05,
+        "learning_rate": 0.08,
+        "regimes": 2,
+        "seed": 20260924
+      },
+      "folds": {
+        "fold_1_test_2023H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 22.685445996628033,
+            "net_return_pct": 105.60183221242121
+          },
+          "in_sample": {
+            "buys": 15,
+            "decision_counts": {
+              "BUY": 15,
+              "HOLD": 295,
+              "SELL": 14
+            },
+            "exposure_share": 0.4209585806369264,
+            "final_long": true,
+            "max_drawdown_pct": 57.601533781255384,
+            "mean_reward": 0.0,
+            "net_return_pct": -4.005166754948542,
+            "regime_usage": [
+              0.5946146633641046,
+              0.40538533663589543
+            ],
+            "sells": 14,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 324
+          },
+          "out_of_sample": {
+            "buys": 9,
+            "decision_counts": {
+              "BUY": 9,
+              "HOLD": 165,
+              "SELL": 8
+            },
+            "exposure_share": 0.9561703096539163,
+            "final_long": true,
+            "max_drawdown_pct": 29.130587187409716,
+            "mean_reward": 0.0,
+            "net_return_pct": 79.06433789794724,
+            "regime_usage": [
+              0.7065379555581512,
+              0.2934620444418487
+            ],
+            "sells": 8,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": -0.0011237836944902753
+        },
+        "fold_2_test_2024H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 30.93611235818756,
+            "net_return_pct": 69.91726170823456
+          },
+          "in_sample": {
+            "buys": 11,
+            "decision_counts": {
+              "BUY": 11,
+              "HOLD": 486,
+              "SELL": 10
+            },
+            "exposure_share": 0.5563325563325563,
+            "final_long": true,
+            "max_drawdown_pct": 26.89370873671717,
+            "mean_reward": 0.0,
+            "net_return_pct": 118.79004238202278,
+            "regime_usage": [
+              0.6261888035173268,
+              0.3738111964826733
+            ],
+            "sells": 10,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 507
+          },
+          "out_of_sample": {
+            "buys": 8,
+            "decision_counts": {
+              "BUY": 8,
+              "HOLD": 167,
+              "SELL": 7
+            },
+            "exposure_share": 0.6985159817351598,
+            "final_long": true,
+            "max_drawdown_pct": 29.890369573436203,
+            "mean_reward": 0.0,
+            "net_return_pct": 23.91300123810478,
+            "regime_usage": [
+              0.6604815002083121,
+              0.33951849979168797
+            ],
+            "sells": 7,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 182
+          },
+          "training_mean_reward_last_epoch": 0.00025443768413845643
+        },
+        "fold_3_test_2025H2": {
+          "buy_and_hold_reference": {
+            "max_drawdown_pct": 53.74206479139391,
+            "net_return_pct": -29.693274515832158
+          },
+          "in_sample": {
+            "buys": 7,
+            "decision_counts": {
+              "BUY": 7,
+              "HOLD": 676,
+              "SELL": 6
+            },
+            "exposure_share": 0.6126516725378617,
+            "final_long": true,
+            "max_drawdown_pct": 40.98745614949828,
+            "mean_reward": 0.0,
+            "net_return_pct": 143.58478369140158,
+            "regime_usage": [
+              0.6389910542021129,
+              0.36100894579788706
+            ],
+            "sells": 6,
+            "skipped_gap_steps": 2,
+            "skipped_history_steps": 0,
+            "steps": 689
+          },
+          "out_of_sample": {
+            "buys": 4,
+            "decision_counts": {
+              "BUY": 4,
+              "HOLD": 213,
+              "SELL": 3
+            },
+            "exposure_share": 0.4931184012066365,
+            "final_long": true,
+            "max_drawdown_pct": 49.13512516255743,
+            "mean_reward": 0.0,
+            "net_return_pct": -39.374598700759364,
+            "regime_usage": [
+              0.5485918368462178,
+              0.4514081631537823
+            ],
+            "sells": 3,
+            "skipped_gap_steps": 0,
+            "skipped_history_steps": 0,
+            "steps": 220
+          },
+          "training_mean_reward_last_epoch": 0.0006847804516159394
+        }
+      },
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "label": "cadence=48h|regimes=2|lr=0.08|epochs=4",
+      "mean_out_of_sample_drawdown_pct": 36.05202730780112,
+      "mean_out_of_sample_return_pct": 21.200913478430884,
+      "worst_out_of_sample_return_pct": -39.374598700759364
+    }
+  ],
+  "dataset_id": "sha256:53938d3dccb146703a6491ba28a2f601ae74bdd3305305904d0b808c2ff3ee73",
+  "final_policy": {
+    "decision_counts_last_training_pass": {
+      "BUY": 444,
+      "HOLD": 936,
+      "SELL": 443
+    },
+    "path": "data/models/local-exposure-agent-v1.json",
+    "regime_usage_last_training_pass": [
+      0.2707914304799811,
+      0.23470963287531746,
+      0.2512106032775321,
+      0.2432883333671693
+    ]
+  },
+  "folds": [
+    {
+      "name": "fold_1_test_2023H2",
+      "test_end": "2024-06-30T23:00:00+00:00",
+      "test_start": "2023-07-01T00:00:00+00:00",
+      "train_start": "2021-09-16T00:00:00+00:00"
+    },
+    {
+      "name": "fold_2_test_2024H2",
+      "test_end": "2025-06-30T23:00:00+00:00",
+      "test_start": "2024-07-01T00:00:00+00:00",
+      "train_start": "2021-09-16T00:00:00+00:00"
+    },
+    {
+      "name": "fold_3_test_2025H2",
+      "test_end": "2026-09-15T23:00:00+00:00",
+      "test_start": "2025-07-01T00:00:00+00:00",
+      "train_start": "2021-09-16T00:00:00+00:00"
+    }
+  ],
+  "generated_at": "2026-09-24T15:59:53.147353+00:00",
+  "perception": {
+    "sparse_days_under_20_bars": 2,
+    "total_days": 2451
+  },
+  "robustness": {
+    "adverse_fees_20bps": {
+      "folds_profitable": 2,
+      "folds_total": 3,
+      "mean_out_of_sample_return_pct": 44.670569596983185,
+      "worst_out_of_sample_return_pct": -13.137618693692577
+    },
+    "seed_stability": {
+      "best": 56.02077825709291,
+      "mean": 42.42463908918171,
+      "per_seed_mean_out_of_sample_return_pct": {
+        "1": 38.83911011810744,
+        "101": 56.02077825709291,
+        "20260924": 48.827654491779064,
+        "7": 34.49293519768408,
+        "999983": 33.94271738124506
+      },
+      "seeds_profitable": 5,
+      "seeds_total": 5,
+      "spread": 22.078060875847846,
+      "worst": 33.94271738124506
+    }
+  }
+}

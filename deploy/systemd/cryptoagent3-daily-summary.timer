@@ -1,0 +1,10 @@
+[Unit]
+Description=Daily summary of the exposure agent's operations
+[Timer]
+# 23:55 UTC: late enough that the reported 24-hour window covers essentially the
+# whole day, without depending on a calendar-day boundary the report does not use.
+OnCalendar=*-*-* 23:55:00 UTC
+Persistent=true
+AccuracySec=1min
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,22 @@
+[Unit]
+Description=CryptoAgent 3.0 pixel dashboard for the exposure agent (read-only)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/workplace/cryptoagent3.0
+Environment=PYTHONPATH=/home/ubuntu/workplace/cryptoagent3.0/src
+UMask=0077
+ExecStart=/home/ubuntu/workplace/cryptoagent3.0/.venv/bin/python -m scripts.run_agent_dashboard --host 127.0.0.1 --port 8787 --journal /home/ubuntu/workplace/cryptoagent3.0/data/live/exposure-agent-activity.jsonl --policy /home/ubuntu/workplace/cryptoagent3.0/data/models/local-exposure-agent-v1.json
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadOnlyPaths=/home/ubuntu/workplace/cryptoagent3.0/data
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,61 @@
+{
+  "0": {
+    "features": {
+      "log_price_over_high_200d": -0.3289744259254811,
+      "log_price_over_ma200": -0.06344221016755876,
+      "log_price_over_ma30": 0.04727145669922721,
+      "return_30d": 0.05217027914249965,
+      "return_90d": -0.06762342695261915,
+      "volatility_30d": 0.02544224333695504,
+      "volatility_ratio_30_90": 0.9396687377613043
+    },
+    "own_long_preference": 0.5103489786456064,
+    "share": 0.3362541073384447
+  },
+  "1": {
+    "features": {
+      "log_price_over_high_200d": -0.5661023729691328,
+      "log_price_over_ma200": -0.26151825364198805,
+      "log_price_over_ma30": -0.1049052433955437,
+      "return_30d": -0.18393874170219052,
+      "return_90d": -0.23818894935574367,
+      "volatility_30d": 0.03353894501160118,
+      "volatility_ratio_30_90": 1.1089464297124059
+    },
+    "own_long_preference": 0.47665247053510384,
+    "share": 0.19879518072289157
+  },
+  "2": {
+    "features": {
+      "log_price_over_high_200d": -0.1017618670690644,
+      "log_price_over_ma200": 0.19445870018977757,
+      "log_price_over_ma30": -0.00941352421215964,
+      "return_30d": -0.008617298736991108,
+      "return_90d": 0.2015282342869791,
+      "volatility_30d": 0.023889395610874147,
+      "volatility_ratio_30_90": 0.9307031998486496
+    },
+    "own_long_preference": 0.5096455885558043,
+    "share": 0.2294633077765608
+  },
+  "3": {
+    "features": {
+      "log_price_over_high_200d": -0.09593708119644133,
+      "log_price_over_ma200": 0.17264193699318167,
+      "log_price_over_ma30": 0.03826085234833459,
+      "return_30d": 0.12060501822167492,
+      "return_90d": 0.20964168866177407,
+      "volatility_30d": 0.021698085657184008,
+      "volatility_ratio_30_90": 0.9235872599289522
+    },
+    "own_long_preference": 0.6058264820493876,
+    "share": 0.23548740416210295
+  },
+  "verdict": {
+    "active_regimes": 4,
+    "conditions_differ": true,
+    "intentions_differ": true,
+    "preference_spread": 0.12917401151428376,
+    "trend_spread": 0.4559769538317656
+  }
+}

@@ -1,0 +1,113 @@
+{
+  "baseline": {
+    "majority_class_accuracy": 0.40256806562834385,
+    "uniform_log_loss": 1.0986122886681098
+  },
+  "created_at": "2026-09-23T00:15:59.503209+00:00",
+  "dataset": {
+    "content_hash": "sha256:5e862ab28b83bde0737fb2bed56ee64560010037edfa6f4f8183f41584d578d3",
+    "contiguous_segments": 3,
+    "dataset_id": "sha256:53938d3dccb146703a6491ba28a2f601ae74bdd3305305904d0b808c2ff3ee73",
+    "gap_count_manifest": 15,
+    "interval": "1h",
+    "rows_skipped_in_short_segments": 318,
+    "selected_rows": 43821,
+    "source_rows": 58769,
+    "window_end_exclusive": "2026-09-16T01:00:00+00:00",
+    "window_start": "2021-09-16T01:00:00+00:00",
+    "window_years": 5
+  },
+  "feature_schema_version": "evidence-multisource/1.0.0",
+  "holdout": {
+    "accuracy": 0.39900130781119963,
+    "confusion_matrix": {
+      "BUY": {
+        "BUY": 1031,
+        "HOLD": 1307,
+        "SELL": 182
+      },
+      "HOLD": {
+        "BUY": 1069,
+        "HOLD": 2126,
+        "SELL": 191
+      },
+      "SELL": {
+        "BUY": 977,
+        "HOLD": 1329,
+        "SELL": 199
+      }
+    },
+    "examples": 8411,
+    "log_loss": 1.0962398899159145,
+    "macro_f1": 0.3398680890571106,
+    "per_class": {
+      "BUY": {
+        "f1": 0.36841164909773094,
+        "precision": 0.3350666233344166,
+        "recall": 0.4091269841269841,
+        "support": 2520
+      },
+      "HOLD": {
+        "f1": 0.521845851742759,
+        "precision": 0.44645107097858044,
+        "recall": 0.6278795038393384,
+        "support": 3386
+      },
+      "SELL": {
+        "f1": 0.12934676633084174,
+        "precision": 0.3479020979020979,
+        "recall": 0.07944111776447106,
+        "support": 2505
+      }
+    }
+  },
+  "label": {
+    "decision_threshold_bps": "10",
+    "definition": "BUY if 4h return minus costs reaches threshold; SELL if inverse return minus costs reaches threshold; otherwise HOLD",
+    "horizon_hours": 4,
+    "round_trip_cost_bps": "20"
+  },
+  "limitations": [
+    "The 1h dataset has no historical BBO spread or aggTrade order flow; spread is missing and flow uses a signed-candle proxy.",
+    "The 1h dataset cannot reproduce 5m/30m runtime features; both use the completed 1h candle return proxy.",
+    "Historical portfolio position, PnL, stop distance and breaker state are unavailable and use neutral values.",
+    "This is multi-source tabular evidence, not visual multimodal learning, and holdout metrics do not establish live trading profitability."
+  ],
+  "model_version": "LOCAL-SOFTMAX-BTC-1H-4H-V1",
+  "optimization": {
+    "algorithm": "causal_online_sgd_single_pass",
+    "class_weighting": "inverse_frequency_from_training_partition",
+    "class_weights": {
+      "BUY": 1.0646917331307761,
+      "HOLD": 0.8601160798752269,
+      "SELL": 1.113427994571873
+    },
+    "l2": 0.0001,
+    "learning_rate": 0.0003,
+    "mean_prequential_train_log_loss": 1.0949432207848995
+  },
+  "promotion": {
+    "criteria": "accuracy > majority baseline and log_loss < uniform baseline",
+    "status": "REJECTED"
+  },
+  "schema_version": "local-softmax-training-report/1.0.0",
+  "split": {
+    "holdout_class_counts": {
+      "BUY": 2520,
+      "HOLD": 3386,
+      "SELL": 2505
+    },
+    "holdout_examples": 8411,
+    "holdout_start": "2025-09-30T11:00:00+00:00",
+    "purge_rule": "training label_at must be strictly before holdout_start",
+    "purged_train_examples": 4,
+    "train_class_counts": {
+      "BUY": 10532,
+      "HOLD": 13037,
+      "SELL": 10071
+    },
+    "train_end": "2025-09-30T06:00:00+00:00",
+    "train_examples": 33640,
+    "type": "temporal_no_shuffle"
+  }
+}

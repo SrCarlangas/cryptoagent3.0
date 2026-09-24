@@ -1,0 +1,5 @@
+READY_FOR_OFFLINE_VALIDATION
+completed_at=2026-09-15T21:25:00Z
+spec=docs/btc-decision-agent-spec.md
+validation=docs/btc-decision-agent-theoretical-validation.md
+live_trading_authorized=false

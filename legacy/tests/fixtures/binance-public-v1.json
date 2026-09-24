@@ -1,0 +1,16 @@
+{
+  "fixture_version": "binance-public-fixtures/1.0.0",
+  "provider_contract_version": "BINANCE_SPOT_DOCS_2026-09-15",
+  "observed_at": "2026-09-15T17:46:21Z",
+  "sources": {
+    "S-01": {"channel": "btcusdt@aggTrade", "payload": {"e": "aggTrade", "E": 1789494380110, "s": "BTCUSDT", "a": 12345, "p": "76874.01", "q": "0.01000000", "f": 20001, "l": 20003, "T": 1789494380100, "m": false}},
+    "S-02": {"channel": "btcusdt@kline_1h", "payload": {"e": "kline", "E": 1789494380200, "s": "BTCUSDT", "k": {"t": 1789492800000, "T": 1789496399999, "s": "BTCUSDT", "i": "1h", "f": 10, "L": 20, "o": "76800", "c": "76874.01", "h": "76900", "l": "76750", "v": "12.5", "n": 11, "x": false, "q": "960000", "V": "6", "Q": "461000"}}},
+    "S-03": {"channel": "/api/v3/klines", "payload": {"symbol": "BTCUSDT", "interval": "1h", "kline": [1789489200000, "76700", "76900", "76650", "76800", "20", 1789492799999, "1536000", 100, "10", "768000", "0"]}},
+    "S-04": {"channel": "btcusdt@bookTicker", "payload": {"u": 400900217, "s": "BTCUSDT", "b": "76874.00", "B": "1.25", "a": "76874.01", "A": "0.90"}},
+    "S-05": {"channel": "btcusdt@depth@100ms", "payload": {"e": "depthUpdate", "E": 1789494380300, "s": "BTCUSDT", "U": 101, "u": 103, "b": [["76874.00", "1.00"]], "a": [["76874.01", "1.00"]]}},
+    "S-06": {"channel": "/api/v3/depth", "payload": {"symbol": "BTCUSDT", "lastUpdateId": 100, "limit": 500, "bids": [["76874.00", "1.20"], ["76873.99", "2.00"]], "asks": [["76874.01", "1.10"], ["76874.02", "2.00"]]}},
+    "S-07": {"channel": "btcusdt@ticker", "payload": {"e": "24hrTicker", "E": 1789494380400, "s": "BTCUSDT", "p": "-100", "P": "-0.13", "c": "76874.01", "o": "76974.01", "h": "79600", "l": "75605", "v": "18254.91", "q": "1410000000", "O": 1789407980400, "C": 1789494380400}},
+    "S-08": {"channel": "/api/v3/ticker/24hr", "payload": {"symbol": "BTCUSDT", "lastPrice": "76874.01", "openPrice": "76974.01", "highPrice": "79600", "lowPrice": "75605", "volume": "18254.91", "quoteVolume": "1410000000", "openTime": 1789407980400, "closeTime": 1789494380400}},
+    "S-09": {"channel": "/api/v3/exchangeInfo", "payload": {"symbol": "BTCUSDT", "status": "TRADING", "baseAsset": "BTC", "quoteAsset": "USDT", "isSpotTradingAllowed": true, "orderTypes": ["LIMIT", "MARKET"], "filters": [{"filterType": "PRICE_FILTER", "tickSize": "0.01"}, {"filterType": "LOT_SIZE", "stepSize": "0.00001"}]}}
+  }
+}

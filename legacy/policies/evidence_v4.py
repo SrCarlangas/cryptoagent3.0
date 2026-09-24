@@ -1,0 +1,13 @@
+"""Frozen identity for the cost-aware anti-churn V4 experiment."""
+
+STRATEGY_VERSION = "EVIDENCE-V4-FROZEN-2026-09-22"
+PARAMETER_VERSION = "ev4/1"
+COST_MODEL_VERSION = "ADVERSE-74.242622BPS/1"
+FREEZE_DATE = "2026-09-22"
+
+__all__ = [
+    "COST_MODEL_VERSION",
+    "FREEZE_DATE",
+    "PARAMETER_VERSION",
+    "STRATEGY_VERSION",
+]
