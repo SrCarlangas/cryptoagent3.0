@@ -171,4 +171,32 @@ for r in orders[-5:]:
 PY
 
 echo
+echo "=== 7. apuntar la observabilidad al journal del agente LLM ==="
+# The dashboard and the daily Slack summary read a single journal path. Left
+# pointing at the numeric agent's file they would show a frozen snapshot forever
+# and the staleness alarm would fire every day, which trains everyone to ignore it.
+# The numeric agent's journal is kept on disk as history, it is just no longer the
+# live source.
+NEW_JOURNAL="$ROOT/data/live/llm-agent-activity.jsonl"
+OLD_JOURNAL="$ROOT/data/live/exposure-agent-activity.jsonl"
+for unit in cryptoagent3-agent-dashboard cryptoagent3-daily-summary; do
+  file="/etc/systemd/system/$unit.service"
+  sudo sed -i "s|$OLD_JOURNAL|$NEW_JOURNAL|g" "$file"
+  if grep -q "$NEW_JOURNAL" "$file"; then
+    echo "  $unit -> llm-agent-activity.jsonl"
+  else
+    echo "  ADVERTENCIA: $unit sigue apuntando al journal anterior"
+  fi
+done
+sudo systemctl daemon-reload
+sudo systemctl restart cryptoagent3-agent-dashboard
+sleep 5
+echo "  dashboard activo=$(systemctl is-active cryptoagent3-agent-dashboard)"
+echo "  resumen diario: $(systemctl is-enabled cryptoagent3-daily-summary 2>&1) (23:55 UTC)"
+
+echo
 echo "TRASPASO COMPLETO. El agente LLM es la unica autoridad de ordenes."
+echo
+echo "Advertencia sobre la evidencia: el gate se paso en UNA ventana y UNA pasada."
+echo "Demuestra que el agente no esta roto ni es degenerado. NO demuestra que tenga"
+echo "ventaja sobre comprar y mantener, y ningun estudio de este proyecto la encontro."
