@@ -1,20 +1,26 @@
 """Persistent memory that lets the agent learn without touching model weights.
 
-The weights of a 30B model cannot be updated on this hardware, and fine-tuning on
-1,826 noisy daily decisions would teach it to memorise noise confidently. So the
-agent learns the way an analyst does: it keeps a record of what it decided, what it
-expected, and what actually happened, and it reads that record before deciding
-again.
+What this module is, stated plainly
+-----------------------------------
+It does NOT train the model. The weights of qwen3:30b-a3b are frozen and nothing
+here changes them: there is no fine-tuning, no adapter, no gradient. What this does
+is keep a record of what the agent decided, what it expected, and what actually
+happened, compute ordinary statistics over that record, and put the result in the
+agent's prompt before it decides again.
+
+That is in-context conditioning, not parametric learning, and the vocabulary here
+says so on purpose. Calling these "lessons the agent learned" would suggest the
+model improved. It did not. It is the same model, better informed about itself.
 
 The danger this module is built around
 --------------------------------------
-A naive reflection loop is worse than no learning at all. If the agent writes
-"lesson: buy when volatility expands" after three lucky trades, it will entrench
-noise as doctrine and act on it with confidence. The project already established
-that this asset has no reliable point-in-time signal: of twenty signal/horizon
-pairs measured on non-overlapping samples, none reached one standard error.
+A naive reflection loop is worse than no record at all. If the agent concludes "buy
+when volatility expands" after three lucky trades, it will entrench noise as
+doctrine and act on it with confidence. The project already established that this
+asset has no reliable point-in-time signal: of twenty signal/horizon pairs measured
+on non-overlapping samples, none reached one standard error.
 
-So nothing becomes a LESSON here on the strength of a story. A pattern is promoted
+So no pattern here is marked as SUPPORTED on the strength of a story. It is promoted
 only when it has enough independent samples AND an effect larger than its own
 standard error. Everything else is shown to the agent explicitly labelled as
 insufficient evidence, which is itself useful information: it tells the agent not
@@ -41,12 +47,12 @@ D = Decimal
 SCHEMA_VERSION = "llm-agent-memory/1.0.0"
 DEFAULT_PATH = "data/live/llm-agent-memory.sqlite3"
 
-MIN_SAMPLES_FOR_LESSON = 8
-"""Below this a pattern is a coincidence, not a lesson."""
+MIN_SAMPLES_FOR_SUPPORT = 8
+"""Below this a pattern is a coincidence, not a finding."""
 
 MIN_EFFECT_IN_STANDARD_ERRORS = 1.5
 """How far the mean outcome must sit from zero, measured in its own standard
-error, before the pattern is allowed to be called a lesson."""
+error, before the pattern may be described as supported by the record."""
 
 _DDL = """
 CREATE TABLE IF NOT EXISTS decisions (
@@ -89,8 +95,15 @@ class PastDecision:
 
 
 @dataclass(frozen=True)
-class Lesson:
-    """A pattern the record actually supports, or explicitly does not."""
+class MeasuredPattern:
+    """A regularity the agent's own record supports, or explicitly does not.
+
+    Named for what it is. This is a statistic computed over past decisions, not
+    something the model learned: the weights never change. The label the agent and
+    the dashboard both see says "con respaldo" or "no concluyente" rather than
+    "leccion", because "lesson" implies knowledge acquired and would misdescribe
+    every part of this pipeline.
+    """
 
     scope: str
     samples: int
@@ -99,7 +112,7 @@ class Lesson:
     supported: bool
 
     def render(self) -> str:
-        verdict = "LECCION" if self.supported else "CANDIDATA (evidencia insuficiente)"
+        verdict = "CON RESPALDO" if self.supported else "NO CONCLUYENTE"
         return (
             f"  [{verdict}] {self.scope}: {self.samples} casos, "
             f"resultado medio {self.mean_realized_pct:+.2f}%, "
@@ -120,7 +133,7 @@ class AgentMemory:
         """`read_only` exists so observers can reuse the statistics without owning
         the database.
 
-        The dashboard has to report the same calibration and the same lesson gate
+        The dashboard has to report the same calibration and the same support gate
         the agent is held to; reimplementing them there would let the two drift, and
         a dashboard showing a looser gate than the agent obeys is a lie. But it runs
         under a sandbox that mounts the data directory read-only, so it cannot run
@@ -288,8 +301,12 @@ class AgentMemory:
             }
         return out
 
-    def lessons(self) -> list[Lesson]:
-        """Patterns grouped by (regime, chosen exposure), gated by statistics."""
+    def measured_patterns(self) -> list[MeasuredPattern]:
+        """Regularities grouped by (regime, chosen exposure), gated by statistics.
+
+        Not "lessons": nothing is learned here. This aggregates outcomes the agent
+        already produced and marks which groups the record can actually support.
+        """
         with closing(self._connect()) as conn:
             rows = conn.execute(
                 "SELECT regime, target_exposure, realized_pct FROM decisions "
@@ -300,7 +317,7 @@ class AgentMemory:
             key = (row["regime"], str(row["target_exposure"]))
             groups.setdefault(key, []).append(float(row["realized_pct"]))
 
-        out: list[Lesson] = []
+        out: list[MeasuredPattern] = []
         for (regime, exposure), values in sorted(groups.items(), key=lambda kv: -len(kv[1])):
             count = len(values)
             mean = sum(values) / count
@@ -311,10 +328,10 @@ class AgentMemory:
                 stderr = float("inf")
             effect = abs(mean) / stderr if stderr > 0 else 0.0
             supported = (
-                count >= MIN_SAMPLES_FOR_LESSON and effect >= MIN_EFFECT_IN_STANDARD_ERRORS
+                count >= MIN_SAMPLES_FOR_SUPPORT and effect >= MIN_EFFECT_IN_STANDARD_ERRORS
             )
             out.append(
-                Lesson(
+                MeasuredPattern(
                     scope=f"regimen {regime} eligiendo {exposure}",
                     samples=count,
                     mean_realized_pct=mean,
@@ -353,7 +370,8 @@ def render_memory_block(memory: AgentMemory, features: Sequence[float]) -> str:
         )
 
     lines = [
-        "TU PROPIO HISTORIAL (aprendes de esto, no de intuiciones):",
+        "TU HISTORIAL MEDIDO (no son intuiciones: son tus decisiones anteriores y lo",
+        "que paso de verdad despues):",
         f"  decisiones={stats['decisiones_totales']} resueltas={stats['resueltas']} "
         f"ordenes={stats['ordenes_ejecutadas']} resultado_medio="
         + (
@@ -376,13 +394,13 @@ def render_memory_block(memory: AgentMemory, features: Sequence[float]) -> str:
                 f"{item.target_exposure} (esperabas {expected}) -> obtuviste {got}"
             )
 
-    lessons = memory.lessons()
-    if lessons:
-        lines.append("  patrones en tu historial:")
-        lines.extend(lesson.render() for lesson in lessons[:6])
+    patterns = memory.measured_patterns()
+    if patterns:
+        lines.append("  patrones medidos en tu historial:")
+        lines.extend(pattern.render() for pattern in patterns[:6])
         lines.append(
-            "    NOTA: solo lo marcado LECCION tiene respaldo estadistico. "
-            "Lo demas es ruido todavia, no lo uses como regla."
+            "    NOTA: solo lo marcado CON RESPALDO tiene respaldo estadistico. "
+            "Lo marcado NO CONCLUYENTE es ruido todavia, no lo uses como regla."
         )
 
     calibration = memory.calibration()
@@ -403,10 +421,10 @@ def render_memory_block(memory: AgentMemory, features: Sequence[float]) -> str:
 __all__ = [
     "DEFAULT_PATH",
     "MIN_EFFECT_IN_STANDARD_ERRORS",
-    "MIN_SAMPLES_FOR_LESSON",
+    "MIN_SAMPLES_FOR_SUPPORT",
     "SCHEMA_VERSION",
     "AgentMemory",
-    "Lesson",
+    "MeasuredPattern",
     "PastDecision",
     "render_memory_block",
 ]

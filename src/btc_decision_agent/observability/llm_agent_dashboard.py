@@ -18,13 +18,17 @@ a log:
   Why, in its own words?
   Has it earned the confidence it is declaring?
 
-That last one is why the calibration and lesson panels exist. Conviction is cheap
-to print and expensive to believe, so it is shown next to the realised hit rate for
-the same conviction bucket, and a pattern is labelled a LESSON only when it clears
-the same statistical gate the agent itself is held to.
+That last one is why the calibration and measured-pattern panels exist. Conviction
+is cheap to print and expensive to believe, so it is shown next to the realised hit
+rate for the same conviction bucket, and a pattern is described as supported only
+when it clears the same statistical gate the agent itself is held to.
+
+The panel is NOT called "lessons learned". The model's weights never change; these
+are statistics over the agent's own past decisions that get placed in its prompt.
+Calling them lessons would claim the model improved, which is not what happens.
 
 Data sources: the activity journal for live position and book, the agent's memory
-database for reasoning, calibration and lessons. Both read-only.
+database for reasoning, calibration and measured patterns. Both read-only.
 
 Serves:
   GET /            self-refreshing HTML
@@ -44,7 +48,7 @@ from typing import Any
 
 from btc_decision_agent.application.llm_memory import (
     MIN_EFFECT_IN_STANDARD_ERRORS,
-    MIN_SAMPLES_FOR_LESSON,
+    MIN_SAMPLES_FOR_SUPPORT,
     AgentMemory,
 )
 from btc_decision_agent.observability.journal import ActivityJournal
@@ -233,11 +237,11 @@ def recent_deliberations(memory_path: Path, limit: int = 12) -> list[dict[str, A
     return out
 
 
-def learning_view(memory_path: Path) -> dict[str, Any]:
-    """Track record, calibration and the statistically gated lessons.
+def track_record_view(memory_path: Path) -> dict[str, Any]:
+    """Track record, calibration and the statistically gated measured patterns.
 
     Reuses AgentMemory so the gate shown here is the same code the agent is held to.
-    A dashboard applying its own looser threshold would quietly report lessons the
+    A dashboard applying its own looser threshold would quietly report findings the
     agent was never told about.
     """
     empty: dict[str, Any] = {
@@ -245,15 +249,15 @@ def learning_view(memory_path: Path) -> dict[str, Any]:
         "error": None,
         "stats": {},
         "calibration": {},
-        "lessons": [],
-        "min_samples": MIN_SAMPLES_FOR_LESSON,
+        "patterns": [],
+        "min_samples": MIN_SAMPLES_FOR_SUPPORT,
         "min_effect": MIN_EFFECT_IN_STANDARD_ERRORS,
     }
     if not memory_path.is_file():
         return {**empty, "error": f"memoria no encontrada: {memory_path}"}
     try:
         memory = AgentMemory(memory_path, read_only=True)
-        lessons = [
+        patterns = [
             {
                 "scope": item.scope,
                 "samples": item.samples,
@@ -261,15 +265,15 @@ def learning_view(memory_path: Path) -> dict[str, Any]:
                 "effect_in_standard_errors": round(item.effect_in_standard_errors, 2),
                 "supported": item.supported,
             }
-            for item in memory.lessons()
+            for item in memory.measured_patterns()
         ]
         return {
             "available": True,
             "error": None,
             "stats": memory.stats(),
             "calibration": memory.calibration(),
-            "lessons": lessons,
-            "min_samples": MIN_SAMPLES_FOR_LESSON,
+            "patterns": patterns,
+            "min_samples": MIN_SAMPLES_FOR_SUPPORT,
             "min_effect": MIN_EFFECT_IN_STANDARD_ERRORS,
         }
     except (sqlite3.Error, OSError, ValueError) as error:
@@ -420,7 +424,7 @@ def build_state(
         "stages": stage_states(latest),
         "recent": recent,
         # has it earned its confidence
-        "learning": learning_view(memory),
+        "track_record": track_record_view(memory),
     }
 
 
@@ -491,12 +495,18 @@ td.ov{color:var(--violet)}
 td.pos{color:var(--cyan)}
 td.neg{color:var(--red)}
 .warn{border-color:var(--red)!important;color:var(--red)}
-.lesson{display:flex;gap:9px;align-items:baseline;font-size:11px;padding:4px 0;
+.stale{border-color:var(--amber)!important;color:var(--amber)}
+.ok{border-color:var(--cyan)!important;color:var(--cyan)}
+/* a pulse, so a working page is visibly distinguishable from a frozen one even
+   when every number on it is legitimately unchanged */
+#live b{display:inline-block;width:7px;height:7px;background:var(--cyan);margin-right:6px}
+#live.beat b{background:#0b3a33}
+.pat{display:flex;gap:9px;align-items:baseline;font-size:11px;padding:4px 0;
 border-bottom:1px dashed #1b2740}
-.lesson:last-child{border-bottom:0}
-.lesson .v{min-width:92px;font-size:10px;letter-spacing:.06em}
-.lesson.ok .v{color:var(--cyan)}
-.lesson.no .v{color:#6b7a91}
+.pat:last-child{border-bottom:0}
+.pat .v{min-width:118px;font-size:10px;letter-spacing:.06em}
+.pat.ok .v{color:var(--cyan)}
+.pat.no .v{color:#6b7a91}
 footer{margin-top:14px;font-size:10px;color:#4a5872;line-height:1.6}
 </style></head>
 <body>
@@ -506,6 +516,7 @@ footer{margin-top:14px;font-size:10px;color:#4a5872;line-height:1.6}
   <div class="px chip">version <b id="ver">—</b></div>
   <div class="px chip">asesor <b id="adv">—</b></div>
   <div class="spacer"></div>
+  <div class="px chip" id="live">conectando…</div>
   <div class="px chip" id="mode">—</div>
   <div class="px chip" id="seen">—</div>
 </header>
@@ -561,7 +572,7 @@ footer{margin-top:14px;font-size:10px;color:#4a5872;line-height:1.6}
 
 <div class="grid">
   <div class="px card">
-    <h2>HISTORIAL MEDIDO</h2>
+    <h2>REGISTRO DE DECISIONES</h2>
     <div class="row"><span>decisiones registradas</span><span id="mTot">—</span></div>
     <div class="row"><span>resueltas</span><span id="mRes">—</span></div>
     <div class="row"><span>ordenes ejecutadas</span><span id="mAct">—</span></div>
@@ -577,9 +588,9 @@ footer{margin-top:14px;font-size:10px;color:#4a5872;line-height:1.6}
       por debajo del rango, el agente es sobreconfiado y se le dice.</div>
   </div>
   <div class="px card">
-    <h2>LECCIONES APRENDIDAS</h2>
-    <div id="lessons"></div>
-    <div class="sub" id="lessonGate">—</div>
+    <h2>PATRONES MEDIDOS EN SU HISTORIAL</h2>
+    <div id="patterns"></div>
+    <div class="sub" id="patternGate">—</div>
   </div>
 </div>
 
@@ -623,10 +634,52 @@ function originTag(o){
   return '<span class="tag veto">VETADO</span>';
 }
 
+// Connection state is tracked and shown. A silent catch made a dead tunnel, a
+// restarting service and a healthy-but-quiet agent all look identical, which is
+// the whole reason this page appeared frozen.
+let lastOk = 0, lastEval = null, lastEvalChange = 0, lastError = '', beat = false;
+
+function heartbeat(){
+  const el = $('live');
+  beat = !beat;
+  let state = 'ok', text;
+  if(!lastOk){
+    state = 'warn';
+    text = 'sin conexion con el panel' + (lastError ? ' ('+esc(lastError)+')' : '');
+  } else {
+    const age = Math.round((Date.now()-lastOk)/1000);
+    const still = Math.round((Date.now()-lastEvalChange)/1000);
+    if(age > 15){
+      state = 'warn';
+      text = 'SIN CONEXION · ultimo dato hace '+age+'s';
+    } else if(still > 120){
+      // The page is fine and the agent is not advancing. A different problem, and
+      // it must not be reported as a connection failure.
+      state = 'stale';
+      text = 'conectado · el agente no avanza desde hace '+still+'s';
+    } else {
+      text = 'en vivo · hace '+age+'s';
+    }
+  }
+  // className is rebuilt in one go so the pulse class is not wiped by it.
+  el.className = 'px chip ' + state + (beat ? ' beat' : '');
+  el.innerHTML = '<b></b>' + text;
+}
+
 async function tick(){
   let s;
-  try { s = await (await fetch('/api/state',{cache:'no-store'})).json(); }
-  catch(e){ return; }
+  try {
+    const r = await fetch('/api/state',{cache:'no-store'});
+    if(!r.ok) throw new Error('http '+r.status);
+    s = await r.json();
+    lastOk = Date.now();
+    lastError = '';
+    if(s.evaluations !== lastEval){ lastEval = s.evaluations; lastEvalChange = Date.now(); }
+  } catch(e){
+    lastError = (e && e.message) ? e.message : 'fallo de red';
+    heartbeat();
+    return;
+  }
 
   $('model').textContent = s.model || '—';
   $('ver').textContent = s.agent_version || '—';
@@ -697,6 +750,7 @@ async function tick(){
   }
   $('regs').innerHTML = rhtml;
 
+  const memErr = (s.track_record||{}).error;
   if(d){
     let vb = '<span class="tag llm">'+esc(d.target_exposure)+'</span>';
     if(d.deliberated) vb += '<span class="tag deep">RAZONAMIENTO PROFUNDO</span>';
@@ -706,9 +760,23 @@ async function tick(){
     vb += '<span class="chip">'+when(d.decided_at)+'</span>';
     $('vbar').innerHTML = vb;
     $('prose').textContent = d.reason || 'el modelo no dejo justificacion';
+  } else if(memErr){
+    // Never let a failed read look like "the agent has not reasoned yet". Those two
+    // states call for completely different reactions.
+    $('vbar').innerHTML = '<span class="tag veto">MEMORIA ILEGIBLE</span>';
+    // The escapes are doubled because this page is a plain Python string: a single
+    // backslash-n here would become a real newline inside a JavaScript string
+    // literal, which is a syntax error that kills the entire script and freezes the
+    // whole dashboard. That happened.
+    $('prose').textContent = 'no se pudo leer la memoria del agente: ' + memErr
+      + '\\n\\nEl agente puede estar decidiendo con normalidad; lo que falla es la lectura '
+      + 'de este panel. Revisa los permisos del servicio del dashboard sobre data/live.';
+  } else {
+    $('vbar').innerHTML = '';
+    $('prose').textContent = 'sin deliberaciones registradas todavia';
   }
 
-  const L = s.learning || {};
+  const L = s.track_record || {};
   const st2 = L.stats || {};
   $('mTot').textContent = st2.decisiones_totales ?? '—';
   $('mRes').textContent = st2.resueltas ?? '—';
@@ -729,21 +797,22 @@ async function tick(){
   $('calRows').innerHTML = calHtml || '<tr><td colspan="4">sin resultados resueltos todavia</td></tr>';
 
   let lhtml='';
-  for(const l of (L.lessons||[])){
-    lhtml += '<div class="lesson '+(l.supported?'ok':'no')+'">'
-      + '<span class="v">'+(l.supported?'LECCION':'CANDIDATA')+'</span>'
+  for(const l of (L.patterns||[])){
+    lhtml += '<div class="pat '+(l.supported?'ok':'no')+'">'
+      + '<span class="v">'+(l.supported?'CON RESPALDO':'NO CONCLUYENTE')+'</span>'
       + '<span>'+esc(l.scope)+' · '+l.samples+' casos · '
       + (l.mean_realized_pct>=0?'+':'')+Number(l.mean_realized_pct).toFixed(2)+'% · '
       + Number(l.effect_in_standard_errors).toFixed(1)+' EE</span></div>';
   }
   if(L.error){
-    $('lessons').innerHTML = '<div class="sub warn">no se pudo leer la memoria: '+esc(L.error)+'</div>';
+    $('patterns').innerHTML = '<div class="sub warn">no se pudo leer la memoria: '+esc(L.error)+'</div>';
   } else {
-    $('lessons').innerHTML = lhtml || '<div class="sub">sin patrones todavia</div>';
+    $('patterns').innerHTML = lhtml || '<div class="sub">sin patrones medidos todavia</div>';
   }
-  $('lessonGate').textContent = 'Un patron solo pasa a LECCION con al menos '
-    + (L.min_samples ?? '?') + ' casos y un efecto de al menos '
-    + (L.min_effect ?? '?') + ' errores estandar. El resto queda como candidata.';
+  $('patternGate').textContent = 'Estadistica sobre sus decisiones ya resueltas. Los pesos '
+    + 'del modelo no cambian: esto se le muestra en el prompt, no lo aprende. Un patron pasa '
+    + 'a CON RESPALDO con al menos ' + (L.min_samples ?? '?') + ' casos y un efecto de al menos '
+    + (L.min_effect ?? '?') + ' errores estandar; el resto queda NO CONCLUYENTE.';
 
   let dhtml='';
   for(const r of (s.deliberations||[])){
@@ -759,7 +828,9 @@ async function tick(){
       + '<td class="ord">'+(r.acted?esc(r.derived_order):'')+'</td>'
       + '<td>'+res+'</td></tr>';
   }
-  $('delibRows').innerHTML = dhtml || '<tr><td colspan="7">sin deliberaciones todavia</td></tr>';
+  $('delibRows').innerHTML = dhtml || ('<tr><td colspan="7">'
+    + (memErr ? 'memoria ilegible: '+esc(memErr) : 'sin deliberaciones todavia')
+    + '</td></tr>');
 
   let html='';
   for(const r of (s.recent||[])){
@@ -770,6 +841,8 @@ async function tick(){
   $('rows').innerHTML = html;
 }
 tick(); setInterval(tick, 5000);
+// Independent of the poll, so the age keeps counting up when the poll is failing.
+heartbeat(); setInterval(heartbeat, 1000);
 </script>
 </body></html>
 """
@@ -802,6 +875,13 @@ class _Handler(BaseHTTPRequestHandler):
             body = LLM_AGENT_PAGE.encode()
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            # The page itself must not be cached. /api/state already said no-store
+            # but the HTML did not, so a browser could hold an old copy of the page
+            # indefinitely and keep running its old JavaScript against the current
+            # API. That looks exactly like a frozen dashboard.
+            self.send_header("Cache-Control", "no-store, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
             self.wfile.write(body)
@@ -840,9 +920,9 @@ __all__ = [
     "REGIME_NAMES",
     "build_state",
     "classify_origin",
-    "learning_view",
     "parse_reason",
     "recent_deliberations",
     "serve",
     "stage_states",
+    "track_record_view",
 ]

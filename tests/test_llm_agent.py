@@ -32,7 +32,7 @@ from btc_decision_agent.application.llm_agent import (
 )
 from btc_decision_agent.application.llm_memory import (
     MIN_EFFECT_IN_STANDARD_ERRORS,
-    MIN_SAMPLES_FOR_LESSON,
+    MIN_SAMPLES_FOR_SUPPORT,
     AgentMemory,
     render_memory_block,
 )
@@ -303,26 +303,26 @@ class TestMemoryLearning:
     def test_real_signal_is_promoted(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")
         self._fill(memory, 1, "LARGO", [3.0 + 0.1 * i for i in range(20)])
-        lesson = next(item for item in memory.lessons() if item.samples >= 20)
-        assert lesson.supported
-        assert lesson.effect_in_standard_errors >= MIN_EFFECT_IN_STANDARD_ERRORS
+        pattern = next(item for item in memory.measured_patterns() if item.samples >= 20)
+        assert pattern.supported
+        assert pattern.effect_in_standard_errors >= MIN_EFFECT_IN_STANDARD_ERRORS
 
     def test_noise_is_filtered_despite_a_positive_mean(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")
         # Mean near zero with wide spread: a positive average that means nothing.
         self._fill(memory, 0, "LARGO", [9.0, -9.0] * 10)
-        lesson = memory.lessons()[0]
-        assert lesson.samples == 20
-        assert not lesson.supported
+        pattern = memory.measured_patterns()[0]
+        assert pattern.samples == 20
+        assert not pattern.supported
 
     def test_small_sample_luck_is_filtered(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")
         # Three spectacular, nearly identical outcomes: a huge effect size on a
         # sample far too small to mean anything.
         self._fill(memory, 2, "LARGO", [8.0, 8.1, 8.2])
-        lesson = memory.lessons()[0]
-        assert lesson.samples < MIN_SAMPLES_FOR_LESSON
-        assert not lesson.supported
+        pattern = memory.measured_patterns()[0]
+        assert pattern.samples < MIN_SAMPLES_FOR_SUPPORT
+        assert not pattern.supported
 
     def test_staying_flat_during_a_fall_counts_as_a_win(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")
@@ -352,8 +352,22 @@ class TestMemoryLearning:
         memory = AgentMemory(tmp_path / "m.sqlite3")
         self._fill(memory, 2, "LARGO", [8.0, 8.1, 8.2])
         block = render_memory_block(memory, [0.0] * len(MARKET_FEATURE_NAMES))
-        assert "CANDIDATA" in block
+        assert "NO CONCLUYENTE" in block
         assert "ruido" in block
+
+    def test_memory_block_never_claims_the_model_learned(self, tmp_path: Path) -> None:
+        """The wording has to match the mechanism.
+
+        Nothing here updates the model's weights, so the prompt must not tell it
+        otherwise. "LECCION" would assert acquired knowledge where there is only a
+        statistic over past outcomes.
+        """
+        memory = AgentMemory(tmp_path / "m.sqlite3")
+        self._fill(memory, 2, "LARGO", [8.0, 8.1, 8.2])
+        block = render_memory_block(memory, [0.0] * len(MARKET_FEATURE_NAMES))
+        assert "LECCION" not in block
+        assert "aprendes" not in block
+        assert "HISTORIAL MEDIDO" in block
 
     def test_empty_memory_says_so(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")

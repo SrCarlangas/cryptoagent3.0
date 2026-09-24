@@ -1,7 +1,8 @@
 [Unit]
-Description=CryptoAgent 3.0 concise daily summary of the exposure agent to Slack
+Description=CryptoAgent 3.0 concise daily summary of the LLM agent to Slack
 After=network-online.target
 Wants=network-online.target
+
 [Service]
 Type=oneshot
 User=ubuntu
@@ -9,8 +10,18 @@ WorkingDirectory=/home/ubuntu/workplace/cryptoagent3.0
 EnvironmentFile=/home/ubuntu/workplace/cryptoagent3.0/.env
 Environment=PYTHONPATH=/home/ubuntu/workplace/cryptoagent3.0/src
 UMask=0077
-ExecStart=/home/ubuntu/workplace/cryptoagent3.0/.venv/bin/python -m scripts.daily_summary --slack --journal /home/ubuntu/workplace/cryptoagent3.0/data/live/exposure-agent-activity.jsonl --policy /home/ubuntu/workplace/cryptoagent3.0/data/models/local-exposure-agent-v1.json --out /home/ubuntu/workplace/cryptoagent3.0/data/live/daily-summary.json
+# Reads the LLM agent's journal and its memory. The memory is what carries the
+# agent's own verdict, its calibration and its measured patterns, so without it
+# report can only describe the book and not the reasoning behind it.
+ExecStart=/home/ubuntu/workplace/cryptoagent3.0/.venv/bin/python -m scripts.daily_summary \
+  --slack \
+  --model qwen3:30b-a3b \
+  --journal /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-activity.jsonl \
+  --memory /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-memory.sqlite3 \
+  --out /home/ubuntu/workplace/cryptoagent3.0/data/live/daily-summary.json
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
+# Write access is needed only for --out; the journal and the memory are read-only
+# by construction in the code.
 ReadWritePaths=/home/ubuntu/workplace/cryptoagent3.0/data

@@ -18,6 +18,7 @@ write to the memory database it reports on.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -32,10 +33,10 @@ from btc_decision_agent.observability.llm_agent_dashboard import (
     LLM_AGENT_PAGE,
     build_state,
     classify_origin,
-    learning_view,
     parse_reason,
     recent_deliberations,
     stage_states,
+    track_record_view,
 )
 
 D = Decimal
@@ -240,9 +241,9 @@ class TestDeliberations:
         assert recent_deliberations(path) == []
 
 
-class TestLearningView:
+class TestTrackRecordView:
     def test_reports_the_same_gate_the_agent_obeys(self, tmp_path: Path) -> None:
-        view = learning_view(_memory(tmp_path, decisions=3))
+        view = track_record_view(_memory(tmp_path, decisions=3))
         assert view["available"] is True
         assert view["error"] is None
         # Mirrors llm_memory, so the page cannot advertise a looser gate.
@@ -251,7 +252,7 @@ class TestLearningView:
         assert view["stats"]["decisiones_totales"] == 3
 
     def test_missing_memory_is_reported_not_silently_empty(self, tmp_path: Path) -> None:
-        view = learning_view(tmp_path / "nope.sqlite3")
+        view = track_record_view(tmp_path / "nope.sqlite3")
         assert view["available"] is False
         assert view["error"] is not None
 
@@ -259,7 +260,7 @@ class TestLearningView:
         """The sandbox mounts data read-only, so a write here means a dead panel."""
         path = _memory(tmp_path, decisions=2)
         before = path.stat().st_mtime_ns
-        learning_view(path)
+        track_record_view(path)
         recent_deliberations(path)
         assert path.stat().st_mtime_ns == before
 
@@ -373,18 +374,59 @@ class TestBuildState:
         assert state["active_regime"] is None
         assert all(item["state"] == "idle" for item in state["stages"])
 
+    def test_page_javascript_has_no_broken_string_literals(self) -> None:
+        """A syntax error in the page script freezes the entire dashboard silently.
+
+        The page is a plain Python string, so writing a single backslash-n inside a
+        JavaScript string emits a real newline and breaks the literal. The server
+        still returns 200 and the page still renders its static skeleton, so the
+        only symptom is that nothing ever updates. That shipped once.
+
+        Counting quotes per line catches exactly that class of bug without needing a
+        JavaScript engine in the test environment.
+        """
+        script = re.search(r"<script>(.*?)</script>", LLM_AGENT_PAGE, re.S)
+        assert script is not None
+        body = script.group(1)
+        offenders = []
+        for number, line in enumerate(body.splitlines(), 1):
+            without_escapes = re.sub(r"\\.", "", line)
+            if without_escapes.count("'") % 2:
+                offenders.append((number, line.strip()[:70]))
+        assert not offenders, f"literales de cadena partidos: {offenders}"
+
+    def test_page_and_api_both_forbid_caching(self) -> None:
+        """A cached page keeps running old JavaScript against the current API, which
+        is indistinguishable from a frozen dashboard."""
+        import inspect
+
+        from btc_decision_agent.observability import llm_agent_dashboard
+
+        source = inspect.getsource(llm_agent_dashboard._Handler.do_GET)
+        # Both branches must set it, not just the JSON one.
+        assert source.count("Cache-Control") >= 2
+
+    def test_page_shows_a_connection_heartbeat(self) -> None:
+        """Most values legitimately change only every 30 minutes, so without a
+        heartbeat a healthy page is visually identical to a dead one."""
+        assert 'id="live"' in LLM_AGENT_PAGE
+        assert "en vivo" in LLM_AGENT_PAGE
+        assert "SIN CONEXION" in LLM_AGENT_PAGE
+        # A stalled agent and a broken connection are different problems.
+        assert "el agente no avanza" in LLM_AGENT_PAGE
+
     def test_page_is_about_the_llm_agent_not_the_numeric_policy(self) -> None:
         # The previous dashboard's subject was the numeric policy's own conviction.
         assert "RAZONAMIENTO DEL AGENTE" in LLM_AGENT_PAGE
         assert "QUIEN DECIDIO" in LLM_AGENT_PAGE
         assert "CALIBRACION" in LLM_AGENT_PAGE
-        assert "LECCIONES APRENDIDAS" in LLM_AGENT_PAGE
+        assert "PATRONES MEDIDOS EN SU HISTORIAL" in LLM_AGENT_PAGE
         # And it must say out loud when it is not the order authority.
         assert "SOMBRA (sin ordenes)" in LLM_AGENT_PAGE
 
 
 class TestDailySummary:
-    def test_summary_counts_orders_and_flags_vetoes(self) -> None:
+    def test_summary_counts_orders_and_real_vetoes(self) -> None:
         from scripts.daily_summary import build_summary
 
         entries = [
@@ -400,11 +442,57 @@ class TestDailySummary:
                 fees_usdt="4.2",
             ),
         ]
-        summary = build_summary(entries, {}, hours=24, now=NOW)
+        summary = build_summary(entries, hours=24, now=NOW)
         assert summary["orders"] == 1
         assert len(summary["buys"]) == 1
         assert summary["vetoes"] == {"DATA_STALE": 1}
         assert summary["fees_usdt"] == "4.2"
+
+    def test_fallback_is_not_counted_as_a_veto(self) -> None:
+        """The old report called this a veto, which reads as "a layer blocked the
+        agent" when the truth is "the model did not answer". Different reactions."""
+        from scripts.daily_summary import build_summary
+
+        entries = [
+            _entry(reason="FALLBACK_QUANT_HOLD"),
+            _entry(reason="FALLBACK_QUANT_HOLD"),
+            _entry(reason="AGENT_HOLD_R0_C85_F"),
+            _entry(reason="DATA_STALE"),
+        ]
+        summary = build_summary(entries, hours=24, now=NOW)
+        assert summary["vetoes"] == {"DATA_STALE": 1}
+        assert summary["decided_by_fallback"] == 2
+        assert summary["decided_by_llm"] == 1
+        assert summary["vetoed"] == 1
+
+    def test_shadow_mode_is_announced(self) -> None:
+        from scripts.daily_summary import build_summary, render
+
+        summary = build_summary([_entry(order_authority=False)], hours=24, now=NOW)
+        assert "SOMBRA" in render(summary)
+
+    def test_order_authority_is_not_announced_as_shadow(self) -> None:
+        from scripts.daily_summary import build_summary, render
+
+        summary = build_summary([_entry(order_authority=True)], hours=24, now=NOW)
+        assert "SOMBRA" not in render(summary)
+
+    def test_reports_the_agents_verdict_and_override(self, tmp_path: Path) -> None:
+        from scripts.daily_summary import build_summary, render
+
+        summary = build_summary(
+            [_entry(order_authority=True)],
+            memory_path=_memory(tmp_path, decisions=2),
+            hours=24,
+            now=NOW,
+        )
+        assert summary["target_exposure"] == "LARGO"
+        assert summary["advisor_says"] == "PLANO"
+        assert summary["overrode_advisor"] is True
+        message = render(summary)
+        assert "Veredicto: LARGO" in message
+        assert "contradicho" in message
+        assert "Historial medido: 2 decisiones" in message
 
     def test_summary_excludes_entries_outside_the_window(self) -> None:
         from scripts.daily_summary import build_summary
@@ -413,20 +501,43 @@ class TestDailySummary:
             _entry(at=(NOW - timedelta(days=5)).isoformat(), order_side="BUY"),
             _entry(at=(NOW - timedelta(hours=1)).isoformat()),
         ]
-        summary = build_summary(entries, {}, hours=24, now=NOW)
+        summary = build_summary(entries, hours=24, now=NOW)
         assert summary["orders"] == 0
         assert summary["evaluations"] == 1
 
     def test_summary_marks_a_dead_process_as_stale(self) -> None:
         from scripts.daily_summary import build_summary, render
 
-        summary = build_summary([_entry(at=(NOW - timedelta(hours=3)).isoformat())], {}, hours=24, now=NOW)
+        summary = build_summary(
+            [_entry(at=(NOW - timedelta(hours=3)).isoformat())], hours=24, now=NOW
+        )
         assert summary["stale"] is True
         assert "posiblemente caido" in render(summary)
 
-    def test_render_stays_short(self) -> None:
+    def test_names_the_model_so_the_reader_knows_who_decided(self) -> None:
         from scripts.daily_summary import build_summary, render
 
-        summary = build_summary([_entry()], {}, hours=24, now=NOW)
+        summary = build_summary([_entry(order_authority=True)], hours=24, now=NOW)
+        assert "qwen3:30b-a3b" in render(summary)
+
+    def test_render_stays_short(self, tmp_path: Path) -> None:
+        from scripts.daily_summary import build_summary, render
+
+        # The fullest realistic message: shadow warning, an order, a verdict and
+        # learning all present at once.
+        summary = build_summary(
+            [
+                _entry(
+                    order_authority=False,
+                    order_side="BUY",
+                    order_base_qty="0.05",
+                    order_avg_price="84000",
+                    fees_usdt="4.2",
+                )
+            ],
+            memory_path=_memory(tmp_path, decisions=2),
+            hours=24,
+            now=NOW,
+        )
         # Conciseness is the stated requirement, so it is asserted.
         assert len(render(summary).splitlines()) <= 10

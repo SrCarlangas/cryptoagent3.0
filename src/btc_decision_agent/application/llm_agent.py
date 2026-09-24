@@ -114,8 +114,8 @@ Como decidir:
    correcta.
 4. Compara los analogos historicos contra el base rate. Si los analogos rinden como
    el promedio de 5 anos, no hay senal: no es razon para actuar.
-5. Solo trata como regla lo que tu historial marque como LECCION. Lo marcado como
-   CANDIDATA es ruido todavia.
+5. Solo trata como regla lo que tu historial medido marque CON RESPALDO. Lo marcado
+   NO CONCLUYENTE es ruido todavia.
 6. Si tu calibracion muestra que aciertas menos de lo que declaras, baja tu
    conviccion y exige mas evidencia antes de cambiar.
 7. Cita numeros concretos del estado en tu razon. No inventes cifras.

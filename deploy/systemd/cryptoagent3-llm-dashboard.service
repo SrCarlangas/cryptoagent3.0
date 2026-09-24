@@ -25,11 +25,20 @@ KillSignal=SIGINT
 TimeoutStopSec=15
 NoNewPrivileges=true
 PrivateTmp=true
+# ProtectSystem=strict already mounts the entire filesystem read-only, so the whole
+# project is unwritable except for what is listed below.
 ProtectSystem=strict
-# The data directory is mounted read-only: this process observes the agent and must
-# never be able to alter the journal or the memory it is reporting on. The memory
-# database is opened with SQLite's mode=ro for the same reason.
-ReadOnlyPaths=/home/ubuntu/workplace/cryptoagent3.0/data
+# data/live must be writable and it is NOT a mistake. The memory database runs in
+# WAL mode, and SQLite cannot open a WAL database at all, even read-only, unless it
+# can map the -shm shared-memory index next to it. With the directory read-only the
+# panel failed deterministically with "unable to open database file".
+#
+# The read-only guarantee therefore comes from the code, not from the mount: the
+# database is opened with SQLite's mode=ro, which refuses writes at the engine level
+# (verified: "attempt to write a readonly database"), and the dashboard never calls
+# the journal's append path. Do not "restore" ReadOnlyPaths here; it silently breaks
+# the reasoning, calibration and measured-pattern panels.
+ReadWritePaths=/home/ubuntu/workplace/cryptoagent3.0/data/live
 
 [Install]
 WantedBy=multi-user.target

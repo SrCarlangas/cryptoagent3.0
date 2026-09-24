@@ -25,13 +25,33 @@ ROOT=/home/ubuntu/workplace/cryptoagent3.0
 UNIT=/etc/systemd/system/cryptoagent3-llm-agent.service
 QUANT=cryptoagent3-exposure-agent
 LLM=cryptoagent3-llm-agent
+REPORT=data/validation/llm-agent-backtest.json
+
+# --gate-pending lets the owner grant authority while the backtest is still running.
+# It deliberately cannot override a gate that RAN AND FAILED: proceeding while
+# evidence is still being collected is a judgement call, proceeding against evidence
+# that already exists is not.
+GATE_PENDING=0
+[ "${1:-}" = "--gate-pending" ] && GATE_PENDING=1
 
 cd "$ROOT"
 
 echo "=== 1. gate pre-registrado ==="
-if ! PYTHONPATH=src .venv/bin/python -m scripts.gate_llm_agent; then
-  echo
-  echo "ABORTADO: el agente no cumple los criterios fijados de antemano."
+if [ -f "$REPORT" ]; then
+  if ! PYTHONPATH=src .venv/bin/python -m scripts.gate_llm_agent; then
+    echo
+    echo "ABORTADO: el agente no cumple los criterios fijados de antemano."
+    echo "Un gate fallado no se puede anular, ni con --gate-pending."
+    exit 1
+  fi
+elif [ "$GATE_PENDING" = "1" ]; then
+  echo "  ADVERTENCIA: el informe del backtest aun no existe ($REPORT)."
+  echo "  Se otorga autoridad por decision explicita del propietario, ANTES de la"
+  echo "  evidencia. Al terminar el backtest hay que ejecutar el gate; si RECHAZA,"
+  echo "  la autoridad debe devolverse al agente cuantitativo con:"
+  echo "    sudo systemctl disable --now $LLM && sudo systemctl enable --now $QUANT"
+else
+  echo "  ABORTADO: no existe $REPORT y no se paso --gate-pending."
   exit 1
 fi
 
@@ -179,20 +199,32 @@ echo "=== 7. apuntar la observabilidad al journal del agente LLM ==="
 # live source.
 NEW_JOURNAL="$ROOT/data/live/llm-agent-activity.jsonl"
 OLD_JOURNAL="$ROOT/data/live/exposure-agent-activity.jsonl"
-for unit in cryptoagent3-agent-dashboard cryptoagent3-daily-summary; do
+for unit in cryptoagent3-llm-dashboard cryptoagent3-daily-summary; do
   file="/etc/systemd/system/$unit.service"
-  sudo sed -i "s|$OLD_JOURNAL|$NEW_JOURNAL|g" "$file"
+  if [ ! -f "$file" ]; then
+    echo "  ADVERTENCIA: $unit no esta instalado"
+    continue
+  fi
+  if grep -q "$OLD_JOURNAL" "$file"; then
+    echo "  FALLO: $unit sigue apuntando al journal del agente cuantitativo."
+    echo "         Reinstala deploy/systemd/$unit.service antes de continuar."
+    exit 1
+  fi
   if grep -q "$NEW_JOURNAL" "$file"; then
     echo "  $unit -> llm-agent-activity.jsonl"
   else
-    echo "  ADVERTENCIA: $unit sigue apuntando al journal anterior"
+    echo "  ADVERTENCIA: no se pudo confirmar el journal de $unit"
   fi
 done
-sudo systemctl daemon-reload
-sudo systemctl restart cryptoagent3-agent-dashboard
+sudo systemctl restart cryptoagent3-llm-dashboard
 sleep 5
-echo "  dashboard activo=$(systemctl is-active cryptoagent3-agent-dashboard)"
+echo "  dashboard activo=$(systemctl is-active cryptoagent3-llm-dashboard)"
 echo "  resumen diario: $(systemctl is-enabled cryptoagent3-daily-summary 2>&1) (23:55 UTC)"
+echo "  prueba del resumen (sin enviar a Slack):"
+PYTHONPATH=src .venv/bin/python -m scripts.daily_summary \
+  --journal "$NEW_JOURNAL" \
+  --memory "$ROOT/data/live/llm-agent-memory.sqlite3" \
+  2>&1 | sed 's/^/    /'
 
 echo
 echo "TRASPASO COMPLETO. El agente LLM es la unica autoridad de ordenes."
