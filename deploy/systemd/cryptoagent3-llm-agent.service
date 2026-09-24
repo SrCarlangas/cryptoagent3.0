@@ -1,0 +1,46 @@
+[Unit]
+Description=CryptoAgent 3.0 local LLM agent (qwen3:30b-a3b) on Binance DEMO
+After=network-online.target docker.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/workplace/cryptoagent3.0
+EnvironmentFile=/home/ubuntu/workplace/cryptoagent3.0/.env
+Environment=PYTHONPATH=/home/ubuntu/workplace/cryptoagent3.0/src
+UMask=0077
+# --dry-run is deliberate for now: the agent reasons, records and learns, but places
+# no orders. Order authority stays with the walk-forward validated quantitative
+# agent until the LLM has evidence of its own. Removing --dry-run and adding
+# --i-understand-this-is-demo is the switch, and only one order authority may ever
+# be enabled at a time.
+ExecStart=/home/ubuntu/workplace/cryptoagent3.0/.venv/bin/python -m scripts.run_llm_agent \
+  --dry-run \
+  --cadence-minutes 30 \
+  --outcome-horizon-hours 24 \
+  --allocation-pct 95 \
+  --max-drawdown-pct 25 \
+  --model qwen3:30b-a3b \
+  --policy /home/ubuntu/workplace/cryptoagent3.0/data/models/local-exposure-agent-v1.json \
+  --history-index /home/ubuntu/workplace/cryptoagent3.0/data/models/history-index.json \
+  --memory /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-memory.sqlite3 \
+  --journal /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-activity.jsonl \
+  --lock-file /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent.lock \
+  --state-file /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-state.json \
+  --intent-db /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-intents.sqlite3
+Restart=always
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=30
+# Memory pressure ordering, most protected last:
+#   ollama            0    dies first; the agent degrades to the numeric policy
+#   this shadow    -100    dies next; it holds no position
+#   order authority -800    dies last; it is the only thing holding real exposure
+OOMScoreAdjust=-100
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths=/home/ubuntu/workplace/cryptoagent3.0/data
+[Install]
+WantedBy=multi-user.target
