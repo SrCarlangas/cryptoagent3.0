@@ -1,0 +1,35 @@
+[Unit]
+Description=CryptoAgent 3.0 pixel dashboard for the LLM exposure agent (read-only)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/workplace/cryptoagent3.0
+Environment=PYTHONPATH=/home/ubuntu/workplace/cryptoagent3.0/src
+UMask=0077
+# Bound to localhost on purpose. The page shows the live position, the book and the
+# agent's reasoning, and it has no authentication, so it must be reached over an SSH
+# tunnel rather than an exposed port.
+ExecStart=/home/ubuntu/workplace/cryptoagent3.0/.venv/bin/python -m scripts.run_llm_dashboard \
+  --host 127.0.0.1 \
+  --port 8787 \
+  --model qwen3:30b-a3b \
+  --journal /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-activity.jsonl \
+  --memory /home/ubuntu/workplace/cryptoagent3.0/data/live/llm-agent-memory.sqlite3
+Restart=always
+RestartSec=5
+KillSignal=SIGINT
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+# The data directory is mounted read-only: this process observes the agent and must
+# never be able to alter the journal or the memory it is reporting on. The memory
+# database is opened with SQLite's mode=ro for the same reason.
+ReadOnlyPaths=/home/ubuntu/workplace/cryptoagent3.0/data
+
+[Install]
+WantedBy=multi-user.target

@@ -110,15 +110,39 @@ class Lesson:
 class AgentMemory:
     """Append-only record of decisions and their measured outcomes."""
 
-    def __init__(self, path: str | Path = DEFAULT_PATH, *, horizon_hours: int = 24) -> None:
+    def __init__(
+        self,
+        path: str | Path = DEFAULT_PATH,
+        *,
+        horizon_hours: int = 24,
+        read_only: bool = False,
+    ) -> None:
+        """`read_only` exists so observers can reuse the statistics without owning
+        the database.
+
+        The dashboard has to report the same calibration and the same lesson gate
+        the agent is held to; reimplementing them there would let the two drift, and
+        a dashboard showing a looser gate than the agent obeys is a lie. But it runs
+        under a sandbox that mounts the data directory read-only, so it cannot run
+        the DDL or take a write lock. This flag skips both.
+        """
         self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.read_only = read_only
         self.horizon = timedelta(hours=horizon_hours)
+        if read_only:
+            if not self.path.is_file():
+                raise FileNotFoundError(f"memoria no encontrada: {self.path}")
+            return
+        self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self._connect()) as conn:
             conn.executescript(_DDL)
             conn.commit()
 
     def _connect(self) -> sqlite3.Connection:
+        if self.read_only:
+            conn = sqlite3.connect(f"file:{self.path}?mode=ro", uri=True, timeout=5.0)
+            conn.row_factory = sqlite3.Row
+            return conn
         conn = sqlite3.connect(self.path, timeout=30.0)
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA synchronous=FULL")

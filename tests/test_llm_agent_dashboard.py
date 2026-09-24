@@ -1,0 +1,432 @@
+"""Tests for the LLM agent dashboard and the daily summary.
+
+The property that matters most is that the page reports truthfully. Two failures
+would be expensive and silent:
+
+  Attributing a decision to the LLM when the numeric fallback made it. An operator
+  reading a dashboard titled "LLM agent" would conclude the model is working while
+  it is in fact down.
+
+  Showing a green decision chain when a layer actually vetoed. A dashboard that
+  decorates rather than reports is worse than no dashboard.
+
+Both are asserted below, along with the read-only guarantee: the dashboard runs
+under a sandbox that mounts the data directory read-only, so it must never need to
+write to the memory database it reports on.
+"""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from pathlib import Path
+from typing import Any
+
+import pytest
+
+from btc_decision_agent.application.llm_memory import AgentMemory
+from btc_decision_agent.observability.journal import ActivityJournal
+from btc_decision_agent.observability.llm_agent_dashboard import (
+    LLM_AGENT_PAGE,
+    build_state,
+    classify_origin,
+    learning_view,
+    parse_reason,
+    recent_deliberations,
+    stage_states,
+)
+
+D = Decimal
+NOW = datetime(2026, 9, 24, 12, tzinfo=UTC)
+
+
+def _entry(**overrides: Any) -> dict[str, Any]:
+    base: dict[str, Any] = {
+        "at": NOW.isoformat(),
+        "venue": "DEMO",
+        "interval": "adaptive",
+        "action": "HOLD",
+        "reason": "AGENT_HOLD_R0_C85_F",
+        "position_before": "LONG",
+        "position_after": "LONG",
+        "price": "84000",
+        "usdt_free": "400",
+        "btc_qty": "0.05",
+        "strategy_version": "EXPOSURE-AGENT-V1",
+        "directional_model_version": "LLM-EXPOSURE-AGENT-V1",
+        "confidence_model": "EXPOSURE-AGENT-V1",
+    }
+    base.update(overrides)
+    return base
+
+
+def _journal(tmp_path: Path, entries: list[dict[str, Any]]) -> ActivityJournal:
+    path = tmp_path / "activity.jsonl"
+    with path.open("w", encoding="utf-8") as stream:
+        for entry in entries:
+            stream.write(json.dumps(entry) + "\n")
+    return ActivityJournal(str(path))
+
+
+def _memory(tmp_path: Path, *, decisions: int = 3) -> Path:
+    path = tmp_path / "mem.sqlite3"
+    memory = AgentMemory(path)
+    for index in range(decisions):
+        memory.record(
+            decided_at=NOW + timedelta(minutes=index),
+            event_id=f"ev-{index}",
+            features=[0.01] * 19,
+            regime=0,
+            # Below 0.5, so the advisor says PLANO while the agent says LARGO.
+            quant_p_long=0.42,
+            target_exposure="LARGO",
+            exposure_before="PLANO",
+            derived_order="BUY" if index == 0 else "HOLD",
+            conviction=0.8,
+            expected_move_pct=1.5,
+            reason=f"razonamiento numero {index}",
+            thinking="penso a fondo" if index == 0 else "",
+            price=D("84000"),
+            acted=index == 0,
+        )
+    return path
+
+
+class TestOriginAttribution:
+    """Who decided is the question the page exists to answer."""
+
+    def test_llm_reason_is_attributed_to_the_llm(self) -> None:
+        assert classify_origin("AGENT_HOLD_R0_C85_F") == "LLM"
+        assert classify_origin("AGENT_BUY_R3_C90_D") == "LLM"
+
+    def test_sustained_verdict_is_distinguished_from_a_fresh_one(self) -> None:
+        # Re-affirming a verdict is not the same as inferring a new one, and the
+        # difference tells an operator whether the model is actually answering.
+        assert classify_origin("AGENT_VERDICT_UNCHANGED") == "LLM_SOSTENIDO"
+
+    def test_fallback_is_never_credited_to_the_llm(self) -> None:
+        assert classify_origin("FALLBACK_QUANT_HOLD") == "FALLBACK"
+        assert classify_origin("FALLBACK_QUANT_ENTER_LONG") == "FALLBACK"
+
+    def test_veto_before_the_agent_is_not_credited_to_anyone(self) -> None:
+        assert classify_origin("PERCEPTION_INSUFFICIENT") == "VETADO"
+        assert classify_origin("DATA_STALE") == "VETADO"
+
+    def test_origin_counts_separate_llm_from_fallback(self, tmp_path: Path) -> None:
+        entries = [
+            _entry(reason="FALLBACK_QUANT_HOLD"),
+            _entry(reason="FALLBACK_QUANT_HOLD"),
+            _entry(reason="AGENT_HOLD_R0_C85_F"),
+            _entry(reason="AGENT_VERDICT_UNCHANGED"),
+            _entry(reason="DATA_STALE"),
+        ]
+        state = build_state(_journal(tmp_path, entries))
+        assert state["origin_counts"] == {
+            "FALLBACK": 2,
+            "LLM": 1,
+            "LLM_SOSTENIDO": 1,
+            "VETADO": 1,
+        }
+
+    def test_last_llm_verdict_is_tracked_separately_from_last_seen(
+        self, tmp_path: Path
+    ) -> None:
+        # Alive but not answering: the newest entry is a fallback, so the page must
+        # still show when the model last spoke for itself.
+        entries = [
+            _entry(at=(NOW - timedelta(hours=2)).isoformat(), reason="AGENT_HOLD_R0_C85_F"),
+            _entry(at=NOW.isoformat(), reason="FALLBACK_QUANT_HOLD"),
+        ]
+        state = build_state(_journal(tmp_path, entries))
+        assert state["origin"] == "FALLBACK"
+        assert state["last_llm_at"] == (NOW - timedelta(hours=2)).isoformat()
+        assert state["last_seen"] == NOW.isoformat()
+
+
+class TestReasonParsing:
+    def test_reads_regime_conviction_and_depth(self) -> None:
+        parsed = parse_reason("AGENT_BUY_R3_C90_D")
+        assert parsed["regime"] == 3
+        assert parsed["conviction"] == 0.90
+        assert parsed["deliberated"] is True
+
+    def test_fast_pass_is_not_reported_as_deliberated(self) -> None:
+        assert parse_reason("AGENT_HOLD_R0_C85_F")["deliberated"] is False
+
+    def test_below_cost_is_flagged(self) -> None:
+        parsed = parse_reason("AGENT_BUY_R3_C90_D_BELOW_COST")
+        assert parsed["below_cost"] is True
+
+    def test_empty_reason_does_not_crash(self) -> None:
+        parsed = parse_reason("")
+        assert parsed["regime"] is None
+        assert parsed["conviction"] is None
+
+
+class TestStageStates:
+    def test_agent_decision_passes_every_layer(self) -> None:
+        stages = stage_states(_entry(action="ENTER_LONG", reason="AGENT_BUY_R3_C90_D"))
+        assert [item["state"] for item in stages] == ["pass"] * 6
+
+    def test_data_gate_blocks_and_later_layers_stay_idle(self) -> None:
+        stages = {item["id"]: item["state"] for item in stage_states(_entry(reason="DATA_STALE"))}
+        assert stages["INTERRUPTORES"] == "pass"
+        assert stages["DATOS"] == "block"
+        assert stages["PERCEPCION"] == "idle"
+        assert stages["AGENTE LLM"] == "idle"
+
+    def test_perception_gate_blocks_before_the_agent(self) -> None:
+        stages = {
+            item["id"]: item["state"]
+            for item in stage_states(_entry(reason="PERCEPTION_INSUFFICIENT"))
+        }
+        assert stages["DATOS"] == "pass"
+        assert stages["PERCEPCION"] == "block"
+        assert stages["AGENTE LLM"] == "idle"
+
+    def test_cost_block_still_credits_the_agent(self) -> None:
+        # The agent did decide; the commission is what stopped the order.
+        stages = {
+            item["id"]: item["state"]
+            for item in stage_states(_entry(reason="AGENT_BUY_R3_C90_D_BELOW_COST"))
+        }
+        assert stages["AGENTE LLM"] == "pass"
+        assert stages["COSTE Y CADENCIA"] == "block"
+
+    def test_protective_stop_blocks_early(self) -> None:
+        stages = {
+            item["id"]: item["state"] for item in stage_states(_entry(reason="PROTECTIVE_STOP"))
+        }
+        assert stages["STOP EXCHANGE"] == "block"
+        assert stages["AGENTE LLM"] == "idle"
+
+    def test_dry_run_prefix_is_ignored(self) -> None:
+        stages = {
+            item["id"]: item["state"]
+            for item in stage_states(_entry(reason="DRY_RUN:PERCEPTION_INSUFFICIENT"))
+        }
+        assert stages["PERCEPCION"] == "block"
+
+    def test_no_activity_is_all_idle(self) -> None:
+        assert all(item["state"] == "idle" for item in stage_states(None))
+
+
+class TestDeliberations:
+    def test_surfaces_the_agents_own_words_newest_first(self, tmp_path: Path) -> None:
+        rows = recent_deliberations(_memory(tmp_path, decisions=3))
+        assert len(rows) == 3
+        assert rows[0]["reason"] == "razonamiento numero 2"
+
+    def test_flags_when_the_agent_overrode_the_advisor(self, tmp_path: Path) -> None:
+        # The advisor's p_long is 0.42 (PLANO) while the agent chose LARGO.
+        rows = recent_deliberations(_memory(tmp_path, decisions=1))
+        assert rows[0]["quant_says"] == "PLANO"
+        assert rows[0]["target_exposure"] == "LARGO"
+        assert rows[0]["overrode_quant"] is True
+
+    def test_marks_the_deliberated_pass(self, tmp_path: Path) -> None:
+        rows = recent_deliberations(_memory(tmp_path, decisions=3))
+        assert rows[-1]["deliberated"] is True  # index 0 carried thinking
+        assert rows[0]["deliberated"] is False
+
+    def test_missing_memory_is_empty_not_an_error(self, tmp_path: Path) -> None:
+        assert recent_deliberations(tmp_path / "nope.sqlite3") == []
+
+    def test_corrupt_memory_is_empty_not_an_error(self, tmp_path: Path) -> None:
+        path = tmp_path / "bad.sqlite3"
+        path.write_text("no soy una base de datos", encoding="utf-8")
+        assert recent_deliberations(path) == []
+
+
+class TestLearningView:
+    def test_reports_the_same_gate_the_agent_obeys(self, tmp_path: Path) -> None:
+        view = learning_view(_memory(tmp_path, decisions=3))
+        assert view["available"] is True
+        assert view["error"] is None
+        # Mirrors llm_memory, so the page cannot advertise a looser gate.
+        assert view["min_samples"] == 8
+        assert view["min_effect"] == 1.5
+        assert view["stats"]["decisiones_totales"] == 3
+
+    def test_missing_memory_is_reported_not_silently_empty(self, tmp_path: Path) -> None:
+        view = learning_view(tmp_path / "nope.sqlite3")
+        assert view["available"] is False
+        assert view["error"] is not None
+
+    def test_does_not_write_to_the_memory_database(self, tmp_path: Path) -> None:
+        """The sandbox mounts data read-only, so a write here means a dead panel."""
+        path = _memory(tmp_path, decisions=2)
+        before = path.stat().st_mtime_ns
+        learning_view(path)
+        recent_deliberations(path)
+        assert path.stat().st_mtime_ns == before
+
+    def test_read_only_memory_refuses_to_write(self, tmp_path: Path) -> None:
+        path = _memory(tmp_path, decisions=1)
+        memory = AgentMemory(path, read_only=True)
+        assert memory.stats()["decisiones_totales"] == 1
+        with pytest.raises(sqlite3.OperationalError):
+            memory.record(
+                decided_at=NOW,
+                event_id="nope",
+                features=[0.0] * 19,
+                regime=0,
+                quant_p_long=0.5,
+                target_exposure="LARGO",
+                exposure_before="PLANO",
+                derived_order="BUY",
+                conviction=0.9,
+                expected_move_pct=1.0,
+                reason="no deberia poder",
+                thinking="",
+                price=D("84000"),
+                acted=True,
+            )
+
+    def test_read_only_memory_requires_an_existing_file(self, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError):
+            AgentMemory(tmp_path / "nope.sqlite3", read_only=True)
+
+
+class TestOrderAuthority:
+    """Claiming authority the agent does not have is the worst failure here."""
+
+    def test_reads_the_recorded_flag(self, tmp_path: Path) -> None:
+        shadow = build_state(_journal(tmp_path, [_entry(order_authority=False)]))
+        assert shadow["order_authority"] is False
+        live = build_state(_journal(tmp_path, [_entry(order_authority=True)]))
+        assert live["order_authority"] is True
+
+    def test_a_holding_shadow_agent_is_not_reported_as_live(self, tmp_path: Path) -> None:
+        # The DRY_RUN prefix is only applied to entries that wanted to trade, so a
+        # shadow agent that spent the day holding carries no prefix at all. Inferring
+        # from the reason alone would call this live.
+        state = build_state(_journal(tmp_path, [_entry(reason="AGENT_VERDICT_UNCHANGED", order_authority=False)]))
+        assert state["order_authority"] is False
+
+    def test_unknown_when_the_journal_predates_the_field(self, tmp_path: Path) -> None:
+        state = build_state(_journal(tmp_path, [_entry()]))
+        assert state["order_authority"] is None
+
+    def test_dry_run_prefix_still_understood_on_old_rows(self, tmp_path: Path) -> None:
+        state = build_state(_journal(tmp_path, [_entry(reason="DRY_RUN:AGENT_BUY_R0_C85_F")]))
+        assert state["order_authority"] is False
+
+
+class TestStandingVerdict:
+    def test_carries_the_last_real_verdict_through_reaffirmations(self, tmp_path: Path) -> None:
+        # 29 of every 30 minutes look like this: a verdict held, not re-inferred.
+        entries = [
+            _entry(at=(NOW - timedelta(minutes=5)).isoformat(), reason="AGENT_HOLD_R3_C90_D"),
+            _entry(at=NOW.isoformat(), reason="AGENT_VERDICT_UNCHANGED"),
+        ]
+        state = build_state(_journal(tmp_path, entries))
+        assert state["active_regime"] == 3
+        assert state["conviction"] == 0.90
+        assert state["deliberated"] is True
+        assert state["standing_verdict_at"] == (NOW - timedelta(minutes=5)).isoformat()
+
+    def test_agent_version_survives_entries_that_omit_it(self, tmp_path: Path) -> None:
+        entries = [
+            _entry(directional_model_version="LLM-EXPOSURE-AGENT-V1"),
+            _entry(at=(NOW + timedelta(minutes=1)).isoformat(), directional_model_version=None),
+        ]
+        state = build_state(_journal(tmp_path, entries))
+        assert state["agent_version"] == "LLM-EXPOSURE-AGENT-V1"
+
+
+class TestBuildState:
+
+    def test_computes_equity_from_the_book(self, tmp_path: Path) -> None:
+        state = build_state(_journal(tmp_path, [_entry()]))
+        # 400 USDT + 0.05 BTC * 84000 = 4600
+        assert state["equity"] is not None
+        assert abs(float(state["equity"]) - 4600.0) < 1e-6
+
+    def test_counts_orders(self, tmp_path: Path) -> None:
+        entries = [
+            _entry(),
+            _entry(
+                at=(NOW + timedelta(minutes=1)).isoformat(),
+                action="ENTER_LONG",
+                reason="AGENT_BUY_R3_C90_D",
+                order_side="BUY",
+                order_base_qty="0.05",
+                order_avg_price="84000",
+            ),
+        ]
+        state = build_state(_journal(tmp_path, entries))
+        assert state["order_count"] == 1
+        assert state["buys"] == 1
+        assert state["sells"] == 0
+
+    def test_target_exposure_comes_from_the_agents_own_verdict(self, tmp_path: Path) -> None:
+        state = build_state(_journal(tmp_path, [_entry()]), _memory(tmp_path, decisions=1))
+        assert state["target_exposure"] == "LARGO"
+        assert state["latest_deliberation"]["reason"] == "razonamiento numero 0"
+
+    def test_empty_journal_does_not_crash(self, tmp_path: Path) -> None:
+        state = build_state(_journal(tmp_path, []))
+        assert state["evaluations"] == 0
+        assert state["active_regime"] is None
+        assert all(item["state"] == "idle" for item in state["stages"])
+
+    def test_page_is_about_the_llm_agent_not_the_numeric_policy(self) -> None:
+        # The previous dashboard's subject was the numeric policy's own conviction.
+        assert "RAZONAMIENTO DEL AGENTE" in LLM_AGENT_PAGE
+        assert "QUIEN DECIDIO" in LLM_AGENT_PAGE
+        assert "CALIBRACION" in LLM_AGENT_PAGE
+        assert "LECCIONES APRENDIDAS" in LLM_AGENT_PAGE
+        # And it must say out loud when it is not the order authority.
+        assert "SOMBRA (sin ordenes)" in LLM_AGENT_PAGE
+
+
+class TestDailySummary:
+    def test_summary_counts_orders_and_flags_vetoes(self) -> None:
+        from scripts.daily_summary import build_summary
+
+        entries = [
+            _entry(at=(NOW - timedelta(hours=2)).isoformat()),
+            _entry(at=(NOW - timedelta(hours=1)).isoformat(), reason="DATA_STALE"),
+            _entry(
+                at=(NOW - timedelta(minutes=30)).isoformat(),
+                action="ENTER_LONG",
+                reason="AGENT_BUY_R3_C90_D",
+                order_side="BUY",
+                order_base_qty="0.05",
+                order_avg_price="84000",
+                fees_usdt="4.2",
+            ),
+        ]
+        summary = build_summary(entries, {}, hours=24, now=NOW)
+        assert summary["orders"] == 1
+        assert len(summary["buys"]) == 1
+        assert summary["vetoes"] == {"DATA_STALE": 1}
+        assert summary["fees_usdt"] == "4.2"
+
+    def test_summary_excludes_entries_outside_the_window(self) -> None:
+        from scripts.daily_summary import build_summary
+
+        entries = [
+            _entry(at=(NOW - timedelta(days=5)).isoformat(), order_side="BUY"),
+            _entry(at=(NOW - timedelta(hours=1)).isoformat()),
+        ]
+        summary = build_summary(entries, {}, hours=24, now=NOW)
+        assert summary["orders"] == 0
+        assert summary["evaluations"] == 1
+
+    def test_summary_marks_a_dead_process_as_stale(self) -> None:
+        from scripts.daily_summary import build_summary, render
+
+        summary = build_summary([_entry(at=(NOW - timedelta(hours=3)).isoformat())], {}, hours=24, now=NOW)
+        assert summary["stale"] is True
+        assert "posiblemente caido" in render(summary)
+
+    def test_render_stays_short(self) -> None:
+        from scripts.daily_summary import build_summary, render
+
+        summary = build_summary([_entry()], {}, hours=24, now=NOW)
+        # Conciseness is the stated requirement, so it is asserted.
+        assert len(render(summary).splitlines()) <= 10

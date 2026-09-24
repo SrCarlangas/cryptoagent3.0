@@ -74,6 +74,15 @@ class ActivityEntry:
     model_confidence: str | None = None
     model_probabilities: dict[str, str] | None = None
     online_learning: bool | None = None
+    order_authority: bool | None = None
+    """Whether this evaluation could actually place an order.
+
+    Recorded explicitly because it cannot be recovered afterwards. The DRY_RUN
+    reason prefix is only applied to entries that wanted to trade, so a shadow run
+    that spent the whole day holding is indistinguishable from a live one by reason
+    code alone. An observer reading this journal has to be able to tell whether the
+    decisions in front of it were real.
+    """
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize all fields while remaining backward-compatible with old rows."""
@@ -170,6 +179,7 @@ def entry_from_live(
     model_confidence: Decimal | None = None,
     model_probabilities: dict[str, Decimal] | None = None,
     online_learning: bool | None = None,
+    order_authority: bool | None = None,
     at: datetime | None = None,
 ) -> ActivityEntry:
     moment = at or datetime.now(tz=UTC)
@@ -233,6 +243,7 @@ def entry_from_live(
             else None
         ),
         online_learning=online_learning,
+        order_authority=order_authority,
     )
 
 

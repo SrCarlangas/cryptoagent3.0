@@ -84,11 +84,16 @@ src/btc_decision_agent/
     exposure_runtime.py    live wiring + the engine that vetoes but never decides
     realtime_demo.py       observer, runner, protections, durable state
     execution_intents.py   PREPARED-before-POST idempotency ledger
+    llm_agent.py           the LLM that decides target exposure, + its fallback
+    llm_tools.py           the state it is handed: market, cost, quant, analogues
+    llm_memory.py          its own outcomes, and the gate that turns them into lessons
   observability/
-    agent_dashboard.py     pixel dashboard (read-only)
+    llm_agent_dashboard.py pixel dashboard for the LLM agent (read-only)
 scripts/
-  run_exposure_agent.py    the process that holds order authority
-  run_agent_dashboard.py   dashboard
+  run_llm_agent.py         the process that holds order authority
+  run_exposure_agent.py    the numeric agent, kept as the fallback path
+  run_llm_dashboard.py     dashboard
+  gate_llm_agent.py        pre-registered criteria for granting order authority
   daily_summary.py         concise daily Slack summary
   promote_exposure_agent.py the only thing that grants order authority
 research/                  training, walk-forward selection, diagnostics
@@ -107,11 +112,20 @@ PYTHONPATH=src:research .venv/bin/python research/train_exposure_agent.py
 # grant order authority (records the evidence into the policy file)
 PYTHONPATH=src .venv/bin/python scripts/promote_exposure_agent.py
 
-# observe without trading
-PYTHONPATH=src:. .venv/bin/python scripts/run_exposure_agent.py --dry-run
+# build the 5-year situation index the LLM agent consults
+PYTHONPATH=src:research .venv/bin/python research/build_history_index.py
 
-# place DEMO orders (explicit opt-in required)
-PYTHONPATH=src:. .venv/bin/python scripts/run_exposure_agent.py --i-understand-this-is-demo
+# observe without trading
+PYTHONPATH=src:. .venv/bin/python scripts/run_llm_agent.py --dry-run
+
+# check the pre-registered gate before granting order authority
+PYTHONPATH=src .venv/bin/python -m scripts.gate_llm_agent
+
+# place DEMO orders (explicit opt-in required, and only if the gate passes)
+PYTHONPATH=src:. .venv/bin/python scripts/run_llm_agent.py --i-understand-this-is-demo
+
+# dashboard, localhost only: reach it over an SSH tunnel
+PYTHONPATH=src:. .venv/bin/python scripts/run_llm_dashboard.py
 ```
 
 The runtime refuses to start unless the policy document is `PROMOTED`, and refuses

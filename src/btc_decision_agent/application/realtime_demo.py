@@ -1521,6 +1521,7 @@ class RealtimeDemoRunner:
                     else None
                 ),
                 online_learning=self._agent_online_learning(),
+                order_authority=not self.dry_run,
                 at=evidence.at,
             )
         )
