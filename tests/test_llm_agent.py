@@ -117,9 +117,16 @@ class StubClient:
         return item
 
 
-def _verdict(target: str, *, conviction: float = 0.8, expected: float = 1.0) -> AgentVerdict:
+def _verdict(
+    target: str,
+    *,
+    conviction: float = 0.8,
+    expected: float = 1.0,
+    posture: str = "NEUTRAL",
+) -> AgentVerdict:
     return AgentVerdict(
         target_exposure=target,
+        posture=posture,
         conviction=conviction,
         expected_move_pct=expected,
         reason="razon de prueba",
@@ -559,6 +566,160 @@ class TestEngineSafety:
         self._settle(engine, _evidence(), _position(PositionState.FLAT))
         assert engine.last_explanation["expected_move_pct"] == 35.31
 
+    def test_an_entry_carries_the_regime_strategy_to_execution(self, tmp_path: Path) -> None:
+        """Sizing happens in the runner and the stop in the engine, so the plan has to
+        travel on the decision or the two disagree about what bet was taken."""
+        engine = self._engine(
+            tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0, posture="AGRESIVA"))
+        )
+        decision = self._settle(engine, _evidence(), _position(PositionState.FLAT))
+        assert decision.action == Action.ENTER_LONG
+        assert decision.execution_plan is not None
+        plan = decision.execution_plan
+        assert plan["posture"] == "AGRESIVA"
+        assert Decimal(plan["stop_loss_fraction"]) > Decimal("0")
+        assert Decimal(plan["allocation_fraction"]) > Decimal("0")
+        info = engine.last_explanation
+        assert info["posture"] == "AGRESIVA"
+        assert info["strategy"]
+        assert info["plan_horizon_hours"] > 0
+
+    def test_the_reason_code_records_the_posture(self, tmp_path: Path) -> None:
+        engine = self._engine(
+            tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0, posture="DEFENSIVA"))
+        )
+        decision = self._settle(engine, _evidence(), _position(PositionState.FLAT))
+        assert "_DEF_" in decision.reason
+
+    def test_a_posture_the_model_invents_degrades_to_neutral(self) -> None:
+        # A formatting slip in a secondary field must not hand the account to the
+        # fallback, because the exposure that moves money was still valid.
+        from btc_decision_agent.application.llm_agent import OllamaClient
+
+        client = OllamaClient()
+        payload = {
+            "message": {
+                "content": json.dumps(
+                    {
+                        "exposicion_objetivo": EXPOSURE_INVESTED,
+                        "postura": "TEMERARIA",
+                        "conviccion": 0.7,
+                        "movimiento_esperado_pct": 1.0,
+                        "razon": "x",
+                    }
+                )
+            },
+            "done_reason": "stop",
+        }
+
+        def fake_urlopen(*_args: Any, **_kwargs: Any) -> Any:
+            class Response:
+                def __enter__(self) -> Any:
+                    return self
+
+                def __exit__(self, *_exc: Any) -> None:
+                    return None
+
+                def read(self) -> bytes:
+                    return json.dumps(payload).encode()
+
+            return Response()
+
+        import btc_decision_agent.application.llm_agent as module
+
+        original = module.urllib.request.urlopen
+        module.urllib.request.urlopen = fake_urlopen  # type: ignore[assignment]
+        try:
+            verdict = client.verdict("estado", think=False)
+        finally:
+            module.urllib.request.urlopen = original  # type: ignore[assignment]
+        assert verdict.posture == "NEUTRAL"
+        assert verdict.target_exposure == EXPOSURE_INVESTED
+
+    def test_the_stop_follows_the_plan_the_position_was_opened_under(
+        self, tmp_path: Path
+    ) -> None:
+        """The reason the plan is persisted rather than held in memory.
+
+        A position opened under a wide trend-following stop must keep it. If the plan
+        were lost, the engine would silently reimpose the default tight geometry and
+        _sync_protection would move the resting exchange order to match.
+        """
+        from dataclasses import replace as dc_replace
+
+        from btc_decision_agent.application.regime_playbook import resolve_plan
+
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED)))
+        wide = resolve_plan(
+            regime=3, posture="AGRESIVA", conviction=0.9, daily_vol_pct=3.0
+        )
+        engine.import_state(
+            dc_replace(
+                engine.state,
+                entry_price=D("80000"),
+                high_since_entry=D("80000"),
+                execution_plan=wide.to_dict(),
+            )
+        )
+        with_plan = engine.active_stop(D("80000"))
+        assert engine.effective_params.stop_loss_fraction == wide.stop_loss_fraction
+        engine.import_state(dc_replace(engine.state, execution_plan=None))
+        without_plan = engine.active_stop(D("80000"))
+        assert with_plan is not None and without_plan is not None
+        # The bull-regime stop is materially wider than the 3% default, so it sits
+        # lower: 13.1% below entry instead of 3%.
+        assert with_plan < without_plan
+        assert engine.effective_params.stop_loss_fraction == D("0.03")
+
+    def test_a_corrupt_plan_never_disables_protection(self, tmp_path: Path) -> None:
+        from dataclasses import replace as dc_replace
+
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED)))
+        engine.import_state(
+            dc_replace(
+                engine.state,
+                entry_price=D("80000"),
+                high_since_entry=D("80000"),
+                execution_plan={"basura": True},
+            )
+        )
+        # Falls back to the configured defaults rather than raising or returning None.
+        assert engine.active_stop(D("80000")) == D("80000") * D("0.97")
+
+    def test_the_burden_of_proof_blocks_a_weakly_held_change(self, tmp_path: Path) -> None:
+        """Regime-dependent behaviour, not just regime-dependent parameters.
+
+        The synthetic evidence used by these tests is a steady uptrend, so the advisor
+        reports a bullish regime. Moving to cash there requires high conviction; a
+        half-hearted 0.40 is not enough and the position stays.
+        """
+        engine = self._engine(
+            tmp_path,
+            StubClient(_verdict(EXPOSURE_CASH, conviction=0.40, expected=5.0)),
+        )
+        decision = self._settle(
+            engine, _evidence(), _position(PositionState.LONG, btc="0.05", usdt="0")
+        )
+        info = engine.last_explanation
+        if info["regime"] == 3:
+            assert decision.action == Action.HOLD
+            assert decision.reason.endswith("_BURDEN_NOT_MET")
+            assert info["burden_met"] is False
+        else:
+            # Other regimes have a low bar for cash, so the exit is allowed.
+            assert info["burden_met"] is True
+
+    def test_the_burden_never_overrides_a_breaker_or_the_stop(self, tmp_path: Path) -> None:
+        # The burden applies only to the agent's own changes. Protection outranks it.
+        engine = self._engine(
+            tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, conviction=0.99, expected=5.0))
+        )
+        engine.update_equity(D("10000"), NOW)
+        decision = engine.evaluate(
+            _evidence(), _position(PositionState.LONG, btc="0.005", usdt="0")
+        )
+        assert decision.action == Action.EXIT_LONG
+
     def test_agreeing_with_the_current_exposure_is_a_hold(self, tmp_path: Path) -> None:
         engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0)))
         decision = self._settle(
@@ -629,6 +790,7 @@ class TestVerdictParsing:
     def test_conviction_is_clamped(self) -> None:
         verdict = AgentVerdict(
             target_exposure=EXPOSURE_INVESTED,
+            posture="NEUTRAL",
             conviction=1.0,
             expected_move_pct=1.0,
             reason="x",

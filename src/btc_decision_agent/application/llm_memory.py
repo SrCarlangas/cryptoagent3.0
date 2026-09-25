@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS decisions (
     derived_order TEXT NOT NULL,
     conviction REAL,
     expected_move_pct REAL,
+    posture TEXT,
     reason TEXT,
     thinking TEXT,
     price_at_decision TEXT NOT NULL,
@@ -81,6 +82,7 @@ CREATE TABLE IF NOT EXISTS decisions (
 );
 CREATE INDEX IF NOT EXISTS idx_resolved ON decisions(resolved);
 CREATE INDEX IF NOT EXISTS idx_regime ON decisions(regime, target_exposure);
+CREATE INDEX IF NOT EXISTS idx_posture ON decisions(regime, posture);
 """
 
 
@@ -151,6 +153,12 @@ class AgentMemory:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self._connect()) as conn:
             conn.executescript(_DDL)
+            # CREATE TABLE IF NOT EXISTS cannot add a column to a table that already
+            # exists, so a database written before postures were recorded needs the
+            # column added explicitly. Idempotent, and cheap enough to run every time.
+            existing = {row[1] for row in conn.execute("PRAGMA table_info(decisions)")}
+            if "posture" not in existing:
+                conn.execute("ALTER TABLE decisions ADD COLUMN posture TEXT")
             conn.commit()
 
     def _connect(self) -> sqlite3.Connection:
@@ -181,14 +189,16 @@ class AgentMemory:
         thinking: str,
         price: Decimal,
         acted: bool,
+        posture: str | None = None,
     ) -> None:
         with closing(self._connect()) as conn:
             conn.execute(
                 """INSERT OR IGNORE INTO decisions (
                     decided_at, event_id, features, regime, quant_p_long,
                     target_exposure, exposure_before, derived_order, conviction,
-                    expected_move_pct, reason, thinking, price_at_decision, acted
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    expected_move_pct, posture, reason, thinking, price_at_decision,
+                    acted
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     decided_at.isoformat(),
                     event_id,
@@ -200,6 +210,7 @@ class AgentMemory:
                     derived_order,
                     conviction,
                     expected_move_pct,
+                    posture,
                     reason[:2000],
                     thinking[:4000],
                     format(price, "f"),

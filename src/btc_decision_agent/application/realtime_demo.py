@@ -63,7 +63,7 @@ _DEFAULT_DAILY_LOSS = D("0.05")
 _DEFAULT_DRAWDOWN = D("0.10")
 _HALF = D("0.5")
 _ZERO = D("0")
-_STATE_VERSION = "realtime-engine-state/v4"
+_STATE_VERSION = "realtime-engine-state/v5"
 
 
 class RealtimeStream(Protocol):
@@ -562,6 +562,14 @@ class RealtimeDecision:
     auditor needs: every directional action carries the agent's reasoning, and
     anything without it was a veto.
     """
+    execution_plan: dict[str, Any] | None = None
+    """The strategy this decision is to be executed under, when entering.
+
+    Carried on the decision rather than read from shared configuration because sizing
+    happens in the runner at order time while the stop is computed in the engine, and
+    the two must agree on the same plan. A position sized for a 10% stop and then
+    protected by a 3% one is a different bet than the one that was decided.
+    """
 
 
 @dataclass(frozen=True)
@@ -582,8 +590,18 @@ class EnginePersistentState:
     protective_client_order_id: str | None = None
     protective_stop_price: Decimal | None = None
     recovery_source: str = "NEW"
+    execution_plan: dict[str, Any] | None = None
+    """The strategy this position was opened under, as chosen for its regime.
 
-    def to_dict(self) -> dict[str, str | None]:
+    Persisted because the stop is recomputed from scratch on every market event out of
+    `entry_price`, `high_since_entry` and the stop fractions. If the plan were held
+    only in memory, a restart would silently reimpose the default geometry on an open
+    position: a position entered under a wide trend-following stop would suddenly be
+    protected by a tight one, or the reverse, and `_sync_protection` would move the
+    resting exchange order to match.
+    """
+
+    def to_dict(self) -> dict[str, str | None] | dict[str, Any]:
         def timestamp(value: datetime | None) -> str | None:
             return value.isoformat() if value is not None else None
 
@@ -607,6 +625,7 @@ class EnginePersistentState:
             "protective_client_order_id": self.protective_client_order_id,
             "protective_stop_price": decimal(self.protective_stop_price),
             "recovery_source": self.recovery_source,
+            "execution_plan": self.execution_plan,
         }
 
     @classmethod
@@ -614,6 +633,7 @@ class EnginePersistentState:
         version = str(raw.get("version", ""))
         if version not in {
             _STATE_VERSION,
+            "realtime-engine-state/v4",
             "realtime-engine-state/v3",
             "realtime-engine-state/v2",
         }:
@@ -651,6 +671,13 @@ class EnginePersistentState:
             ),
             protective_stop_price=decimal("protective_stop_price"),
             recovery_source=str(raw.get("recovery_source", "STATE_FILE")),
+            # Absent on v2-v4 checkpoints, which simply means "no plan recorded";
+            # the engine then falls back to its configured defaults.
+            execution_plan=(
+                dict(raw["execution_plan"])
+                if isinstance(raw.get("execution_plan"), dict)
+                else None
+            ),
         )
 
 
@@ -731,6 +758,7 @@ class ProtectiveDecisionEngine:
                 protective_order_id=None,
                 protective_client_order_id=None,
                 protective_stop_price=None,
+                execution_plan=None,
             )
             return
 
@@ -779,6 +807,7 @@ class ProtectiveDecisionEngine:
                 protective_order_id=None,
                 protective_client_order_id=None,
                 protective_stop_price=None,
+                execution_plan=None,
                 recovery_source="FILL",
             )
 
@@ -810,6 +839,10 @@ class ProtectiveDecisionEngine:
             return "DRAWDOWN_BREAKER"
         return None
 
+    def set_execution_plan(self, plan: dict[str, Any] | None) -> None:
+        """Record the strategy a position is being opened under."""
+        self._state = replace(self._state, execution_plan=plan)
+
     def set_protective_order(self, order: ExchangeOrder | None) -> None:
         self._state = replace(
             self._state,
@@ -818,6 +851,27 @@ class ProtectiveDecisionEngine:
             protective_stop_price=order.stop_price if order else None,
         )
 
+    @property
+    def effective_params(self) -> RealtimeParams:
+        """Configured parameters, overridden by the open position's own strategy.
+
+        A position is opened under the strategy its regime called for, and it must be
+        managed under that same strategy until it closes. Recomputing the stop from the
+        process defaults instead would move the stop under a live position every time
+        the regime changed or the process restarted.
+        """
+        raw = self._state.execution_plan
+        if not raw:
+            return self.params
+        try:
+            from btc_decision_agent.application.regime_playbook import ExecutionPlan
+
+            return ExecutionPlan.from_dict(raw).apply(self.params)
+        except (KeyError, TypeError, ValueError, ArithmeticError):
+            # A malformed plan must not disable protection; fall back to defaults,
+            # which are tighter than anything the playbook can produce at the top end.
+            return self.params
+
     def active_stop(self, price: Decimal) -> Decimal | None:
         return self._active_stop(price)
 
@@ -825,17 +879,18 @@ class ProtectiveDecisionEngine:
         entry = self._state.entry_price
         if entry is None:
             return None
-        initial = entry * (D("1") - self.params.stop_loss_fraction)
+        params = self.effective_params
+        initial = entry * (D("1") - params.stop_loss_fraction)
         high = self._state.high_since_entry or price
-        if high >= entry * (D("1") + self.params.break_even_activation_fraction):
+        if high >= entry * (D("1") + params.break_even_activation_fraction):
             initial = max(
                 initial,
-                entry * (D("1") + self.params.break_even_lock_fraction),
+                entry * (D("1") + params.break_even_lock_fraction),
             )
-        activation = entry * (D("1") + self.params.trailing_activation_fraction)
+        activation = entry * (D("1") + params.trailing_activation_fraction)
         if high < activation:
             return initial
-        trailing = high * (D("1") - self.params.trailing_stop_fraction)
+        trailing = high * (D("1") - params.trailing_stop_fraction)
         return max(initial, trailing)
 
     def evaluate(
@@ -1324,13 +1379,30 @@ class RealtimeDemoRunner:
                 client_id = deterministic_client_order_id(decision)
                 if decision.action == Action.ENTER_LONG:
                     minimum = self._rules.min_notional if self._rules else self.params.min_notional_usdt
+                    # Size under the decision's own strategy. Sizing here and the stop
+                    # in the engine must use the same plan, or the position is sized for
+                    # one bet and protected for another.
+                    sizing = self.params
+                    if decision.execution_plan:
+                        try:
+                            from btc_decision_agent.application.regime_playbook import (
+                                ExecutionPlan,
+                            )
+
+                            sizing = ExecutionPlan.from_dict(decision.execution_plan).apply(
+                                self.params
+                            )
+                        except (KeyError, TypeError, ValueError, ArithmeticError):
+                            _LOGGER.warning(
+                                "plan de ejecucion invalido; se usa la configuracion por defecto"
+                            )
                     quote = size_entry_percentage(
                         before.usdt_free,
-                        self.params.allocation_fraction,
+                        sizing.allocation_fraction,
                         min_notional=minimum,
                         equity=before.equity,
-                        risk_per_trade_fraction=self.params.risk_per_trade_fraction,
-                        stop_loss_fraction=self.params.stop_loss_fraction,
+                        risk_per_trade_fraction=sizing.risk_per_trade_fraction,
+                        stop_loss_fraction=sizing.stop_loss_fraction,
                     )
                     requested_base: Decimal | None = None
                 else:
@@ -1422,6 +1494,11 @@ class RealtimeDemoRunner:
                             order.executed_base_qty,
                             now,
                         )
+                        # on_fill clears the plan, so a BUY records the strategy it was
+                        # opened under immediately afterwards. The very next call is
+                        # _sync_protection, which reads the stop from this plan.
+                        if order.side == OrderSide.BUY and decision.execution_plan:
+                            self.engine.set_execution_plan(decision.execution_plan)
                         self._persist_state()
                     after = self._reconcile(now)
                     if after.state == PositionState.LONG:
@@ -1489,7 +1566,7 @@ class RealtimeDemoRunner:
                 spread_bps=evidence.spread_bps,
                 data_age_ms=evidence.data_age_ms,
                 coverage=evidence.coverage,
-                allocation_pct=self.params.allocation_fraction * D("100"),
+                allocation_pct=self.engine.effective_params.allocation_fraction * D("100"),
                 event_id=evidence.event_id,
                 entry_price=state.entry_price,
                 high_since_entry=state.high_since_entry,
@@ -1501,7 +1578,9 @@ class RealtimeDemoRunner:
                 fees_usdt=order.fees_usdt if order else None,
                 fees_by_asset=order.fees_by_asset if order else None,
                 protective_order_id=state.protective_order_id,
-                risk_per_trade_pct=self.params.risk_per_trade_fraction * D("100"),
+                risk_per_trade_pct=(
+                    self.engine.effective_params.risk_per_trade_fraction * D("100")
+                ),
                 breaker=self.engine.breaker_reason(after.equity),
                 parameter_version=PARAMETER_VERSION,
                 strategy_version=STRATEGY_VERSION,

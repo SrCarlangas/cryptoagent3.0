@@ -79,6 +79,13 @@ from btc_decision_agent.application.realtime_demo import (
     RealtimeParams,
     ReconciledPosition,
 )
+from btc_decision_agent.application.regime_playbook import (
+    POSTURE_VALUES,
+    Posture,
+    meets_burden_of_proof,
+    render_playbook_block,
+    resolve_plan,
+)
 from btc_decision_agent.domain.contracts import Action, PositionState
 
 _LOGGER = logging.getLogger(__name__)
@@ -92,25 +99,45 @@ VERDICT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
         "exposicion_objetivo": {"type": "string", "enum": list(EXPOSURE_VALUES)},
+        "postura": {"type": "string", "enum": list(POSTURE_VALUES)},
         "conviccion": {"type": "number"},
         "movimiento_esperado_pct": {"type": "number"},
         "razon": {"type": "string"},
     },
-    "required": ["exposicion_objetivo", "conviccion", "movimiento_esperado_pct", "razon"],
+    "required": [
+        "exposicion_objetivo",
+        "postura",
+        "conviccion",
+        "movimiento_esperado_pct",
+        "razon",
+    ],
 }
 
 SYSTEM_PROMPT = """Eres el operador de una cuenta BTC/USDT en Binance. Tu mision es
 obtener la maxima rentabilidad neta posible a lo largo del tiempo.
 
-No eliges una orden. Eliges cual DEBE SER la exposicion ahora, evaluada desde cero:
+No eliges una orden. Eliges dos cosas, evaluadas desde cero:
+
+1) La EXPOSICION que debe haber ahora:
   INVERTIDO = el capital debe estar en BTC
   EN LIQUIDEZ = el capital debe estar en USDT
+
+2) La POSTURA con la que ejecutar la estrategia de tu regimen:
+  DEFENSIVA = menos capital, stop mas ceñido
+  NEUTRAL   = la estrategia del regimen tal cual
+  AGRESIVA  = mas capital, stop mas ancho para no salir por ruido
+
+No declaras numeros de tamano ni de stop: salen de la volatilidad medida y de limites
+fijados de antemano. Cada regimen tiene su propia estrategia y su propia carga de la
+prueba, y las veras en el bloque ESTRATEGIA DEL REGIMEN. Leelas antes de decidir.
 El sistema comparara tu eleccion con la exposicion actual y derivara la orden.
 
 Como decidir:
 1. BTC tiene deriva positiva de largo plazo. Estar EN LIQUIDEZ renuncia a esa
    deriva, asi que EN LIQUIDEZ debe justificarse con evidencia. No es el default
-   seguro.
+   seguro. En regimen alcista fuerte esto se endurece: quedarse fuera de una
+   tendencia establecida es una decision costosa y necesita mas conviccion que
+   entrar.
 2. Estar INVERTIDO durante una caida sostenida destruye capital. INVERTIDO tambien
    se justifica con evidencia.
 3. Declara en movimiento_esperado_pct cuanto crees que se movera el precio a tu favor
@@ -141,6 +168,7 @@ class LLMUnavailable(Exception):
 @dataclass(frozen=True)
 class AgentVerdict:
     target_exposure: str
+    posture: str
     conviction: float
     expected_move_pct: float
     reason: str
@@ -209,6 +237,12 @@ class OllamaClient:
         target = str(parsed.get("exposicion_objetivo", "")).upper()
         if target not in set(EXPOSURE_VALUES):
             raise LLMUnavailable(f"exposicion_objetivo invalida: {target!r}")
+        posture = str(parsed.get("postura", "")).upper()
+        if posture not in set(POSTURE_VALUES):
+            # Degraded rather than rejected: an unknown posture is a formatting slip,
+            # not a reason to hand the account to the fallback. The exposure, which is
+            # the decision that moves money, was valid.
+            posture = Posture.NEUTRAL.value
         try:
             conviction = float(parsed.get("conviccion", 0.0))
             expected = float(parsed.get("movimiento_esperado_pct", 0.0))
@@ -217,6 +251,7 @@ class OllamaClient:
 
         return AgentVerdict(
             target_exposure=target,
+            posture=posture,
             conviction=max(0.0, min(1.0, conviction)),
             expected_move_pct=expected,
             reason=str(parsed.get("razon", ""))[:1200],
@@ -279,6 +314,10 @@ class LLMTradingAgent:
         )
         cost = cost_view(params.round_trip_cost_bps, params.allocation_fraction)
         analogues = self.history.analogues(vector, self.analogue_count)
+        playbook = render_playbook_block(
+            int(quant.get("regimen", 0)),
+            market.get("volatilidad_diaria_30d_pct"),
+        )
         block = render_state_block(
             market,
             position,
@@ -287,7 +326,7 @@ class LLMTradingAgent:
             analogues,
             self.history.summarise(analogues),
             self.history.base_rates(),
-            render_memory_block(self.memory, vector),
+            render_memory_block(self.memory, vector) + "\n\n" + playbook,
         )
         self.last_state_block = block
         self.last_quant = quant
@@ -669,7 +708,27 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             policy_version=AGENT_VERSION,
         )
 
-        acted = wants_change and clears
+        # The regime's strategy, resolved into bounded numbers. The agent chose a
+        # posture; volatility and pre-registered limits decide what it means.
+        plan = resolve_plan(
+            regime=int(quant.get("regimen", 0)),
+            posture=verdict.posture,
+            conviction=verdict.conviction,
+            daily_vol_pct=float(volatility) if volatility is not None else None,
+        )
+        # Burden of proof, which is the asymmetry the previous design lacked. In a
+        # strong uptrend being in cash is the side that must justify itself, so an
+        # agent that is merely unsure ends up riding the trend instead of watching it.
+        # Applied only to CHANGES: it can never trap the agent in a position, because
+        # failing to clear a burden means staying where it is, and an exit that also
+        # fails the burden still leaves the protective stop and the breakers live.
+        burden_met = meets_burden_of_proof(
+            regime=int(quant.get("regimen", 0)),
+            wants_invested=verdict.wants_long,
+            conviction=verdict.conviction,
+        )
+
+        acted = wants_change and clears and burden_met
         self.agent.memory.record(
             decided_at=now,
             event_id=evidence.event_id,
@@ -685,6 +744,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             thinking=verdict.thinking,
             price=evidence.price,
             acted=acted,
+            posture=verdict.posture,
         )
         self._last_explanation = {
             "agent_version": AGENT_VERSION,
@@ -702,17 +762,31 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             "regime": quant.get("regimen"),
             "regime_name": quant.get("nombre_regimen"),
             "agrees_with_quant": verdict.target_exposure == quant.get("recomienda"),
+            "posture": verdict.posture,
+            "strategy": plan.strategy_name,
+            "burden_met": burden_met,
+            "plan_allocation_pct": float(plan.allocation_fraction * 100),
+            "plan_stop_pct": float(plan.stop_loss_fraction * 100),
+            "plan_trail_pct": float(plan.trailing_stop_fraction * 100),
+            "plan_risk_pct": float(plan.risk_per_trade_fraction * 100),
+            "plan_horizon_hours": plan.horizon_hours,
         }
 
         suffix = "D" if verdict.deliberated else "F"
         reason = (
             f"AGENT_{trade.value}_R{quant.get('regimen', 0)}"
-            f"_C{round(verdict.conviction * 100)}_{suffix}"
+            f"_C{round(verdict.conviction * 100)}_{verdict.posture[:3]}_{suffix}"
         )
         self._reset_candidate()
 
         if not wants_change:
             return RealtimeDecision(Action.HOLD, reason, evidence, agent_decision=record)
+        if not burden_met:
+            # Distinct from _BELOW_COST: the economics were fine, the conviction was
+            # not enough for this side in this regime.
+            return RealtimeDecision(
+                Action.HOLD, f"{reason}_BURDEN_NOT_MET", evidence, agent_decision=record
+            )
         if not clears:
             # It wants to move but its own expected move does not cover the round
             # trip. Refusing here is the economics the agent itself declared.
@@ -720,7 +794,13 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 Action.HOLD, f"{reason}_BELOW_COST", evidence, agent_decision=record
             )
         if trade == TradeDecision.BUY:
-            return RealtimeDecision(Action.ENTER_LONG, reason, evidence, agent_decision=record)
+            return RealtimeDecision(
+                Action.ENTER_LONG,
+                reason,
+                evidence,
+                agent_decision=record,
+                execution_plan=plan.to_dict(),
+            )
         return RealtimeDecision(Action.EXIT_LONG, reason, evidence, True, agent_decision=record)
 
 
