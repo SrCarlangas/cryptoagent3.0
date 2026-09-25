@@ -42,6 +42,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Any
 
+from btc_decision_agent.application.llm_tools import EXPOSURE_CASH, EXPOSURE_INVESTED
 from btc_decision_agent.application.realtime_demo import RealtimeParams
 
 D = Decimal
@@ -104,13 +105,23 @@ class RegimeStrategy:
     record judges a trend-following decision on a trend's timescale rather than on
     tomorrow's noise."""
 
-    min_conviction_to_invest: float
-    """Burden of proof for BEING INVESTED in this regime."""
+    default_exposure: str
+    """Where the capital sits in this regime unless there is a reason not to.
 
-    min_conviction_to_hold_cash: float
-    """Burden of proof for BEING IN CASH. In a strong uptrend this is the side that
-    has to justify itself, which is the asymmetry the previous design was missing:
-    staying out of a rising market is a decision, not a neutral default."""
+    A burden of proof needs a side that carries it, and expressing it as two separate
+    minimums did not work. Gating only CHANGES left the status quo unexamined: the
+    agent began in cash, wanted cash, so nothing changed and no threshold ever
+    applied. Measured on the most bullish window in the dataset it sat out a +185%
+    advance declaring 0.50 conviction for cash in regime 3, which is well under the
+    0.70 that side supposedly required, and the requirement never bit."""
+
+    min_conviction_to_deviate: float
+    """Conviction needed to hold the OTHER exposure instead of the default.
+
+    In a strong uptrend the default is invested, so being in cash is what must be
+    argued for. In a deep bear the default is cash and being invested is what must be
+    argued for. Below the threshold the default stands, which means 'I do not know'
+    resolves to the side the regime favours rather than to inaction."""
 
     doctrine: str
     """One line shown to the agent, so it knows the strategy it is operating inside."""
@@ -125,8 +136,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("1.0"),
         risk_per_trade=D("0.02"),
         horizon_hours=48,
-        min_conviction_to_invest=0.60,
-        min_conviction_to_hold_cash=0.50,
+        default_exposure=EXPOSURE_CASH,
+        min_conviction_to_deviate=0.60,
         doctrine=(
             "Lateral bajo la media de 200d. Los rebotes fallan mas de lo que "
             "continuan: tamano medio, stop ceñido, horizonte corto. Estar invertido "
@@ -141,8 +152,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("0.8"),
         risk_per_trade=D("0.01"),
         horizon_hours=24,
-        min_conviction_to_invest=0.80,
-        min_conviction_to_hold_cash=0.30,
+        default_exposure=EXPOSURE_CASH,
+        min_conviction_to_deviate=0.80,
         doctrine=(
             "Caida sostenida con volatilidad alta. Preservar capital manda: tamano "
             "minimo, stop corto, horizonte corto. Invertir aqui exige conviccion "
@@ -157,8 +168,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("1.2"),
         risk_per_trade=D("0.035"),
         horizon_hours=96,
-        min_conviction_to_invest=0.50,
-        min_conviction_to_hold_cash=0.55,
+        default_exposure=EXPOSURE_INVESTED,
+        min_conviction_to_deviate=0.55,
         doctrine=(
             "Sobre tendencia con momento plano. La tendencia de fondo sigue viva: "
             "tamano alto, stop holgado para no salir por ruido, horizonte medio."
@@ -172,8 +183,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("1.5"),
         risk_per_trade=D("0.09"),
         horizon_hours=168,
-        min_conviction_to_invest=0.35,
-        min_conviction_to_hold_cash=0.70,
+        default_exposure=EXPOSURE_INVESTED,
+        min_conviction_to_deviate=0.70,
         doctrine=(
             "Tendencia alcista establecida. Aqui se fluye con el movimiento: tamano "
             "maximo, stop ANCHO para que el ruido no te saque de la tendencia, "
@@ -337,22 +348,35 @@ def resolve_plan(
     )
 
 
-def meets_burden_of_proof(
+def resolve_exposure(
     *, regime: int | None, wants_invested: bool, conviction: float
-) -> bool:
-    """Whether the declared conviction clears this regime's burden for that side.
+) -> tuple[bool, bool]:
+    """Apply the regime's burden of proof to a declared exposure.
 
-    This is where "the regime changes the strategy" becomes visible in behaviour
-    rather than only in parameters. In a deep bear, being invested needs 0.80. In a
-    strong uptrend, being in CASH needs 0.70, and being invested needs only 0.35.
+    Returns (exposure to act on, whether the agent's own choice was honoured).
+
+    This is where "the regime changes the strategy" becomes behaviour rather than
+    parameters. The regime sets where capital sits by default; deviating from it
+    requires conviction. Under the threshold the default stands, so uncertainty
+    resolves toward the side the regime favours instead of toward inaction.
+
+    The previous version gated only CHANGES and was therefore toothless: an agent
+    already sitting in the wrong place never triggered a change, so its position was
+    never tested against the threshold. On the most bullish 300-day window available it
+    sat out a +185% advance while repeatedly declaring 0.50 conviction for cash in a
+    strong uptrend, which was far below what that side required.
+
+    The direction still comes from the model: the conviction is the model's, and the
+    thresholds were fixed in advance per regime. What this removes is the ability to
+    hold an unargued position by default.
     """
     strategy = strategy_for(regime)
-    threshold = (
-        strategy.min_conviction_to_invest
-        if wants_invested
-        else strategy.min_conviction_to_hold_cash
-    )
-    return conviction >= threshold
+    default_invested = strategy.default_exposure == EXPOSURE_INVESTED
+    if wants_invested == default_invested:
+        return wants_invested, True
+    if conviction >= strategy.min_conviction_to_deviate:
+        return wants_invested, True
+    return default_invested, False
 
 
 def render_playbook_block(regime: int | None, daily_vol_pct: float | None) -> str:
@@ -363,8 +387,11 @@ def render_playbook_block(regime: int | None, daily_vol_pct: float | None) -> st
         f"({strategy.name}):",
         f"  {strategy.doctrine}",
         f"  horizonte previsto: {strategy.horizon_hours} h",
-        f"  conviccion minima para INVERTIDO: {strategy.min_conviction_to_invest:.2f}",
-        f"  conviccion minima para EN LIQUIDEZ: {strategy.min_conviction_to_hold_cash:.2f}",
+        f"  exposicion por defecto de este regimen: {strategy.default_exposure}",
+        f"  conviccion minima para desviarse de ella: "
+        f"{strategy.min_conviction_to_deviate:.2f}",
+        "  Si no alcanzas esa conviccion se aplica la exposicion por defecto: la duda "
+        "no te deja fuera, te deja donde el regimen manda.",
     ]
     for posture in Posture:
         plan = resolve_plan(
@@ -393,8 +420,8 @@ __all__ = [
     "ExecutionPlan",
     "Posture",
     "RegimeStrategy",
-    "meets_burden_of_proof",
     "render_playbook_block",
+    "resolve_exposure",
     "resolve_plan",
     "strategy_for",
 ]

@@ -76,7 +76,7 @@ from btc_decision_agent.application.realtime_demo import (
     size_entry_percentage,
 )
 from btc_decision_agent.application.regime_playbook import (
-    meets_burden_of_proof,
+    resolve_exposure,
     resolve_plan,
 )
 
@@ -262,7 +262,13 @@ def main() -> None:
             print(f"  [{number}/{len(decision_days)}] fallo del modelo: {error}", flush=True)
             continue
 
-        wants_long = verdict.wants_long
+        # Same burden of proof as production: the regime's default exposure stands
+        # unless the agent clears the threshold to deviate from it.
+        wants_long, choice_honoured = resolve_exposure(
+            regime=int(quant.get("regimen", 0)),
+            wants_invested=verdict.wants_long,
+            conviction=verdict.conviction,
+        )
         changing = wants_long != position_long
         # Same economics as live, including the asymmetry: the cost threshold gates
         # ENTRIES only, and the declared expected move is bounded by what the market's
@@ -282,14 +288,9 @@ def main() -> None:
             conviction=verdict.conviction,
             daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
         )
-        burden_met = meets_burden_of_proof(
-            regime=int(quant.get("regimen", 0)),
-            wants_invested=wants_long,
-            conviction=verdict.conviction,
-        )
-        if changing and clears and not burden_met:
+        if not choice_honoured:
             burden_blocks += 1
-        acted = changing and clears and burden_met
+        acted = changing and clears
         fill = closes[min(day + 1, end_day)]
 
         if acted and wants_long:
@@ -328,7 +329,7 @@ def main() -> None:
             features=vector,
             regime=int(quant.get("regimen", 0)),
             quant_p_long=float(quant.get("p_largo", 0.0)),
-            target_exposure=verdict.target_exposure,
+            target_exposure=EXPOSURE_INVESTED if wants_long else EXPOSURE_CASH,
             exposure_before=EXPOSURE_INVESTED if position_long else EXPOSURE_CASH,
             derived_order="BUY" if acted and wants_long else ("SELL" if acted else "HOLD"),
             conviction=verdict.conviction,
@@ -369,14 +370,15 @@ def main() -> None:
                 "decision": number,
                 "day_index": day,
                 "price": round(price, 2),
-                "target": verdict.target_exposure,
+                "target": EXPOSURE_INVESTED if wants_long else EXPOSURE_CASH,
+                "agent_asked_for": verdict.target_exposure,
+                "choice_honoured": choice_honoured,
                 "posture": verdict.posture,
                 "strategy": plan.strategy_name,
                 "plan_allocation_pct": float(plan.allocation_fraction * 100),
                 "plan_stop_pct": float(plan.stop_loss_fraction * 100),
                 "plan_risk_pct": float(plan.risk_per_trade_fraction * 100),
                 "plan_horizon_hours": plan.horizon_hours,
-                "burden_met": burden_met,
                 "invested_share": round(
                     (units * price) / (cash + units * price) if (cash + units * price) else 0.0, 4
                 ),
@@ -395,7 +397,7 @@ def main() -> None:
             elapsed = time.time() - started
             print(
                 f"  [{number}/{len(decision_days)}] dia {day} precio {price:.0f} -> "
-                f"{verdict.target_exposure} conv {verdict.conviction:.2f} "
+                f"{EXPOSURE_INVESTED if wants_long else EXPOSURE_CASH} "
                 f"{verdict.posture[:3]} conv {verdict.conviction:.2f} actuo={acted} "
                 f"invertido {(units * price) / (cash + units * price) * 100 if (cash + units * price) else 0:.0f}% "
                 f"equity {(cash + units * price) / START_CAPITAL:.4f} "
@@ -505,7 +507,8 @@ def render(payload: dict[str, Any]) -> str:
         f"- actuo en el {agent['acted_share']:.0%} (el resto no requeria cambio o no cubria costo)",
         f"- cambios de exposicion que el costo bloqueo: {agent['blocked_changes_by_cost']}"
         f" (de ellos salidas: {agent['blocked_exits_by_cost']}, debe ser 0)",
-        f"- cambios que la carga de la prueba del regimen bloqueo: {agent['burden_blocks']}",
+        f"- veces que el regimen impuso su exposicion por defecto sobre la eleccion "
+        f"del agente: {agent['burden_blocks']}",
         f"- salidas por stop protector: {agent['stop_exits']}",
         "",
         "## Estrategia por regimen",

@@ -33,8 +33,8 @@ from btc_decision_agent.application.regime_playbook import (
     PLAYBOOK,
     ExecutionPlan,
     Posture,
-    meets_burden_of_proof,
     render_playbook_block,
+    resolve_exposure,
     resolve_plan,
     strategy_for,
 )
@@ -158,17 +158,66 @@ class TestPlaybookShape:
         assert bull.risk_per_trade > bear.risk_per_trade
         assert bull.horizon_hours > bear.horizon_hours
 
-    def test_the_burden_of_proof_inverts_in_a_strong_uptrend(self) -> None:
-        """The specific failure the owner pointed at: 41% invested in a bull regime.
+    def test_the_default_exposure_inverts_between_bear_and_bull(self) -> None:
+        """The specific failure the owner pointed at: 41% invested in a bull regime."""
+        from btc_decision_agent.application.llm_tools import (
+            EXPOSURE_CASH,
+            EXPOSURE_INVESTED,
+        )
 
-        In regime 3 staying in cash is what has to be justified, so an agent that is
-        merely unsure ends up invested rather than out.
+        assert PLAYBOOK[3].default_exposure == EXPOSURE_INVESTED
+        assert PLAYBOOK[2].default_exposure == EXPOSURE_INVESTED
+        assert PLAYBOOK[1].default_exposure == EXPOSURE_CASH
+        assert PLAYBOOK[0].default_exposure == EXPOSURE_CASH
+
+    def test_uncertainty_resolves_to_the_regime_default_not_to_inaction(self) -> None:
+        """The bug this replaced. Gating only CHANGES left the status quo unexamined, so
+        an agent already in cash sat out a +185% advance declaring 0.50 conviction for
+        cash in a strong uptrend, far below the 0.70 that side required.
+
+        Now an unargued preference loses to the regime's default.
         """
-        assert meets_burden_of_proof(regime=3, wants_invested=True, conviction=0.40)
-        assert not meets_burden_of_proof(regime=3, wants_invested=False, conviction=0.40)
-        # And the reverse in a deep bear.
-        assert not meets_burden_of_proof(regime=1, wants_invested=True, conviction=0.60)
-        assert meets_burden_of_proof(regime=1, wants_invested=False, conviction=0.40)
+        # Strong uptrend: half-hearted cash becomes invested.
+        exposure, honoured = resolve_exposure(regime=3, wants_invested=False, conviction=0.50)
+        assert exposure is True
+        assert honoured is False
+        # With real conviction, the agent's own call stands.
+        exposure, honoured = resolve_exposure(regime=3, wants_invested=False, conviction=0.75)
+        assert exposure is False
+        assert honoured is True
+
+    def test_the_same_rule_protects_capital_in_a_deep_bear(self) -> None:
+        # Half-hearted investment in a falling market becomes cash.
+        exposure, honoured = resolve_exposure(regime=1, wants_invested=True, conviction=0.60)
+        assert exposure is False
+        assert honoured is False
+        # And a strongly argued entry is still allowed.
+        exposure, honoured = resolve_exposure(regime=1, wants_invested=True, conviction=0.85)
+        assert exposure is True
+        assert honoured is True
+
+    def test_agreeing_with_the_default_never_needs_justification(self) -> None:
+        for conviction in (0.0, 0.5, 1.0):
+            assert resolve_exposure(regime=3, wants_invested=True, conviction=conviction) == (
+                True,
+                True,
+            )
+            assert resolve_exposure(regime=1, wants_invested=False, conviction=conviction) == (
+                False,
+                True,
+            )
+
+    def test_there_is_no_case_where_both_sides_fail(self) -> None:
+        """The incoherence in the first attempt: two independent minimums could reject
+        cash and investment at once, leaving no defined behaviour."""
+        candidates: list[int | None] = [*PLAYBOOK, None, 99]
+        for regime in candidates:
+            for wants in (True, False):
+                for conviction in (0.0, 0.3, 0.5, 0.7, 0.9, 1.0):
+                    exposure, _ = resolve_exposure(
+                        regime=regime, wants_invested=wants, conviction=conviction
+                    )
+                    assert isinstance(exposure, bool)
 
     def test_an_unknown_regime_falls_back_to_the_cautious_strategy(self) -> None:
         assert strategy_for(None) is PLAYBOOK[1]
@@ -240,7 +289,8 @@ class TestPlanResolution:
     def test_the_agent_is_shown_the_strategy_it_operates_inside(self) -> None:
         block = render_playbook_block(3, 2.0)
         assert "alcista fuerte" in block
-        assert "EN LIQUIDEZ" in block  # the inverted burden is stated
+        assert "EN LIQUIDEZ" in block  # the default and its threshold are stated
+        assert "por defecto" in block
         for posture in Posture:
             assert posture.value in block
         # It must be told it chooses posture, not numbers.

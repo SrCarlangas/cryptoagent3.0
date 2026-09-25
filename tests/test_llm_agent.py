@@ -686,12 +686,16 @@ class TestEngineSafety:
         # Falls back to the configured defaults rather than raising or returning None.
         assert engine.active_stop(D("80000")) == D("80000") * D("0.97")
 
-    def test_the_burden_of_proof_blocks_a_weakly_held_change(self, tmp_path: Path) -> None:
+    def test_an_unargued_exit_loses_to_the_regime_default(self, tmp_path: Path) -> None:
         """Regime-dependent behaviour, not just regime-dependent parameters.
 
-        The synthetic evidence used by these tests is a steady uptrend, so the advisor
-        reports a bullish regime. Moving to cash there requires high conviction; a
-        half-hearted 0.40 is not enough and the position stays.
+        The synthetic evidence is a steady uptrend, so the advisor reports a bullish
+        regime, whose default exposure is invested. Moving to cash there needs 0.70; a
+        half-hearted 0.40 loses to the default and the position stays.
+
+        The first version of this only vetoed CHANGES, which meant an agent already in
+        cash was never tested at all. It sat out a +185% advance declaring 0.50
+        conviction for cash in a strong uptrend.
         """
         engine = self._engine(
             tmp_path,
@@ -701,13 +705,23 @@ class TestEngineSafety:
             engine, _evidence(), _position(PositionState.LONG, btc="0.05", usdt="0")
         )
         info = engine.last_explanation
-        if info["regime"] == 3:
+        if info["regime"] in {2, 3}:
             assert decision.action == Action.HOLD
-            assert decision.reason.endswith("_BURDEN_NOT_MET")
-            assert info["burden_met"] is False
+            assert decision.reason.endswith("_REGIMEN_MANDA")
+            assert info["choice_honoured"] is False
+            assert info["effective_exposure"] == EXPOSURE_INVESTED
+            # The agent's own words are still recorded, unchanged.
+            assert info["target_exposure"] == EXPOSURE_CASH
         else:
-            # Other regimes have a low bar for cash, so the exit is allowed.
-            assert info["burden_met"] is True
+            # Cash is the default in the bearish regimes, so the exit is honoured.
+            assert info["choice_honoured"] is True
+
+    def test_an_unargued_entry_in_a_bear_regime_loses_to_cash(self, tmp_path: Path) -> None:
+        # The rule is symmetric: it protects capital as readily as it captures trend.
+        from btc_decision_agent.application.regime_playbook import resolve_exposure
+
+        assert resolve_exposure(regime=1, wants_invested=True, conviction=0.60) == (False, False)
+        assert resolve_exposure(regime=1, wants_invested=True, conviction=0.85) == (True, True)
 
     def test_the_burden_never_overrides_a_breaker_or_the_stop(self, tmp_path: Path) -> None:
         # The burden applies only to the agent's own changes. Protection outranks it.

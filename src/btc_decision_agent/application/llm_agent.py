@@ -82,8 +82,8 @@ from btc_decision_agent.application.realtime_demo import (
 from btc_decision_agent.application.regime_playbook import (
     POSTURE_VALUES,
     Posture,
-    meets_burden_of_proof,
     render_playbook_block,
+    resolve_exposure,
     resolve_plan,
 )
 from btc_decision_agent.domain.contracts import Action, PositionState
@@ -676,8 +676,18 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 "deliberations": self._deliberations,
             }
             return RealtimeDecision(Action.HOLD, "AGENT_VERDICT_UNCHANGED", evidence)
+        # The regime's burden of proof, applied to the POSITION and not only to
+        # transitions. Gating changes alone left the status quo unexamined: an agent
+        # already in the wrong place never triggered a change, so its exposure was never
+        # tested. On the most bullish window available it sat out a +185% advance while
+        # declaring 0.50 conviction for cash in a strong uptrend.
+        effective_long, honoured = resolve_exposure(
+            regime=int(quant.get("regimen", 0)),
+            wants_invested=verdict.wants_long,
+            conviction=verdict.conviction,
+        )
         action = (
-            ExposureAction.TARGET_LONG if verdict.wants_long else ExposureAction.TARGET_FLAT
+            ExposureAction.TARGET_LONG if effective_long else ExposureAction.TARGET_FLAT
         )
         trade = decision_for(action, is_long)
         wants_change = trade in {TradeDecision.BUY, TradeDecision.SELL}
@@ -716,26 +726,14 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             conviction=verdict.conviction,
             daily_vol_pct=float(volatility) if volatility is not None else None,
         )
-        # Burden of proof, which is the asymmetry the previous design lacked. In a
-        # strong uptrend being in cash is the side that must justify itself, so an
-        # agent that is merely unsure ends up riding the trend instead of watching it.
-        # Applied only to CHANGES: it can never trap the agent in a position, because
-        # failing to clear a burden means staying where it is, and an exit that also
-        # fails the burden still leaves the protective stop and the breakers live.
-        burden_met = meets_burden_of_proof(
-            regime=int(quant.get("regimen", 0)),
-            wants_invested=verdict.wants_long,
-            conviction=verdict.conviction,
-        )
-
-        acted = wants_change and clears and burden_met
+        acted = wants_change and clears
         self.agent.memory.record(
             decided_at=now,
             event_id=evidence.event_id,
             features=vector,
             regime=int(quant.get("regimen", 0)),
             quant_p_long=float(quant.get("p_largo", 0.0)),
-            target_exposure=verdict.target_exposure,
+            target_exposure=EXPOSURE_INVESTED if effective_long else EXPOSURE_CASH,
             exposure_before=EXPOSURE_INVESTED if is_long else EXPOSURE_CASH,
             derived_order=trade.value,
             conviction=verdict.conviction,
@@ -764,7 +762,8 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             "agrees_with_quant": verdict.target_exposure == quant.get("recomienda"),
             "posture": verdict.posture,
             "strategy": plan.strategy_name,
-            "burden_met": burden_met,
+            "choice_honoured": honoured,
+            "effective_exposure": EXPOSURE_INVESTED if effective_long else EXPOSURE_CASH,
             "plan_allocation_pct": float(plan.allocation_fraction * 100),
             "plan_stop_pct": float(plan.stop_loss_fraction * 100),
             "plan_trail_pct": float(plan.trailing_stop_fraction * 100),
@@ -776,17 +775,12 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         reason = (
             f"AGENT_{trade.value}_R{quant.get('regimen', 0)}"
             f"_C{round(verdict.conviction * 100)}_{verdict.posture[:3]}_{suffix}"
+            + ("" if honoured else "_REGIMEN_MANDA")
         )
         self._reset_candidate()
 
         if not wants_change:
             return RealtimeDecision(Action.HOLD, reason, evidence, agent_decision=record)
-        if not burden_met:
-            # Distinct from _BELOW_COST: the economics were fine, the conviction was
-            # not enough for this side in this regime.
-            return RealtimeDecision(
-                Action.HOLD, f"{reason}_BURDEN_NOT_MET", evidence, agent_decision=record
-            )
         if not clears:
             # It wants to move but its own expected move does not cover the round
             # trip. Refusing here is the economics the agent itself declared.
