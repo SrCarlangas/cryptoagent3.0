@@ -39,7 +39,7 @@ MIN_DECISIONS = 50
 """Fewer than this and the sample says nothing about behaviour."""
 
 MIN_MINORITY_SHARE = 0.05
-"""Both LARGO and PLANO must appear. A constant agent is either buy and hold in
+"""Both exposures must appear. A constant agent is either buy and hold in
 disguise or a machine that never invests; neither needs an LLM."""
 
 MAX_SWITCH_RATE = 0.30
@@ -84,7 +84,8 @@ def evaluate(report: dict[str, Any]) -> tuple[list[tuple[str, bool, str]], bool]
         (
             "discrimina: usa ambas exposiciones",
             minority >= MIN_MINORITY_SHARE,
-            f"LARGO {long_share:.0%} / PLANO {1 - long_share:.0%}, minoria {minority:.0%} "
+            f"INVERTIDO {long_share:.0%} / EN LIQUIDEZ {1 - long_share:.0%}, "
+            f"minoria {minority:.0%} "
             f"(minimo {MIN_MINORITY_SHARE:.0%})",
         ),
         (

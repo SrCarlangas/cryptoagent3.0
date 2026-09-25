@@ -51,6 +51,7 @@ from btc_decision_agent.application.llm_memory import (
     MIN_SAMPLES_FOR_SUPPORT,
     AgentMemory,
 )
+from btc_decision_agent.application.llm_tools import EXPOSURE_CASH, EXPOSURE_INVESTED
 from btc_decision_agent.observability.journal import ActivityJournal
 
 D = Decimal
@@ -210,7 +211,11 @@ def recent_deliberations(memory_path: Path, limit: int = 12) -> list[dict[str, A
     out: list[dict[str, Any]] = []
     for row in rows:
         quant_p = row["quant_p_long"]
-        quant_says = None if quant_p is None else ("LARGO" if float(quant_p) >= 0.5 else "PLANO")
+        quant_says = (
+            None
+            if quant_p is None
+            else (EXPOSURE_INVESTED if float(quant_p) >= 0.5 else EXPOSURE_CASH)
+        )
         target = str(row["target_exposure"])
         out.append(
             {

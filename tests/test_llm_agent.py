@@ -37,6 +37,9 @@ from btc_decision_agent.application.llm_memory import (
     render_memory_block,
 )
 from btc_decision_agent.application.llm_tools import (
+    EXPOSURE_CASH,
+    EXPOSURE_INVESTED,
+    EXPOSURE_VALUES,
     HistoryIndex,
     cost_view,
     market_view,
@@ -245,7 +248,7 @@ class TestTools:
             holding_hours=5,
             active_stop=D("18500"),
         )
-        assert view["exposicion_actual"] == "LARGO"
+        assert view["exposicion_actual"] == EXPOSURE_INVESTED
         assert view["pnl_no_realizado_pct"] == pytest.approx(5.26, abs=0.01)
         assert view["caida_hasta_stop_pct"] == pytest.approx(-7.5, abs=0.01)
         assert view["equity_total_usdt"] == pytest.approx(1100.0, abs=0.01)
@@ -260,7 +263,7 @@ class TestTools:
             holding_hours=0,
             active_stop=None,
         )
-        assert view["exposicion_actual"] == "PLANO"
+        assert view["exposicion_actual"] == EXPOSURE_CASH
         assert view["pnl_no_realizado_pct"] == 0.0
 
     def test_cost_view_states_the_threshold(self) -> None:
@@ -272,7 +275,7 @@ class TestTools:
         policy = RegimeMixturePolicy(regimes=4, init_seed=5)
         vector = market_view([D(str(round(v, 2))) for v in _closes()], D("20000"))["_vector"]
         view = quant_view(policy, vector, PortfolioState())
-        assert view["recomienda"] in {"LARGO", "PLANO"}
+        assert view["recomienda"] in set(EXPOSURE_VALUES)
         assert 0.0 <= view["p_largo"] <= 1.0
         assert len(view["reparto_regimenes"]) == 4
 
@@ -288,7 +291,7 @@ class TestMemoryLearning:
                 regime=regime,
                 quant_p_long=0.55,
                 target_exposure=exposure,
-                exposure_before="PLANO",
+                exposure_before=EXPOSURE_CASH,
                 derived_order="HOLD",
                 conviction=0.9,
                 expected_move_pct=1.0,
@@ -297,12 +300,12 @@ class TestMemoryLearning:
                 price=D("80000"),
                 acted=False,
             )
-            move = realized if exposure == "LARGO" else -realized
+            move = realized if exposure == EXPOSURE_INVESTED else -realized
             memory.resolve_pending(at + timedelta(hours=25), D("80000") * D(str(1 + move / 100)))
 
     def test_real_signal_is_promoted(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")
-        self._fill(memory, 1, "LARGO", [3.0 + 0.1 * i for i in range(20)])
+        self._fill(memory, 1, EXPOSURE_INVESTED, [3.0 + 0.1 * i for i in range(20)])
         pattern = next(item for item in memory.measured_patterns() if item.samples >= 20)
         assert pattern.supported
         assert pattern.effect_in_standard_errors >= MIN_EFFECT_IN_STANDARD_ERRORS
@@ -310,7 +313,7 @@ class TestMemoryLearning:
     def test_noise_is_filtered_despite_a_positive_mean(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")
         # Mean near zero with wide spread: a positive average that means nothing.
-        self._fill(memory, 0, "LARGO", [9.0, -9.0] * 10)
+        self._fill(memory, 0, EXPOSURE_INVESTED, [9.0, -9.0] * 10)
         pattern = memory.measured_patterns()[0]
         assert pattern.samples == 20
         assert not pattern.supported
@@ -319,7 +322,7 @@ class TestMemoryLearning:
         memory = AgentMemory(tmp_path / "m.sqlite3")
         # Three spectacular, nearly identical outcomes: a huge effect size on a
         # sample far too small to mean anything.
-        self._fill(memory, 2, "LARGO", [8.0, 8.1, 8.2])
+        self._fill(memory, 2, EXPOSURE_INVESTED, [8.0, 8.1, 8.2])
         pattern = memory.measured_patterns()[0]
         assert pattern.samples < MIN_SAMPLES_FOR_SUPPORT
         assert not pattern.supported
@@ -332,8 +335,8 @@ class TestMemoryLearning:
             features=[0.0] * len(MARKET_FEATURE_NAMES),
             regime=1,
             quant_p_long=0.3,
-            target_exposure="PLANO",
-            exposure_before="LARGO",
+            target_exposure=EXPOSURE_CASH,
+            exposure_before=EXPOSURE_INVESTED,
             derived_order="SELL",
             conviction=0.9,
             expected_move_pct=2.0,
@@ -350,7 +353,7 @@ class TestMemoryLearning:
 
     def test_memory_block_warns_about_unsupported_patterns(self, tmp_path: Path) -> None:
         memory = AgentMemory(tmp_path / "m.sqlite3")
-        self._fill(memory, 2, "LARGO", [8.0, 8.1, 8.2])
+        self._fill(memory, 2, EXPOSURE_INVESTED, [8.0, 8.1, 8.2])
         block = render_memory_block(memory, [0.0] * len(MARKET_FEATURE_NAMES))
         assert "NO CONCLUYENTE" in block
         assert "ruido" in block
@@ -363,7 +366,7 @@ class TestMemoryLearning:
         statistic over past outcomes.
         """
         memory = AgentMemory(tmp_path / "m.sqlite3")
-        self._fill(memory, 2, "LARGO", [8.0, 8.1, 8.2])
+        self._fill(memory, 2, EXPOSURE_INVESTED, [8.0, 8.1, 8.2])
         block = render_memory_block(memory, [0.0] * len(MARKET_FEATURE_NAMES))
         assert "LECCION" not in block
         assert "aprendes" not in block
@@ -390,7 +393,7 @@ class TestEngineSafety:
         return engine.evaluate(evidence, position)
 
     def test_unqualified_evidence_abstains(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO")))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED)))
         decision = engine.evaluate(
             _evidence(qualified=False, reason="DATA_STALE"), _position(PositionState.FLAT)
         )
@@ -398,7 +401,7 @@ class TestEngineSafety:
         assert decision.reason == "DATA_STALE"
 
     def test_insufficient_perception_abstains(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO")))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED)))
         decision = engine.evaluate(_evidence(daily=30), _position(PositionState.FLAT))
         assert decision.reason == "PERCEPTION_INSUFFICIENT"
 
@@ -411,7 +414,7 @@ class TestEngineSafety:
         assert engine.last_explanation["fallback"] == "modelo_cuantitativo_validado"
 
     def test_before_the_first_verdict_the_policy_is_in_charge(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO")))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED)))
         decision = engine.evaluate(_evidence(), _position(PositionState.FLAT))
         assert decision.reason.startswith("FALLBACK_QUANT_")
         assert engine.last_explanation["status"] == "esperando_primera_deliberacion"
@@ -422,7 +425,7 @@ class TestEngineSafety:
         class SlowClient(StubClient):
             def verdict(self, state_block: str, *, think: bool, num_predict: int = 900) -> AgentVerdict:
                 time.sleep(1.5)
-                return _verdict("LARGO")
+                return _verdict(EXPOSURE_INVESTED)
 
         engine = self._engine(tmp_path, SlowClient())
         started = time.time()
@@ -432,20 +435,20 @@ class TestEngineSafety:
 
     def test_economic_gate_blocks_a_move_that_does_not_cover_its_cost(self, tmp_path: Path) -> None:
         # Wants to go long from flat but expects only 0.05%, under the 0.20% round trip.
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO", expected=0.05)))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=0.05)))
         decision = self._settle(engine, _evidence(), _position(PositionState.FLAT))
         assert decision.action == Action.HOLD
         assert decision.reason.endswith("_BELOW_COST")
         assert engine.last_explanation["clears_cost"] is False
 
     def test_a_move_that_covers_its_cost_is_allowed(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO", expected=5.0)))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0)))
         decision = self._settle(engine, _evidence(), _position(PositionState.FLAT))
         assert decision.action == Action.ENTER_LONG
         assert engine.last_explanation["clears_cost"] is True
 
     def test_agreeing_with_the_current_exposure_is_a_hold(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO", expected=5.0)))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0)))
         decision = self._settle(
             engine, _evidence(), _position(PositionState.LONG, btc="0.05", usdt="0")
         )
@@ -453,7 +456,7 @@ class TestEngineSafety:
         assert decision.reason.startswith("AGENT_HOLD_")
 
     def test_breaker_forces_exit_and_never_an_entry(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO", expected=5.0)))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0)))
         engine.update_equity(D("10000"), NOW)
         flat = engine.evaluate(_evidence(), _position(PositionState.FLAT, usdt="100"))
         assert flat.action == Action.HOLD
@@ -463,16 +466,16 @@ class TestEngineSafety:
         assert long_decision.action == Action.EXIT_LONG
 
     def test_decisions_are_recorded_for_learning(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO", expected=5.0)))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0)))
         self._settle(engine, _evidence(), _position(PositionState.FLAT))
         assert engine.agent.memory.stats()["decisiones_totales"] == 1
 
     def test_explanation_identifies_the_agent_and_its_advisor(self, tmp_path: Path) -> None:
-        engine = self._engine(tmp_path, StubClient(_verdict("LARGO", expected=5.0)))
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0)))
         self._settle(engine, _evidence(), _position(PositionState.FLAT))
         info = engine.last_explanation
         assert info["agent_version"] == AGENT_VERSION
-        assert info["target_exposure"] == "LARGO"
+        assert info["target_exposure"] == EXPOSURE_INVESTED
         assert "quant_recommends" in info
         assert "agrees_with_quant" in info
 
@@ -513,7 +516,7 @@ class TestVerdictParsing:
 
     def test_conviction_is_clamped(self) -> None:
         verdict = AgentVerdict(
-            target_exposure="LARGO",
+            target_exposure=EXPOSURE_INVESTED,
             conviction=1.0,
             expected_move_pct=1.0,
             reason="x",

@@ -28,6 +28,10 @@ from typing import Any
 import pytest
 
 from btc_decision_agent.application.llm_memory import AgentMemory
+from btc_decision_agent.application.llm_tools import (
+    EXPOSURE_CASH,
+    EXPOSURE_INVESTED,
+)
 from btc_decision_agent.observability.journal import ActivityJournal
 from btc_decision_agent.observability.llm_agent_dashboard import (
     LLM_AGENT_PAGE,
@@ -82,8 +86,8 @@ def _memory(tmp_path: Path, *, decisions: int = 3) -> Path:
             regime=0,
             # Below 0.5, so the advisor says PLANO while the agent says LARGO.
             quant_p_long=0.42,
-            target_exposure="LARGO",
-            exposure_before="PLANO",
+            target_exposure=EXPOSURE_INVESTED,
+            exposure_before=EXPOSURE_CASH,
             derived_order="BUY" if index == 0 else "HOLD",
             conviction=0.8,
             expected_move_pct=1.5,
@@ -144,6 +148,41 @@ class TestOriginAttribution:
         assert state["origin"] == "FALLBACK"
         assert state["last_llm_at"] == (NOW - timedelta(hours=2)).isoformat()
         assert state["last_seen"] == NOW.isoformat()
+
+
+class TestExposureVocabulary:
+    """The two exposure names live in one place and must not drift.
+
+    They appear in the JSON schema the model is constrained to, in the prompt that
+    explains them, in the memory rows, in the dashboard and in the Slack summary. A
+    mismatch between the schema and the prompt would make the model emit a value the
+    parser rejects, which surfaces as the fallback quietly taking over.
+    """
+
+    def test_schema_and_prompt_agree_with_the_constants(self) -> None:
+        from btc_decision_agent.application.llm_agent import SYSTEM_PROMPT, VERDICT_SCHEMA
+        from btc_decision_agent.application.llm_tools import EXPOSURE_VALUES
+
+        enum = VERDICT_SCHEMA["properties"]["exposicion_objetivo"]["enum"]
+        assert enum == list(EXPOSURE_VALUES)
+        for value in EXPOSURE_VALUES:
+            assert value in SYSTEM_PROMPT, f"el prompt no explica {value}"
+
+    def test_the_retired_vocabulary_is_gone(self) -> None:
+        from btc_decision_agent.application.llm_agent import SYSTEM_PROMPT, VERDICT_SCHEMA
+
+        enum = VERDICT_SCHEMA["properties"]["exposicion_objetivo"]["enum"]
+        assert "LARGO" not in enum
+        assert "PLANO" not in enum
+        # "largo plazo" is legitimate prose, so only the standalone tokens are barred.
+        assert not re.search(r"\bPLANO\b", SYSTEM_PROMPT)
+        assert not re.search(r"\bLARGO\b", SYSTEM_PROMPT)
+
+    def test_dashboard_and_summary_use_the_constants(self) -> None:
+        from btc_decision_agent.application.llm_tools import EXPOSURE_CASH, EXPOSURE_INVESTED
+
+        assert EXPOSURE_INVESTED == "INVERTIDO"
+        assert EXPOSURE_CASH == "EN LIQUIDEZ"
 
 
 class TestReasonParsing:
@@ -223,8 +262,8 @@ class TestDeliberations:
     def test_flags_when_the_agent_overrode_the_advisor(self, tmp_path: Path) -> None:
         # The advisor's p_long is 0.42 (PLANO) while the agent chose LARGO.
         rows = recent_deliberations(_memory(tmp_path, decisions=1))
-        assert rows[0]["quant_says"] == "PLANO"
-        assert rows[0]["target_exposure"] == "LARGO"
+        assert rows[0]["quant_says"] == EXPOSURE_CASH
+        assert rows[0]["target_exposure"] == EXPOSURE_INVESTED
         assert rows[0]["overrode_quant"] is True
 
     def test_marks_the_deliberated_pass(self, tmp_path: Path) -> None:
@@ -275,8 +314,8 @@ class TestTrackRecordView:
                 features=[0.0] * 19,
                 regime=0,
                 quant_p_long=0.5,
-                target_exposure="LARGO",
-                exposure_before="PLANO",
+                target_exposure=EXPOSURE_INVESTED,
+                exposure_before=EXPOSURE_CASH,
                 derived_order="BUY",
                 conviction=0.9,
                 expected_move_pct=1.0,
@@ -365,7 +404,7 @@ class TestBuildState:
 
     def test_target_exposure_comes_from_the_agents_own_verdict(self, tmp_path: Path) -> None:
         state = build_state(_journal(tmp_path, [_entry()]), _memory(tmp_path, decisions=1))
-        assert state["target_exposure"] == "LARGO"
+        assert state["target_exposure"] == EXPOSURE_INVESTED
         assert state["latest_deliberation"]["reason"] == "razonamiento numero 0"
 
     def test_empty_journal_does_not_crash(self, tmp_path: Path) -> None:
@@ -486,11 +525,11 @@ class TestDailySummary:
             hours=24,
             now=NOW,
         )
-        assert summary["target_exposure"] == "LARGO"
-        assert summary["advisor_says"] == "PLANO"
+        assert summary["target_exposure"] == EXPOSURE_INVESTED
+        assert summary["advisor_says"] == EXPOSURE_CASH
         assert summary["overrode_advisor"] is True
         message = render(summary)
-        assert "Veredicto: LARGO" in message
+        assert f"Veredicto: {EXPOSURE_INVESTED}" in message
         assert "contradicho" in message
         assert "Historial medido: 2 decisiones" in message
 

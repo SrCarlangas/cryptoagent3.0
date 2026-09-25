@@ -59,6 +59,8 @@ from btc_decision_agent.application.llm_agent import (
 )
 from btc_decision_agent.application.llm_memory import AgentMemory, render_memory_block
 from btc_decision_agent.application.llm_tools import (
+    EXPOSURE_CASH,
+    EXPOSURE_INVESTED,
     HistoryIndex,
     cost_view,
     market_view,
@@ -236,7 +238,7 @@ def main() -> None:
             regime=int(quant.get("regimen", 0)),
             quant_p_long=float(quant.get("p_largo", 0.0)),
             target_exposure=verdict.target_exposure,
-            exposure_before="LARGO" if position_long else "PLANO",
+            exposure_before=EXPOSURE_INVESTED if position_long else EXPOSURE_CASH,
             derived_order="BUY" if acted and wants_long else ("SELL" if acted else "HOLD"),
             conviction=verdict.conviction,
             expected_move_pct=verdict.expected_move_pct,
@@ -287,13 +289,15 @@ def main() -> None:
         "decisions": len(trace),
         "model_failures": failures,
         "long_share": (
-            sum(1 for item in trace if item["target"] == "LARGO") / len(trace) if trace else 0.0
+            sum(1 for item in trace if item["target"] == EXPOSURE_INVESTED) / len(trace)
+            if trace
+            else 0.0
         ),
         "acted_share": (
             sum(1 for item in trace if item["acted"]) / len(trace) if trace else 0.0
         ),
         "blocked_by_cost": sum(
-            1 for item in trace if item["target"] != "LARGO" and not item["clears_cost"]
+            1 for item in trace if item["target"] != EXPOSURE_INVESTED and not item["clears_cost"]
         ),
         "agreement_with_quant": (
             sum(1 for item in trace if item["target"] == item["quant_recommends"]) / len(trace)
@@ -361,7 +365,7 @@ def render(payload: dict[str, Any]) -> str:
         "## Comportamiento del agente",
         "",
         f"- decisiones tomadas: {agent['decisions']} (fallos del modelo: {agent['model_failures']})",
-        f"- eligio LARGO en el {agent['long_share']:.0%} de las decisiones",
+        f"- eligio {EXPOSURE_INVESTED} en el {agent['long_share']:.0%} de las decisiones",
         f"- actuo en el {agent['acted_share']:.0%} (el resto no requeria cambio o no cubria costo)",
         f"- veces que quiso salir pero el costo lo bloqueo: {agent['blocked_by_cost']}",
         f"- coincidio con el modelo cuantitativo en el {agent['agreement_with_quant']:.0%}",

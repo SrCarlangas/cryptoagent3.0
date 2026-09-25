@@ -61,6 +61,9 @@ from btc_decision_agent.application.exposure_agent import (
 from btc_decision_agent.application.exposure_features import MIN_DAILY_HISTORY
 from btc_decision_agent.application.llm_memory import AgentMemory, render_memory_block
 from btc_decision_agent.application.llm_tools import (
+    EXPOSURE_CASH,
+    EXPOSURE_INVESTED,
+    EXPOSURE_VALUES,
     HistoryIndex,
     cost_view,
     market_view,
@@ -87,7 +90,7 @@ AGENT_VERSION = "LLM-EXPOSURE-AGENT-V1"
 VERDICT_SCHEMA: dict[str, Any] = {
     "type": "object",
     "properties": {
-        "exposicion_objetivo": {"type": "string", "enum": ["LARGO", "PLANO"]},
+        "exposicion_objetivo": {"type": "string", "enum": list(EXPOSURE_VALUES)},
         "conviccion": {"type": "number"},
         "movimiento_esperado_pct": {"type": "number"},
         "razon": {"type": "string"},
@@ -99,15 +102,16 @@ SYSTEM_PROMPT = """Eres el operador de una cuenta BTC/USDT en Binance. Tu mision
 obtener la maxima rentabilidad neta posible a lo largo del tiempo.
 
 No eliges una orden. Eliges cual DEBE SER la exposicion ahora, evaluada desde cero:
-  LARGO = el capital debe estar en BTC
-  PLANO = el capital debe estar en USDT
+  INVERTIDO = el capital debe estar en BTC
+  EN LIQUIDEZ = el capital debe estar en USDT
 El sistema comparara tu eleccion con la exposicion actual y derivara la orden.
 
 Como decidir:
-1. BTC tiene deriva positiva de largo plazo. Estar PLANO renuncia a esa deriva, asi
-   que PLANO debe justificarse con evidencia. No es el default seguro.
-2. Estar LARGO durante una caida sostenida destruye capital. LARGO tambien se
-   justifica con evidencia.
+1. BTC tiene deriva positiva de largo plazo. Estar EN LIQUIDEZ renuncia a esa
+   deriva, asi que EN LIQUIDEZ debe justificarse con evidencia. No es el default
+   seguro.
+2. Estar INVERTIDO durante una caida sostenida destruye capital. INVERTIDO tambien
+   se justifica con evidencia.
 3. Cambiar de exposicion cuesta comision. Declara en movimiento_esperado_pct cuanto
    crees que se movera el precio a tu favor en los proximos dias. Si ese movimiento
    es menor que el costo de cambiar, cambiar destruye valor aunque tu direccion sea
@@ -140,7 +144,7 @@ class AgentVerdict:
 
     @property
     def wants_long(self) -> bool:
-        return self.target_exposure == "LARGO"
+        return self.target_exposure == EXPOSURE_INVESTED
 
 
 class OllamaClient:
@@ -197,7 +201,7 @@ class OllamaClient:
             raise LLMUnavailable(f"JSON invalido: {error}; contenido={content[:200]!r}") from error
 
         target = str(parsed.get("exposicion_objetivo", "")).upper()
-        if target not in {"LARGO", "PLANO"}:
+        if target not in set(EXPOSURE_VALUES):
             raise LLMUnavailable(f"exposicion_objetivo invalida: {target!r}")
         try:
             conviction = float(parsed.get("conviccion", 0.0))
@@ -476,7 +480,9 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 "fallback": "modelo_cuantitativo_validado",
                 "fallback_count": self._fallbacks,
                 "target_exposure": (
-                    "LARGO" if fallback.action == ExposureAction.TARGET_LONG else "PLANO"
+                    EXPOSURE_INVESTED
+                    if fallback.action == ExposureAction.TARGET_LONG
+                    else EXPOSURE_CASH
                 ),
                 "p_long": fallback.action_probabilities[ExposureAction.TARGET_LONG.value],
             }
@@ -510,7 +516,9 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 "deliberating": self.deliberating,
                 "fallback": "modelo_cuantitativo_validado",
                 "target_exposure": (
-                    "LARGO" if fallback.action == ExposureAction.TARGET_LONG else "PLANO"
+                    EXPOSURE_INVESTED
+                    if fallback.action == ExposureAction.TARGET_LONG
+                    else EXPOSURE_CASH
                 ),
                 "p_long": fallback.action_probabilities[ExposureAction.TARGET_LONG.value],
             }
@@ -566,7 +574,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             regime=int(quant.get("regimen", 0)),
             quant_p_long=float(quant.get("p_largo", 0.0)),
             target_exposure=verdict.target_exposure,
-            exposure_before="LARGO" if is_long else "PLANO",
+            exposure_before=EXPOSURE_INVESTED if is_long else EXPOSURE_CASH,
             derived_order=trade.value,
             conviction=verdict.conviction,
             expected_move_pct=verdict.expected_move_pct,

@@ -43,6 +43,25 @@ from btc_decision_agent.application.exposure_features import (
 D = Decimal
 DEFAULT_INDEX = "data/models/history-index.json"
 
+EXPOSURE_INVESTED = "INVERTIDO"
+"""The capital is in the traded asset."""
+
+EXPOSURE_CASH = "EN LIQUIDEZ"
+"""The capital is in the quote currency."""
+
+EXPOSURE_VALUES: tuple[str, str] = (EXPOSURE_INVESTED, EXPOSURE_CASH)
+"""The only two exposures this agent chooses between.
+
+Defined once and imported everywhere so the vocabulary cannot drift across the
+prompt, the schema, the memory and the dashboard.
+
+Deliberately not LARGO and PLANO. "Largo" implies a short side exists, and there is
+none here: the capital is either in the asset or in the quote currency. "Plano"
+suggests neutrality or inaction, when sitting in cash is an active bet that the
+price falls. These names also say nothing about which asset is traded, so they
+survive a move to a different pair.
+"""
+
 REGIME_NAMES: dict[int, str] = {
     0: "recuperacion_lateral",
     1: "bajista_profundo",
@@ -255,7 +274,7 @@ def position_view(
         else 0.0
     )
     return {
-        "exposicion_actual": "LARGO" if position_long else "PLANO",
+        "exposicion_actual": EXPOSURE_INVESTED if position_long else EXPOSURE_CASH,
         "btc": float(btc_qty),
         "usdt_libre": round(float(usdt_free), 2),
         "equity_total_usdt": round(float(equity), 2),
@@ -306,7 +325,9 @@ def quant_view(
     regime = outcome.dominant_regime
     return {
         "p_largo": round(outcome.action_probabilities[ExposureAction.TARGET_LONG.value], 4),
-        "recomienda": "LARGO" if outcome.action == ExposureAction.TARGET_LONG else "PLANO",
+        "recomienda": (
+            EXPOSURE_INVESTED if outcome.action == ExposureAction.TARGET_LONG else EXPOSURE_CASH
+        ),
         "regimen": regime,
         "nombre_regimen": REGIME_NAMES.get(regime, f"regimen_{regime}"),
         "reparto_regimenes": [round(value, 3) for value in outcome.regime_responsibilities],
@@ -384,6 +405,9 @@ def render_state_block(
 
 __all__ = [
     "DEFAULT_INDEX",
+    "EXPOSURE_CASH",
+    "EXPOSURE_INVESTED",
+    "EXPOSURE_VALUES",
     "REGIME_NAMES",
     "Analogue",
     "HistoryIndex",

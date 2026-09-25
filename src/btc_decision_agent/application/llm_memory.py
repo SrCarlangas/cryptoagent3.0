@@ -43,6 +43,8 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
+from btc_decision_agent.application.llm_tools import EXPOSURE_INVESTED
+
 D = Decimal
 SCHEMA_VERSION = "llm-agent-memory/1.0.0"
 DEFAULT_PATH = "data/live/llm-agent-memory.sqlite3"
@@ -226,7 +228,9 @@ class AgentMemory:
                 if entry <= 0:
                     continue
                 move_pct = (float(price) / entry - 1.0) * 100.0
-                realized = move_pct if row["target_exposure"] == "LARGO" else -move_pct
+                realized = (
+                    move_pct if row["target_exposure"] == EXPOSURE_INVESTED else -move_pct
+                )
                 conn.execute(
                     "UPDATE decisions SET resolved=1, resolved_at=?, "
                     "price_at_resolution=?, realized_pct=? WHERE id=?",
