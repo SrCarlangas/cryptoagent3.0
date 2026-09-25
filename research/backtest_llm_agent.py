@@ -33,6 +33,7 @@ import argparse
 import json
 import tempfile
 import time
+from dataclasses import replace as dc_replace
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
@@ -69,7 +70,15 @@ from btc_decision_agent.application.llm_tools import (
     quant_view,
     render_state_block,
 )
-from btc_decision_agent.application.realtime_demo import RealtimeParams
+from btc_decision_agent.application.realtime_demo import (
+    ProtectiveDecisionEngine,
+    RealtimeParams,
+    size_entry_percentage,
+)
+from btc_decision_agent.application.regime_playbook import (
+    meets_burden_of_proof,
+    resolve_plan,
+)
 
 D = Decimal
 REPORT = Path("data/validation/llm-agent-backtest")
@@ -132,6 +141,14 @@ def main() -> None:
     parser.add_argument("--index", default="data/models/history-index.json")
     parser.add_argument("--fee-per-side", type=float, default=0.001)
     parser.add_argument("--think", action="store_true", help="enable reasoning (much slower)")
+    parser.add_argument(
+        "--end-day",
+        type=int,
+        default=0,
+        help="last day index of the window; 0 means the most recent day. Exists so a "
+        "change aimed at rising markets can be replayed on a window that actually "
+        "contains one, instead of being judged on a window that barely tests it",
+    )
     args = parser.parse_args()
 
     bars, dataset_id = load_bars()
@@ -141,7 +158,9 @@ def main() -> None:
     policy = RegimeMixturePolicy.load(args.policy)
 
     span = args.decisions * args.step_days
-    end_day = len(closes) - 1
+    end_day = args.end_day if args.end_day > 0 else len(closes) - 1
+    if end_day > len(closes) - 1:
+        raise SystemExit(f"--end-day beyond the dataset ({len(closes) - 1} days available)")
     start_day = end_day - span
     if start_day < MIN_DAILY_HISTORY + 1:
         raise SystemExit("not enough history for that many decisions")
@@ -158,11 +177,37 @@ def main() -> None:
     )
 
     fee = args.fee_per_side
-    cash, units, switches = 1.0, 0.0, 0
+    # A real starting capital rather than 1.0, because sizing goes through the
+    # production formula and that formula has a minimum notional. Normalised capital
+    # would round every order to zero.
+    START_CAPITAL = 10_000.0
+    cash, units, switches = START_CAPITAL, 0.0, 0
     entry_price: float | None = None
+    high_since_entry: float | None = None
+    active_plan: dict[str, Any] | None = None
     holding_days = 0
-    peak, drawdown = 1.0, 0.0
+    peak, drawdown = START_CAPITAL, 0.0
     failures = 0
+    stop_exits = 0
+    burden_blocks = 0
+    # The engine itself computes the stop, rather than the backtest reimplementing it.
+    # Two copies of stop geometry would drift, and the drift would be invisible because
+    # each side looks reasonable alone.
+    stop_engine = ProtectiveDecisionEngine(params)
+
+    def current_stop(price: float) -> float | None:
+        if entry_price is None:
+            return None
+        stop_engine.import_state(
+            dc_replace(
+                stop_engine.state,
+                entry_price=D(str(entry_price)),
+                high_since_entry=D(str(high_since_entry or entry_price)),
+                execution_plan=active_plan,
+            )
+        )
+        raw = stop_engine.active_stop(D(str(price)))
+        return float(raw) if raw is not None else None
     trace: list[dict[str, Any]] = []
     started = time.time()
     # A synthetic clock so memory horizons behave as they will live.
@@ -230,15 +275,50 @@ def main() -> None:
             round_trip_cost_bps=float(params.round_trip_cost_bps),
             daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
         )
-        acted = changing and clears
+        # The regime's strategy, resolved exactly as production resolves it.
+        plan = resolve_plan(
+            regime=int(quant.get("regimen", 0)),
+            posture=verdict.posture,
+            conviction=verdict.conviction,
+            daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
+        )
+        burden_met = meets_burden_of_proof(
+            regime=int(quant.get("regimen", 0)),
+            wants_invested=wants_long,
+            conviction=verdict.conviction,
+        )
+        if changing and clears and not burden_met:
+            burden_blocks += 1
+        acted = changing and clears and burden_met
         fill = closes[min(day + 1, end_day)]
 
         if acted and wants_long:
-            units, cash = (cash * (1 - fee)) / fill, 0.0
-            entry_price, holding_days, switches = fill, 0, switches + 1
+            sizing = plan.apply(params)
+            equity_now = cash + units * price
+            quote = float(
+                size_entry_percentage(
+                    D(str(cash)),
+                    sizing.allocation_fraction,
+                    min_notional=params.min_notional_usdt,
+                    equity=D(str(equity_now)),
+                    risk_per_trade_fraction=sizing.risk_per_trade_fraction,
+                    stop_loss_fraction=sizing.stop_loss_fraction,
+                )
+            )
+            if quote > 0.0:
+                units += (quote * (1 - fee)) / fill
+                cash -= quote
+                entry_price = fill
+                high_since_entry = fill
+                active_plan = plan.to_dict()
+                holding_days, switches = 0, switches + 1
+            else:
+                acted = False
         elif acted and not wants_long:
-            cash, units = units * fill * (1 - fee), 0.0
-            entry_price, holding_days, switches = None, 0, switches + 1
+            cash += units * fill * (1 - fee)
+            units = 0.0
+            entry_price, high_since_entry, active_plan = None, None, None
+            holding_days, switches = 0, switches + 1
         elif units > 0.0:
             holding_days += args.step_days
 
@@ -257,12 +337,30 @@ def main() -> None:
             thinking=verdict.thinking,
             price=D(str(price)),
             acted=acted,
+            posture=verdict.posture,
         )
         memory.resolve_pending(now, D(str(price)))
 
-        # Mark to market across every day until the next decision.
+        # Walk every day until the next decision, marking to market and letting the
+        # protective stop fire. Only closes are available, so an intraday wick that
+        # would have triggered the stop is invisible here: this UNDERSTATES stop-outs,
+        # which flatters wide stops and is stated in the report.
         for mark in range(day, min(day + args.step_days, end_day)):
-            equity = cash + units * closes[mark]
+            close = closes[mark]
+            if units > 0.0:
+                high_since_entry = max(high_since_entry or close, close)
+                stop = current_stop(close)
+                if stop is not None and close <= stop:
+                    # Filled at the stop, or at the close when the day gapped through
+                    # it, whichever is worse for the position.
+                    exit_price = min(stop, close)
+                    cash += units * exit_price * (1 - fee)
+                    units = 0.0
+                    entry_price, high_since_entry, active_plan = None, None, None
+                    holding_days = 0
+                    stop_exits += 1
+                    switches += 1
+            equity = cash + units * close
             peak = max(peak, equity)
             drawdown = max(drawdown, (peak - equity) / peak)
 
@@ -272,6 +370,16 @@ def main() -> None:
                 "day_index": day,
                 "price": round(price, 2),
                 "target": verdict.target_exposure,
+                "posture": verdict.posture,
+                "strategy": plan.strategy_name,
+                "plan_allocation_pct": float(plan.allocation_fraction * 100),
+                "plan_stop_pct": float(plan.stop_loss_fraction * 100),
+                "plan_risk_pct": float(plan.risk_per_trade_fraction * 100),
+                "plan_horizon_hours": plan.horizon_hours,
+                "burden_met": burden_met,
+                "invested_share": round(
+                    (units * price) / (cash + units * price) if (cash + units * price) else 0.0, 4
+                ),
                 "conviction": verdict.conviction,
                 "expected_move_pct": verdict.expected_move_pct,
                 "acted": acted,
@@ -280,7 +388,7 @@ def main() -> None:
                 "regime": quant.get("regimen"),
                 "quant_recommends": quant.get("recomienda"),
                 "seconds": round(verdict.seconds, 1),
-                "equity": round(cash + units * price, 6),
+                "equity": round((cash + units * price) / START_CAPITAL, 6),
             }
         )
         if number % 10 == 0 or number == 1:
@@ -288,15 +396,19 @@ def main() -> None:
             print(
                 f"  [{number}/{len(decision_days)}] dia {day} precio {price:.0f} -> "
                 f"{verdict.target_exposure} conv {verdict.conviction:.2f} "
-                f"esperado {verdict.expected_move_pct:+.2f}% actuo={acted} "
-                f"equity {cash + units * price:.4f} ({elapsed / number:.0f}s/decision)",
+                f"{verdict.posture[:3]} conv {verdict.conviction:.2f} actuo={acted} "
+                f"invertido {(units * price) / (cash + units * price) * 100 if (cash + units * price) else 0:.0f}% "
+                f"equity {(cash + units * price) / START_CAPITAL:.4f} "
+                f"({elapsed / number:.0f}s/decision)",
                 flush=True,
             )
 
     final = cash + (units * closes[end_day - 1] * (1 - fee) if units else 0.0)
     agent_result = {
-        "net_return_pct": (final - 1.0) * 100.0,
+        "net_return_pct": (final / START_CAPITAL - 1.0) * 100.0,
         "max_drawdown_pct": drawdown * 100.0,
+        "stop_exits": stop_exits,
+        "burden_blocks": burden_blocks,
         "switches": switches,
         "decisions": len(trace),
         "model_failures": failures,
@@ -393,7 +505,40 @@ def render(payload: dict[str, Any]) -> str:
         f"- actuo en el {agent['acted_share']:.0%} (el resto no requeria cambio o no cubria costo)",
         f"- cambios de exposicion que el costo bloqueo: {agent['blocked_changes_by_cost']}"
         f" (de ellos salidas: {agent['blocked_exits_by_cost']}, debe ser 0)",
+        f"- cambios que la carga de la prueba del regimen bloqueo: {agent['burden_blocks']}",
+        f"- salidas por stop protector: {agent['stop_exits']}",
+        "",
+        "## Estrategia por regimen",
+        "",
+        "| regimen | decisiones | invertido | postura dominante | asignacion media | stop medio |",
+        "|---|---|---|---|---|---|",
+    ]
+    by_regime: dict[Any, list[dict[str, Any]]] = {}
+    for item in payload["trace"]:
+        by_regime.setdefault(item.get("regime"), []).append(item)
+    for regime in sorted(by_regime, key=lambda value: (value is None, value)):
+        rows = by_regime[regime]
+        invested = sum(1 for row in rows if row["target"] == EXPOSURE_INVESTED)
+        postures: dict[str, int] = {}
+        for row in rows:
+            postures[row.get("posture", "?")] = postures.get(row.get("posture", "?"), 0) + 1
+        dominant = max(postures, key=lambda key: postures[key]) if postures else "?"
+        allocation = sum(row.get("plan_allocation_pct", 0.0) for row in rows) / len(rows)
+        stop = sum(row.get("plan_stop_pct", 0.0) for row in rows) / len(rows)
+        lines.append(
+            f"| {regime} | {len(rows)} | {invested} ({invested / len(rows):.0%}) | "
+            f"{dominant} | {allocation:.0f}% | {stop:.1f}% |"
+        )
+    lines += [
+        "",
+        "## Advertencia sobre la simulacion",
+        "",
+        "Los stops se evaluan contra CIERRES diarios porque es lo unico que hay en el "
+        "dataset. Una mecha intradia que habria tocado el stop es invisible aqui, asi "
+        "que esto SUBESTIMA las salidas por stop y por tanto favorece a los stops "
+        "anchos. Leer la ventaja de la estrategia alcista con esa reserva.",
         f"- coincidio con el modelo cuantitativo en el {agent['agreement_with_quant']:.0%}",
+        "",
         "",
         "## Advertencia sobre la evidencia",
         "",
