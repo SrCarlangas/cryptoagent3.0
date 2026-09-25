@@ -275,6 +275,7 @@ def main() -> None:
                 "conviction": verdict.conviction,
                 "expected_move_pct": verdict.expected_move_pct,
                 "acted": acted,
+                "changing": changing,
                 "clears_cost": clears,
                 "regime": quant.get("regimen"),
                 "quant_recommends": quant.get("recomienda"),
@@ -307,8 +308,20 @@ def main() -> None:
         "acted_share": (
             sum(1 for item in trace if item["acted"]) / len(trace) if trace else 0.0
         ),
-        "blocked_by_cost": sum(
-            1 for item in trace if item["target"] != EXPOSURE_INVESTED and not item["clears_cost"]
+        # Only decisions that actually wanted to MOVE and were refused. The previous
+        # version counted every decision whose target was cash and whose expected move
+        # did not clear the fee, which includes the large majority that were already in
+        # cash and needed no action at all. It reported 79 blocked exits when the real
+        # number was zero, which would have read as the fix having failed.
+        "blocked_changes_by_cost": sum(
+            1 for item in trace if item.get("changing") and not item["clears_cost"]
+        ),
+        "blocked_exits_by_cost": sum(
+            1
+            for item in trace
+            if item.get("changing")
+            and not item["clears_cost"]
+            and item["target"] != EXPOSURE_INVESTED
         ),
         "agreement_with_quant": (
             sum(1 for item in trace if item["target"] == item["quant_recommends"]) / len(trace)
@@ -378,7 +391,8 @@ def render(payload: dict[str, Any]) -> str:
         f"- decisiones tomadas: {agent['decisions']} (fallos del modelo: {agent['model_failures']})",
         f"- eligio {EXPOSURE_INVESTED} en el {agent['long_share']:.0%} de las decisiones",
         f"- actuo en el {agent['acted_share']:.0%} (el resto no requeria cambio o no cubria costo)",
-        f"- veces que quiso salir pero el costo lo bloqueo: {agent['blocked_by_cost']}",
+        f"- cambios de exposicion que el costo bloqueo: {agent['blocked_changes_by_cost']}"
+        f" (de ellos salidas: {agent['blocked_exits_by_cost']}, debe ser 0)",
         f"- coincidio con el modelo cuantitativo en el {agent['agreement_with_quant']:.0%}",
         "",
         "## Advertencia sobre la evidencia",
