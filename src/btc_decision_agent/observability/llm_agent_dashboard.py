@@ -288,6 +288,74 @@ def track_record_view(memory_path: Path) -> dict[str, Any]:
         return {**empty, "error": f"{type(error).__name__}: {error}"}
 
 
+def equity_series(
+    entries: list[dict[str, Any]], *, points: int = 240, fee_per_side: float = 0.001
+) -> dict[str, Any]:
+    """The agent's equity against buy and hold, both rebased to 100 at the first record.
+
+    Illustrative only, and the honest caveats are returned with the data so the page
+    can show them rather than imply more than this measures:
+
+    The window starts at the first journal entry, not at the start of the strategy.
+    This journal begins when the LLM agent was deployed, so the chart shows days, not
+    years, and a day of BTC noise dwarfs any decision made in it.
+
+    Buy and hold is charged the entry commission, because comparing a net result
+    against a gross one flatters the agent for free.
+
+    The agent inherited an open position, so at the first record it was already fully
+    invested. The two lines therefore start out nearly identical by construction, and
+    they only separate once the agent actually changes exposure.
+    """
+    priced = [entry for entry in entries if entry.get("price") and _equity(entry) is not None]
+    if len(priced) < 2:
+        return {"available": False, "points": [], "reason": "hacen falta al menos dos registros"}
+
+    first = priced[0]
+    base_equity = _equity(first)
+    base_price = D(first["price"])
+    if base_equity is None or base_equity <= 0 or base_price <= 0:
+        return {"available": False, "points": [], "reason": "primer registro sin valor utilizable"}
+
+    # Buy and hold buys once at the first price, paying the entry commission.
+    units = (base_equity * (D("1") - D(str(fee_per_side)))) / base_price
+
+    step = max(len(priced) // points, 1)
+    sampled = priced[::step]
+    if sampled[-1] is not priced[-1]:
+        sampled.append(priced[-1])
+
+    out: list[dict[str, Any]] = []
+    for entry in sampled:
+        equity = _equity(entry)
+        if equity is None:
+            continue
+        hold = units * D(entry["price"])
+        out.append(
+            {
+                "at": entry.get("at"),
+                "agent": round(float(equity / base_equity) * 100.0, 4),
+                "hold": round(float(hold / base_equity) * 100.0, 4),
+                "price": float(entry["price"]),
+            }
+        )
+    if len(out) < 2:
+        return {"available": False, "points": [], "reason": "serie demasiado corta"}
+
+    last = out[-1]
+    return {
+        "available": True,
+        "points": out,
+        "from": out[0]["at"],
+        "to": last["at"],
+        "samples": len(priced),
+        "agent_pct": round(last["agent"] - 100.0, 2),
+        "hold_pct": round(last["hold"] - 100.0, 2),
+        "difference_pp": round(last["agent"] - last["hold"], 2),
+        "fee_per_side": fee_per_side,
+    }
+
+
 def build_state(
     journal: ActivityJournal,
     memory_path: Path | None = None,
@@ -428,6 +496,7 @@ def build_state(
         "last_seen": (latest or {}).get("at"),
         "stages": stage_states(latest),
         "recent": recent,
+        "series": equity_series(entries),
         # has it earned its confidence
         "track_record": track_record_view(memory),
     }
@@ -512,6 +581,16 @@ border-bottom:1px dashed #1b2740}
 .pat .v{min-width:118px;font-size:10px;letter-spacing:.06em}
 .pat.ok .v{color:var(--cyan)}
 .pat.no .v{color:#6b7a91}
+/* equity chart: plain SVG, no libraries, so it works offline behind the tunnel */
+#chart{width:100%;height:220px;display:block;background:#050810;border:2px solid var(--dim)}
+.chartbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:9px;font-size:11px}
+.key{display:inline-flex;align-items:center;gap:6px;color:var(--muted)}
+.key i{width:14px;height:3px;display:inline-block}
+.key.agent i{background:var(--cyan)}
+.key.hold i{background:var(--amber)}
+.delta{padding:2px 7px;border:2px solid var(--dim);font-size:10px;letter-spacing:.06em}
+.delta.up{border-color:var(--cyan);color:var(--cyan)}
+.delta.down{border-color:var(--red);color:var(--red)}
 footer{margin-top:14px;font-size:10px;color:#4a5872;line-height:1.6}
 </style></head>
 <body>
@@ -567,6 +646,14 @@ footer{margin-top:14px;font-size:10px;color:#4a5872;line-height:1.6}
     <div class="sub">El modelo cuantitativo clasifica el mercado y opina. El agente
       puede contradecirlo, y cuando lo hace queda registrado.</div>
   </div>
+</div>
+
+<div class="px wide">
+  <h2>AGENTE FRENTE A COMPRAR Y MANTENER</h2>
+  <div class="chartbar" id="chartBar"></div>
+  <svg id="chart" viewBox="0 0 960 220" preserveAspectRatio="none" role="img"
+       aria-label="Equity del agente comparada con comprar y mantener"></svg>
+  <div class="sub" id="chartNote">—</div>
 </div>
 
 <div class="px wide">
@@ -637,6 +724,70 @@ function originTag(o){
   if(o==='LLM_SOSTENIDO') return '<span class="tag llm">LLM ·</span>';
   if(o==='FALLBACK') return '<span class="tag fb">FALLBACK</span>';
   return '<span class="tag veto">VETADO</span>';
+}
+
+function drawChart(series){
+  const svg = $('chart'), bar = $('chartBar'), note = $('chartNote');
+  if(!series || !series.available || !series.points || series.points.length < 2){
+    svg.innerHTML = '';
+    bar.innerHTML = '';
+    note.textContent = (series && series.reason) ? series.reason : 'sin datos suficientes todavia';
+    return;
+  }
+  const pts = series.points;
+  const W = 960, H = 220, L = 46, R = 8, T = 12, B = 22;
+  let lo = Infinity, hi = -Infinity;
+  for(const p of pts){
+    lo = Math.min(lo, p.agent, p.hold);
+    hi = Math.max(hi, p.agent, p.hold);
+  }
+  // Always keep the 100 baseline in view; a chart that crops it hides whether the
+  // book is up or down at a glance.
+  lo = Math.min(lo, 100); hi = Math.max(hi, 100);
+  const pad = Math.max((hi - lo) * 0.08, 0.05);
+  lo -= pad; hi += pad;
+  const x = i => L + (i / (pts.length - 1)) * (W - L - R);
+  const y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+
+  const line = key => pts.map((p, i) => x(i).toFixed(1) + ',' + y(p[key]).toFixed(1)).join(' ');
+  const gridVals = [lo + (hi - lo) * 0.5, 100, hi - pad, lo + pad];
+  const seen = {};
+  let grid = '';
+  for(const v of gridVals){
+    const k = v.toFixed(2);
+    if(seen[k]) continue;
+    seen[k] = 1;
+    const isBase = Math.abs(v - 100) < 1e-9;
+    grid += '<line x1="' + L + '" y1="' + y(v).toFixed(1) + '" x2="' + (W - R)
+      + '" y2="' + y(v).toFixed(1) + '" stroke="' + (isBase ? '#3a4a66' : '#16203a')
+      + '" stroke-width="1"' + (isBase ? ' stroke-dasharray="4 4"' : '') + '/>';
+    grid += '<text x="4" y="' + (y(v) + 3.5).toFixed(1) + '" fill="'
+      + (isBase ? '#9da9bd' : '#4a5872') + '" font-size="9">' + v.toFixed(2) + '</text>';
+  }
+  const t0 = (pts[0].at || '').replace('T', ' ').slice(5, 16);
+  const t1 = (pts[pts.length - 1].at || '').replace('T', ' ').slice(5, 16);
+  svg.innerHTML = grid
+    + '<polyline fill="none" stroke="#ffcc66" stroke-width="2" points="' + line('hold') + '"/>'
+    + '<polyline fill="none" stroke="#5eead4" stroke-width="2" points="' + line('agent') + '"/>'
+    + '<text x="' + L + '" y="' + (H - 6) + '" fill="#4a5872" font-size="9">' + esc(t0) + '</text>'
+    + '<text x="' + (W - R) + '" y="' + (H - 6) + '" fill="#4a5872" font-size="9" '
+    + 'text-anchor="end">' + esc(t1) + '</text>';
+
+  const d = series.difference_pp;
+  bar.innerHTML = '<span class="key agent"><i></i>agente ' + (series.agent_pct >= 0 ? '+' : '')
+      + series.agent_pct.toFixed(2) + '%</span>'
+    + '<span class="key hold"><i></i>comprar y mantener ' + (series.hold_pct >= 0 ? '+' : '')
+      + series.hold_pct.toFixed(2) + '%</span>'
+    + '<span class="delta ' + (d >= 0 ? 'up' : 'down') + '">diferencia '
+      + (d >= 0 ? '+' : '') + d.toFixed(2) + 'pp</span>';
+
+  note.textContent = 'Base 100 en el primer registro del journal (' + series.samples
+    + ' evaluaciones). Comprar y mantener paga la comision de entrada de '
+    + (series.fee_per_side * 10000).toFixed(0) + ' bps. '
+    + 'Solo ilustrativo: la ventana empieza cuando se despliego este agente, no cuando '
+    + 'empezo la estrategia, y el agente heredo una posicion abierta, asi que las dos '
+    + 'lineas arrancan casi iguales por construccion y solo se separan cuando cambia '
+    + 'de exposicion.';
 }
 
 // Connection state is tracked and shown. A silent catch made a dead tunnel, a
@@ -836,6 +987,8 @@ async function tick(){
   $('delibRows').innerHTML = dhtml || ('<tr><td colspan="7">'
     + (memErr ? 'memoria ilegible: '+esc(memErr) : 'sin deliberaciones todavia')
     + '</td></tr>');
+
+  drawChart(s.series);
 
   let html='';
   for(const r of (s.recent||[])){

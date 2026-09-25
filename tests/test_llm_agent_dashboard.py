@@ -37,6 +37,7 @@ from btc_decision_agent.observability.llm_agent_dashboard import (
     LLM_AGENT_PAGE,
     build_state,
     classify_origin,
+    equity_series,
     parse_reason,
     recent_deliberations,
     stage_states,
@@ -148,6 +149,83 @@ class TestOriginAttribution:
         assert state["origin"] == "FALLBACK"
         assert state["last_llm_at"] == (NOW - timedelta(hours=2)).isoformat()
         assert state["last_seen"] == NOW.isoformat()
+
+
+class TestEquitySeries:
+    """A miscalculated comparison is worse than no comparison.
+
+    The chart is illustrative, but an illustration that flatters the agent is still a
+    false claim, so the arithmetic is pinned here.
+    """
+
+    def _series(self, prices: list[str], books: list[tuple[str, str]]) -> dict[str, Any]:
+        entries = [
+            _entry(
+                at=(NOW + timedelta(minutes=index)).isoformat(),
+                price=price,
+                usdt_free=usdt,
+                btc_qty=btc,
+            )
+            for index, (price, (usdt, btc)) in enumerate(zip(prices, books, strict=True))
+        ]
+        return equity_series(entries, points=100)
+
+    def test_buy_and_hold_pays_the_entry_commission(self) -> None:
+        # Fully invested the whole way, so the only gap left is the commission buy and
+        # hold pays at entry. Comparing a net result against a gross one would hand the
+        # agent a free advantage.
+        series = self._series(["100", "100"], [("0", "1"), ("0", "1")])
+        assert series["available"] is True
+        assert series["agent_pct"] == 0.0
+        assert series["hold_pct"] == -0.1  # 10 bps
+        assert series["difference_pp"] == 0.1
+
+    def test_tracks_the_agent_beating_the_asset_by_being_out_of_it(self) -> None:
+        # Starts invested, sells at 100, price then halves. The agent keeps its cash.
+        series = self._series(
+            ["100", "100", "50"], [("0", "1"), ("100", "0"), ("100", "0")]
+        )
+        assert series["agent_pct"] == 0.0
+        assert series["hold_pct"] == pytest.approx(-50.05, abs=0.01)
+        assert series["difference_pp"] > 49.0
+
+    def test_tracks_the_agent_losing_to_the_asset(self) -> None:
+        # Sells at 100 and the price then doubles, so it misses the whole move.
+        series = self._series(
+            ["100", "100", "200"], [("0", "1"), ("100", "0"), ("100", "0")]
+        )
+        assert series["agent_pct"] == 0.0
+        assert series["hold_pct"] == pytest.approx(99.8, abs=0.05)
+        assert series["difference_pp"] < -99.0
+
+    def test_both_lines_are_rebased_to_one_hundred(self) -> None:
+        series = self._series(["80000", "81000"], [("0", "0.05"), ("0", "0.05")])
+        assert series["points"][0]["agent"] == 100.0
+        # Hold starts one commission below, by construction.
+        assert series["points"][0]["hold"] == pytest.approx(99.9, abs=0.01)
+
+    def test_downsamples_instead_of_returning_every_record(self) -> None:
+        # The journal grows by roughly 17k rows a day; shipping all of them to the
+        # browser every five seconds would be wasteful.
+        prices = ["80000"] * 1000
+        books = [("0", "0.05")] * 1000
+        series = equity_series(
+            [
+                _entry(at=(NOW + timedelta(seconds=5 * i)).isoformat(), price=p, btc_qty=b, usdt_free=u)
+                for i, (p, (u, b)) in enumerate(zip(prices, books, strict=True))
+            ],
+            points=50,
+        )
+        assert series["samples"] == 1000
+        assert len(series["points"]) <= 55
+
+    def test_a_single_record_is_reported_as_insufficient(self) -> None:
+        series = equity_series([_entry()], points=10)
+        assert series["available"] is False
+        assert series["reason"]
+
+    def test_empty_journal_does_not_crash(self) -> None:
+        assert equity_series([], points=10)["available"] is False
 
 
 class TestExposureVocabulary:
