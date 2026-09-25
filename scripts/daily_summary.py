@@ -24,6 +24,7 @@ import argparse
 import json
 import os
 import re
+import sys
 import urllib.error
 import urllib.request
 from collections import Counter
@@ -329,10 +330,21 @@ def render(summary: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def send_slack(text: str) -> bool:
+def send_slack(text: str) -> tuple[bool, str]:
+    """Post to Slack, returning whether it worked and why not if it did not.
+
+    The reason is returned rather than collapsed into a bool because "no webhook is
+    configured" and "Slack rejected the post" need different fixes, and because this
+    ran for weeks reporting success while delivering nothing.
+    """
     webhook = os.environ.get("SLACK_WEBHOOK_URL", "").strip()
     if not webhook:
-        return False
+        return False, "SLACK_WEBHOOK_URL no esta configurada"
+    # The message carries the live position and the book, so it must only ever go to
+    # Slack. A typo in the variable would otherwise publish the account state to an
+    # arbitrary host.
+    if not webhook.startswith("https://hooks.slack.com/"):
+        return False, "SLACK_WEBHOOK_URL no apunta a https://hooks.slack.com/"
     body = json.dumps({"text": text}).encode()
     request = urllib.request.Request(
         webhook, data=body, headers={"Content-Type": "application/json"}
@@ -340,12 +352,16 @@ def send_slack(text: str) -> bool:
     try:
         with urllib.request.urlopen(request, timeout=15) as response:
             status = int(response.status)
-    except (urllib.error.URLError, TimeoutError):
-        return False
-    return 200 <= status < 300
+    except urllib.error.HTTPError as error:
+        return False, f"Slack respondio http {error.code}"
+    except (urllib.error.URLError, TimeoutError) as error:
+        return False, f"no se pudo contactar con Slack: {error}"
+    if 200 <= status < 300:
+        return True, f"http {status}"
+    return False, f"Slack respondio http {status}"
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="Concise daily summary of the LLM agent's operations."
     )
@@ -378,8 +394,16 @@ def main() -> None:
         out.write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
     if args.slack:
-        print("slack:", "sent" if send_slack(message) else "NOT sent (missing webhook or error)")
+        sent, detail = send_slack(message)
+        print(f"slack: {'enviado' if sent else 'NO ENVIADO'} — {detail}")
+        if not sent:
+            # Exit non-zero so systemd marks the unit failed. Printing the problem and
+            # returning success meant the timer reported "Succeeded" every day while
+            # nothing was ever delivered, which is how a broken notification channel
+            # stays broken for weeks.
+            return 1
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
