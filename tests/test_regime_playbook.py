@@ -245,3 +245,93 @@ class TestPlanResolution:
             assert posture.value in block
         # It must be told it chooses posture, not numbers.
         assert "POSTURA" in block
+
+
+class TestMemoryMigration:
+    """A column added after release has to be applied to databases that predate it.
+
+    This crashed the live agent into a restart loop and no existing test could have
+    caught it: every fixture builds a fresh database where CREATE TABLE already carries
+    the column. The failure only appears against a database that does not.
+    """
+
+    def _legacy_database(self, path) -> None:  # type: ignore[no-untyped-def]
+        import sqlite3
+
+        conn = sqlite3.connect(path)
+        conn.executescript(
+            """
+            CREATE TABLE decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                decided_at TEXT NOT NULL, event_id TEXT, features TEXT NOT NULL,
+                regime INTEGER, quant_p_long REAL, target_exposure TEXT NOT NULL,
+                exposure_before TEXT NOT NULL, derived_order TEXT NOT NULL,
+                conviction REAL, expected_move_pct REAL, reason TEXT, thinking TEXT,
+                price_at_decision TEXT NOT NULL, acted INTEGER NOT NULL DEFAULT 0,
+                resolved INTEGER NOT NULL DEFAULT 0, resolved_at TEXT,
+                price_at_resolution TEXT, realized_pct REAL,
+                UNIQUE(decided_at, event_id));
+            """
+        )
+        conn.execute(
+            "INSERT INTO decisions (decided_at,event_id,features,regime,target_exposure,"
+            "exposure_before,derived_order,price_at_decision) "
+            "VALUES ('2026-01-01','e1','[]',0,'INVERTIDO','EN LIQUIDEZ','HOLD','80000')"
+        )
+        conn.commit()
+        conn.close()
+
+    def test_opening_a_database_without_the_column_migrates_it(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
+        import sqlite3
+
+        from btc_decision_agent.application.llm_memory import AgentMemory
+
+        path = tmp_path / "legacy.sqlite3"
+        self._legacy_database(path)
+        columns = {row[1] for row in sqlite3.connect(path).execute("PRAGMA table_info(decisions)")}
+        assert "posture" not in columns
+
+        memory = AgentMemory(path)  # must not raise
+        columns = {row[1] for row in sqlite3.connect(path).execute("PRAGMA table_info(decisions)")}
+        assert "posture" in columns
+        # The existing row survives the migration.
+        assert memory.stats()["decisiones_totales"] == 1
+
+    def test_the_migration_is_idempotent(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
+        from btc_decision_agent.application.llm_memory import AgentMemory
+
+        path = tmp_path / "legacy.sqlite3"
+        self._legacy_database(path)
+        AgentMemory(path)
+        AgentMemory(path)
+        assert AgentMemory(path).stats()["decisiones_totales"] == 1
+
+    def test_a_posture_can_be_written_after_migrating(self, tmp_path) -> None:  # type: ignore[no-untyped-def]
+        import sqlite3
+
+        from btc_decision_agent.application.llm_memory import AgentMemory
+
+        path = tmp_path / "legacy.sqlite3"
+        self._legacy_database(path)
+        memory = AgentMemory(path)
+        memory.record(
+            decided_at=NOW,
+            event_id="e2",
+            features=[0.0] * 19,
+            regime=3,
+            quant_p_long=0.8,
+            target_exposure="INVERTIDO",
+            exposure_before="EN LIQUIDEZ",
+            derived_order="BUY",
+            conviction=0.8,
+            expected_move_pct=2.0,
+            reason="x",
+            thinking="",
+            price=D("80000"),
+            acted=True,
+            posture="AGRESIVA",
+        )
+        stored = sqlite3.connect(path).execute(
+            "SELECT posture FROM decisions WHERE event_id='e2'"
+        ).fetchone()
+        assert stored == ("AGRESIVA",)

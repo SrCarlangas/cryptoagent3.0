@@ -82,6 +82,19 @@ CREATE TABLE IF NOT EXISTS decisions (
 );
 CREATE INDEX IF NOT EXISTS idx_resolved ON decisions(resolved);
 CREATE INDEX IF NOT EXISTS idx_regime ON decisions(regime, target_exposure);
+"""
+
+_ADDED_COLUMNS: tuple[tuple[str, str], ...] = (("posture", "TEXT"),)
+"""Columns introduced after the first release, with their types.
+
+CREATE TABLE IF NOT EXISTS is a no-op on an existing table, so a column added later
+has to be applied with ALTER TABLE. Anything that references such a column, including
+an index, must come after that migration: putting the index in the DDL crashed every
+process holding an older database with "no such column: posture", and no test caught
+it because they all build a fresh database where CREATE TABLE already has the column.
+"""
+
+_POST_MIGRATION_DDL = """
 CREATE INDEX IF NOT EXISTS idx_posture ON decisions(regime, posture);
 """
 
@@ -153,12 +166,12 @@ class AgentMemory:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with closing(self._connect()) as conn:
             conn.executescript(_DDL)
-            # CREATE TABLE IF NOT EXISTS cannot add a column to a table that already
-            # exists, so a database written before postures were recorded needs the
-            # column added explicitly. Idempotent, and cheap enough to run every time.
+            # Migrate before anything can reference a newer column. Idempotent.
             existing = {row[1] for row in conn.execute("PRAGMA table_info(decisions)")}
-            if "posture" not in existing:
-                conn.execute("ALTER TABLE decisions ADD COLUMN posture TEXT")
+            for column, column_type in _ADDED_COLUMNS:
+                if column not in existing:
+                    conn.execute(f"ALTER TABLE decisions ADD COLUMN {column} {column_type}")
+            conn.executescript(_POST_MIGRATION_DDL)
             conn.commit()
 
     def _connect(self) -> sqlite3.Connection:
