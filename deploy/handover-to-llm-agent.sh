@@ -147,23 +147,44 @@ echo "=== 6. verificacion final ==="
 echo "  $LLM activo=$(systemctl is-active $LLM) habilitado=$(systemctl is-enabled $LLM)"
 echo "  $QUANT activo=$(systemctl is-active $QUANT) habilitado=$(systemctl is-enabled $QUANT 2>&1)"
 
-# Count authorities by reading the live /proc cmdline of every candidate process.
-# systemctl cat is not used here because a comment in the unit mentions the flag and
-# produces a false positive; and a bare pgrep head -1 was observed returning a stale
-# pid. The ground truth is what the running process was actually invoked with.
-authorities=0
-for pid in $(pgrep -f "scripts.run_exposure_agent|scripts.run_llm_agent" 2>/dev/null || true); do
-  cmd=$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)
-  case "$cmd" in
-    *"scripts.run_exposure_agent"*|*"scripts.run_llm_agent"*) ;;
-    *) continue ;;
-  esac
-  case "$cmd" in
-    *"--i-understand-this-is-demo"*)
-      authorities=$((authorities + 1))
-      echo "  autoridad de ordenes: pid $pid -> $(echo "$cmd" | grep -o 'scripts\.run_[a-z_]*')"
-      ;;
-  esac
+# Count authorities by matching argv exactly, not by grepping command lines.
+#
+# Three ways this check has already been wrong. systemctl cat reports a false
+# positive because a comment in the unit mentions the flag. A bare pgrep head -1
+# returned a stale pid. And a shell loop that greps for the flag matches ITSELF,
+# because the loop's own command line contains the string it is searching for: that
+# produced a "two order authorities" alarm when there was only one.
+#
+# Matching argv[0] against the venv interpreter and reading the -m module name avoids
+# all three. Note that /proc/PID/exe is useless here, since the venv's bin/python is
+# a symlink and exe resolves to the system interpreter.
+authority_report=$(python3 - <<'PYCHECK'
+import glob
+
+VENV = "/home/ubuntu/workplace/cryptoagent3.0/.venv/bin/python"
+MODULES = {"scripts.run_llm_agent", "scripts.run_exposure_agent"}
+found = []
+for entry in glob.glob("/proc/[0-9]*"):
+    pid = entry.rsplit("/", 1)[1]
+    try:
+        raw = open(entry + "/cmdline", "rb").read()
+    except OSError:
+        continue
+    argv = [part.decode("utf-8", "replace") for part in raw.split(b"\0") if part]
+    if not argv or argv[0] != VENV or "-m" not in argv:
+        continue
+    index = argv.index("-m") + 1
+    module = argv[index] if index < len(argv) else ""
+    if module in MODULES and "--i-understand-this-is-demo" in argv:
+        found.append(f"{pid} {module}")
+print(len(found))
+for line in found:
+    print(line)
+PYCHECK
+)
+authorities=$(printf '%s\n' "$authority_report" | head -1)
+printf '%s\n' "$authority_report" | tail -n +2 | while read -r line; do
+  [ -n "$line" ] && echo "  autoridad de ordenes: pid $line"
 done
 echo "  total de autoridades: $authorities (debe ser 1)"
 [ "$authorities" -eq 1 ] || { echo "  FALLO: no hay exactamente una autoridad"; exit 1; }
