@@ -330,34 +330,77 @@ def render(summary: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+SLACK_API = "https://slack.com/api/chat.postMessage"
+
+
+def _post(url: str, body: bytes, headers: dict[str, str]) -> tuple[int, bytes]:
+    request = urllib.request.Request(url, data=body, headers=headers)
+    with urllib.request.urlopen(request, timeout=15) as response:
+        return int(response.status), response.read()
+
+
 def send_slack(text: str) -> tuple[bool, str]:
     """Post to Slack, returning whether it worked and why not if it did not.
 
-    The reason is returned rather than collapsed into a bool because "no webhook is
+    Two transports, because this workspace uses a bot rather than a webhook. If
+    SLACK_BOT_TOKEN is set the message goes through chat.postMessage to
+    SLACK_CHANNEL; otherwise SLACK_WEBHOOK_URL is used if present.
+
+    The reason is returned rather than collapsed into a bool because "nothing is
     configured" and "Slack rejected the post" need different fixes, and because this
-    ran for weeks reporting success while delivering nothing.
+    reported success for weeks while delivering nothing.
     """
+    token = os.environ.get("SLACK_BOT_TOKEN", "").strip()
     webhook = os.environ.get("SLACK_WEBHOOK_URL", "").strip()
+
+    if token:
+        channel = os.environ.get("SLACK_CHANNEL", "").strip()
+        if not channel:
+            return False, "SLACK_BOT_TOKEN esta puesta pero falta SLACK_CHANNEL"
+        if not token.startswith("xoxb-"):
+            return False, "SLACK_BOT_TOKEN no parece un token de bot (xoxb-)"
+        body = json.dumps({"channel": channel, "text": text}).encode()
+        try:
+            _status, raw = _post(
+                SLACK_API,
+                body,
+                {
+                    "Content-Type": "application/json; charset=utf-8",
+                    "Authorization": f"Bearer {token}",
+                },
+            )
+        except urllib.error.HTTPError as error:
+            return False, f"Slack respondio http {error.code}"
+        except (urllib.error.URLError, TimeoutError) as error:
+            return False, f"no se pudo contactar con Slack: {error}"
+        # The Web API answers 200 even when it refuses the message, so the status
+        # code proves nothing and the body has to be read. Trusting the 200 here is
+        # exactly how a broken channel looks healthy.
+        try:
+            answer = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            return False, "Slack devolvio una respuesta ilegible"
+        if answer.get("ok"):
+            return True, f"chat.postMessage -> {channel}"
+        return False, f"Slack rechazo el mensaje: {answer.get('error', 'desconocido')}"
+
     if not webhook:
-        return False, "SLACK_WEBHOOK_URL no esta configurada"
+        return False, "no hay SLACK_BOT_TOKEN ni SLACK_WEBHOOK_URL configurados"
     # The message carries the live position and the book, so it must only ever go to
     # Slack. A typo in the variable would otherwise publish the account state to an
     # arbitrary host.
     if not webhook.startswith("https://hooks.slack.com/"):
         return False, "SLACK_WEBHOOK_URL no apunta a https://hooks.slack.com/"
-    body = json.dumps({"text": text}).encode()
-    request = urllib.request.Request(
-        webhook, data=body, headers={"Content-Type": "application/json"}
-    )
     try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            status = int(response.status)
+        status, _raw = _post(
+            webhook, json.dumps({"text": text}).encode(), {"Content-Type": "application/json"}
+        )
     except urllib.error.HTTPError as error:
         return False, f"Slack respondio http {error.code}"
     except (urllib.error.URLError, TimeoutError) as error:
         return False, f"no se pudo contactar con Slack: {error}"
     if 200 <= status < 300:
-        return True, f"http {status}"
+        return True, f"webhook http {status}"
     return False, f"Slack respondio http {status}"
 
 
@@ -369,7 +412,7 @@ def main() -> int:
     parser.add_argument("--memory", default=DEFAULT_MEMORY)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--hours", type=int, default=24)
-    parser.add_argument("--slack", action="store_true", help="post to SLACK_WEBHOOK_URL")
+    parser.add_argument("--slack", action="store_true", help="post to Slack (SLACK_BOT_TOKEN + SLACK_CHANNEL, o SLACK_WEBHOOK_URL)")
     parser.add_argument("--out", default="", help="also write the JSON summary here")
     parser.add_argument("--env-file", default=".env")
     args = parser.parse_args()
