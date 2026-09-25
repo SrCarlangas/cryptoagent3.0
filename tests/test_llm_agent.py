@@ -19,8 +19,10 @@ import pytest
 
 from btc_decision_agent.application.exposure_agent import (
     ExposureAction,
+    PolicyDecision,
     PortfolioState,
     RegimeMixturePolicy,
+    TradeDecision,
 )
 from btc_decision_agent.application.exposure_features import MARKET_FEATURE_NAMES
 from btc_decision_agent.application.llm_agent import (
@@ -162,6 +164,23 @@ def _agent(tmp_path: Path, client: StubClient) -> LLMTradingAgent:
         history=HistoryIndex(_index_file(tmp_path)),
         memory=AgentMemory(tmp_path / "mem.sqlite3"),
         client=client,  # type: ignore[arg-type]
+    )
+
+
+def _policy_decision(action: ExposureAction, decision: TradeDecision) -> PolicyDecision:
+    """A deterministic fallback opinion, so the test does not depend on what the
+    learned policy happens to think about synthetic evidence."""
+    return PolicyDecision(
+        action=action,
+        decision=decision,
+        action_probabilities={
+            ExposureAction.TARGET_LONG.value: 0.9,
+            ExposureAction.TARGET_FLAT.value: 0.1,
+        },
+        regime_responsibilities=[1.0, 0.0, 0.0, 0.0],
+        dominant_regime=0,
+        confidence=0.9,
+        policy_version="test",
     )
 
 
@@ -446,6 +465,99 @@ class TestEngineSafety:
         decision = self._settle(engine, _evidence(), _position(PositionState.FLAT))
         assert decision.action == Action.ENTER_LONG
         assert engine.last_explanation["clears_cost"] is True
+
+    def test_the_fallback_may_not_open_a_position(self, tmp_path: Path) -> None:
+        """Observed in production, and it reversed a deliberate decision.
+
+        The exchange stop fired at 11:23 leaving the account in cash. The LLM then
+        deliberated and chose EN LIQUIDEZ with 0.70 conviction. A process restart 34
+        minutes later wiped the in-memory verdict and the fallback bought straight
+        back in. The fallback exists so an open position is never unmanaged; managing
+        one means being able to leave it, not being allowed to start one.
+        """
+        engine = self._engine(tmp_path, StubClient(LLMUnavailable("modelo caido")))
+        wants_to_buy = _policy_decision(ExposureAction.TARGET_LONG, TradeDecision.BUY)
+
+        suppressed = engine._fallback_decision(wants_to_buy, _evidence(), is_long=False)
+        assert suppressed.action == Action.HOLD
+        assert suppressed.reason == "FALLBACK_QUANT_ENTRY_SUPPRESSED"
+
+        # Already invested and the fallback agrees: holding is fine, it opens nothing.
+        holding = engine._fallback_decision(wants_to_buy, _evidence(), is_long=True)
+        assert holding.action == Action.HOLD
+
+        # And it can always get out.
+        wants_to_sell = _policy_decision(ExposureAction.TARGET_FLAT, TradeDecision.SELL)
+        exit_decision = engine._fallback_decision(wants_to_sell, _evidence(), is_long=True)
+        assert exit_decision.action == Action.EXIT_LONG
+
+    def test_the_fallback_may_still_close_a_position(self, tmp_path: Path) -> None:
+        # Refusing to sell is the one failure with unbounded downside, so exits stay
+        # available to the fallback even though entries do not.
+        engine = self._engine(tmp_path, StubClient(LLMUnavailable("modelo caido")))
+        engine.update_equity(D("10000"), NOW)  # trips the drawdown breaker
+        decision = engine.evaluate(
+            _evidence(), _position(PositionState.LONG, btc="0.005", usdt="0")
+        )
+        assert decision.action == Action.EXIT_LONG
+
+    def test_an_exit_is_never_blocked_by_its_cost(self, tmp_path: Path) -> None:
+        """The expensive bug. Gating exits on commission held a losing position.
+
+        Replayed over 100 decisions the agent asked to move to cash 49 times and was
+        refused because its own declared expected move did not clear 0.20%. It was
+        held from 79,861 down to 64,143. Leaving is not a bet that must beat its
+        transaction cost; it is declining to keep one, and a risk control that a
+        commission can veto is not a risk control.
+        """
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_CASH, expected=0.0)))
+        decision = self._settle(
+            engine, _evidence(), _position(PositionState.LONG, btc="0.05", usdt="0")
+        )
+        assert decision.action == Action.EXIT_LONG
+        assert not decision.reason.endswith("_BELOW_COST")
+        assert engine.last_explanation["clears_cost"] is True
+
+    def test_entries_are_still_gated_so_churn_stays_bounded(self, tmp_path: Path) -> None:
+        # The asymmetry must not become a licence to trade freely in both directions.
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=0.05)))
+        decision = self._settle(engine, _evidence(), _position(PositionState.FLAT))
+        assert decision.action == Action.HOLD
+        assert decision.reason.endswith("_BELOW_COST")
+
+    def test_an_inflated_expected_move_cannot_unlock_an_entry(self) -> None:
+        """The agent declared +35.31% over a few days in one replayed decision.
+
+        Since the entry gate is a threshold on that number, an unbounded estimate lets
+        it authorise any entry by asserting a large enough move. The bound is what the
+        market's own volatility could deliver.
+        """
+        # 0.5% daily volatility caps the usable estimate at 3 * 0.5 * sqrt(3) = 2.6%,
+        # so a claimed 35% is not taken at face value, but it still clears 0.20%.
+        assert LLMTradingAgent.plausible_expected_move(35.31, 0.5) < 3.0
+        # With a cost threshold above the plausible ceiling, the entry is refused.
+        assert not LLMTradingAgent.clears_cost_static(
+            wants_long=True,
+            position_long=False,
+            expected_move_pct=35.31,
+            round_trip_cost_bps=400.0,
+            daily_vol_pct=0.5,
+        )
+        # Unbounded, the same fantasy would have authorised it.
+        assert LLMTradingAgent.clears_cost_static(
+            wants_long=True,
+            position_long=False,
+            expected_move_pct=35.31,
+            round_trip_cost_bps=400.0,
+            daily_vol_pct=None,
+        )
+
+    def test_the_raw_estimate_is_still_recorded_for_calibration(self, tmp_path: Path) -> None:
+        # The bound is only what the gate acts on. Hiding the exaggeration would make
+        # the agent's overconfidence unmeasurable.
+        engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=35.31)))
+        self._settle(engine, _evidence(), _position(PositionState.FLAT))
+        assert engine.last_explanation["expected_move_pct"] == 35.31
 
     def test_agreeing_with_the_current_exposure_is_a_hold(self, tmp_path: Path) -> None:
         engine = self._engine(tmp_path, StubClient(_verdict(EXPOSURE_INVESTED, expected=5.0)))

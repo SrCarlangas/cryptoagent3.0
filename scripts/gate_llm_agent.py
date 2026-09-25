@@ -55,6 +55,28 @@ MAX_RETURN_SHORTFALL_PP = 25.0
 """How far below buy and hold the net return may fall. Not beating buy and hold is
 acceptable and expected; being crushed by it is not."""
 
+MAX_SHORTFALL_VS_FALLBACK_PP = 10.0
+"""How far below the numeric fallback the agent may fall.
+
+ADDED AFTER THE FIRST RUN, AND THE FIRST RUN WOULD HAVE FAILED IT.
+
+The original six criteria compared the agent to buy and hold and never to the policy
+it displaces, which was a hole: an agent can clear every bar above and still be worse
+than the thing it replaced. The first run showed exactly that, with the agent at
+-25.46% against the fallback's -12.50% and a worse drawdown too, a shortfall of
+12.96pp.
+
+Stating the sequence plainly because it is the whole point of pre-registration: this
+criterion did not gate that approval and cannot be used to revoke it retroactively.
+It gates every run from now on.
+
+The 10pp threshold is derived rather than chosen to fit. The fallback switched 51
+times against the agent's 5; at 20 bps a round trip that is roughly 10pp of
+commission the fallback pays and the agent does not. So a gap up to 10pp can be
+explained by the fallback's churn being cheap in a backtest and expensive in reality.
+Beyond that the agent is simply worse, and reasons stop being explanations.
+"""
+
 
 def evaluate(report: dict[str, Any]) -> tuple[list[tuple[str, bool, str]], bool]:
     agent = report["llm_agent"]
@@ -69,6 +91,8 @@ def evaluate(report: dict[str, Any]) -> tuple[list[tuple[str, bool, str]], bool]
     switch_rate = int(agent["switches"]) / decisions if decisions else 1.0
     drawdown_saved = float(hold["max_drawdown_pct"]) - float(agent["max_drawdown_pct"])
     shortfall = float(hold["net_return_pct"]) - float(agent["net_return_pct"])
+    quant = report["quant_policy"]
+    fallback_shortfall = float(quant["net_return_pct"]) - float(agent["net_return_pct"])
 
     checks: list[tuple[str, bool, str]] = [
         (
@@ -105,6 +129,14 @@ def evaluate(report: dict[str, Any]) -> tuple[list[tuple[str, bool, str]], bool]
             shortfall <= MAX_RETURN_SHORTFALL_PP,
             f"agente {agent['net_return_pct']:+.1f}% vs b&h {hold['net_return_pct']:+.1f}% "
             f"= deficit {shortfall:+.1f}pp (limite {MAX_RETURN_SHORTFALL_PP:.0f}pp)",
+        ),
+        (
+            "no es peor que el modelo que reemplaza",
+            fallback_shortfall <= MAX_SHORTFALL_VS_FALLBACK_PP,
+            f"agente {agent['net_return_pct']:+.1f}% vs fallback {quant['net_return_pct']:+.1f}% "
+            f"= deficit {fallback_shortfall:+.1f}pp "
+            f"(limite {MAX_SHORTFALL_VS_FALLBACK_PP:.0f}pp) "
+            f"[criterio anadido tras la primera pasada]",
         ),
     ]
     return checks, all(passed for _name, passed, _detail in checks)

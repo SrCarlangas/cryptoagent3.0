@@ -54,6 +54,7 @@ from btc_decision_agent.application.exposure_training import build_daily_percept
 from btc_decision_agent.application.llm_agent import (
     DEFAULT_ENDPOINT,
     DEFAULT_MODEL,
+    LLMTradingAgent,
     LLMUnavailable,
     OllamaClient,
 )
@@ -218,7 +219,17 @@ def main() -> None:
 
         wants_long = verdict.wants_long
         changing = wants_long != position_long
-        clears = verdict.expected_move_pct >= float(params.round_trip_cost_bps) / 100.0
+        # Same economics as live, including the asymmetry: the cost threshold gates
+        # ENTRIES only, and the declared expected move is bounded by what the market's
+        # own volatility could deliver. Replaying with different rules than production
+        # would measure a system that does not exist.
+        clears = LLMTradingAgent.clears_cost_static(
+            wants_long=wants_long,
+            position_long=position_long,
+            expected_move_pct=verdict.expected_move_pct,
+            round_trip_cost_bps=float(params.round_trip_cost_bps),
+            daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
+        )
         acted = changing and clears
         fill = closes[min(day + 1, end_day)]
 

@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import threading
 import urllib.error
 import urllib.request
@@ -112,10 +113,15 @@ Como decidir:
    seguro.
 2. Estar INVERTIDO durante una caida sostenida destruye capital. INVERTIDO tambien
    se justifica con evidencia.
-3. Cambiar de exposicion cuesta comision. Declara en movimiento_esperado_pct cuanto
-   crees que se movera el precio a tu favor en los proximos dias. Si ese movimiento
-   es menor que el costo de cambiar, cambiar destruye valor aunque tu direccion sea
-   correcta.
+3. Declara en movimiento_esperado_pct cuanto crees que se movera el precio a tu favor
+   en los proximos dias. Se realista: una cifra inflada no desbloquea nada porque se
+   acota contra la volatilidad observada, y queda registrada para medir tu
+   calibracion.
+   ENTRAR cuesta comision: si el movimiento esperado no cubre el costo de ida y
+   vuelta, entrar destruye valor aunque tu direccion sea correcta.
+   SALIR no se bloquea por costo. Dejar de estar expuesto no es una apuesta que deba
+   cubrir comision, es dejar de sostener una. Si crees que debes estar EN LIQUIDEZ,
+   dilo sin preocuparte por la comision.
 4. Compara los analogos historicos contra el base rate. Si los analogos rinden como
    el promedio de 5 anos, no hay senal: no es razon para actuar.
 5. Solo trata como regla lo que tu historial medido marque CON RESPALDO. Lo marcado
@@ -238,6 +244,7 @@ class LLMTradingAgent:
         self.client = client or OllamaClient()
         self.analogue_count = analogue_count
         self.last_state_block = ""
+        self.last_market: dict[str, Any] = {}
         self.last_quant: dict[str, Any] = {}
 
     def build_state(
@@ -284,6 +291,7 @@ class LLMTradingAgent:
         )
         self.last_state_block = block
         self.last_quant = quant
+        self.last_market = market
         return block, vector, quant
 
     def decide(self, state_block: str, *, position_long: bool) -> AgentVerdict:
@@ -300,15 +308,79 @@ class LLMTradingAgent:
             raise
         return considered
 
-    def clears_cost(self, verdict: AgentVerdict, params: RealtimeParams) -> bool:
-        """Economic gate on ACTING, not on thinking.
+    def clears_cost(
+        self,
+        verdict: AgentVerdict,
+        params: RealtimeParams,
+        *,
+        position_long: bool,
+        daily_vol_pct: float | None = None,
+    ) -> bool:
+        """Economic gate on ENTERING. Exits are never blocked by it.
 
-        The project measured unbounded churn at 137% of capital per year. So the
-        agent may reconsider continuously, but moving the book requires it to state
-        an expected move that covers the round trip.
+        The project measured unbounded churn at 137% of capital per year, so opening
+        a position requires the agent to state an expected move that covers the round
+        trip. That part stands.
+
+        Applying the same test to exits was a mistake of mine and it was expensive.
+        Measured over 100 replayed decisions, the agent wanted to move to cash 49
+        times and was refused because its own declared expected move did not clear
+        0.20%. The damage shows in the trades it did make: it entered at 79,861 and
+        was held in until 64,143, a 20% loss it had asked to avoid.
+
+        The asymmetry is not a tweak, it is the correct economics. Entering is a bet
+        that has to beat its own transaction cost. Leaving is not a bet, it is
+        declining to keep one, and the downside of staying is unbounded while the cost
+        of leaving is 10 bps. A risk control that can be vetoed by a commission is not
+        a risk control.
         """
-        cost_pct = float(params.round_trip_cost_bps) / 100.0
-        return verdict.expected_move_pct >= cost_pct
+        return self.clears_cost_static(
+            wants_long=verdict.wants_long,
+            position_long=position_long,
+            expected_move_pct=verdict.expected_move_pct,
+            round_trip_cost_bps=float(params.round_trip_cost_bps),
+            daily_vol_pct=daily_vol_pct,
+        )
+
+    @staticmethod
+    def clears_cost_static(
+        *,
+        wants_long: bool,
+        position_long: bool,
+        expected_move_pct: float,
+        round_trip_cost_bps: float,
+        daily_vol_pct: float | None,
+    ) -> bool:
+        """The rule itself, with no dependency on live objects.
+
+        Exists so the backtest and production cannot drift apart. Replaying with
+        different economics than the running system measures a system that does not
+        exist, and the divergence is invisible because both sides look reasonable in
+        isolation.
+        """
+        if position_long and not wants_long:
+            return True
+        expected = LLMTradingAgent.plausible_expected_move(expected_move_pct, daily_vol_pct)
+        return expected >= round_trip_cost_bps / 100.0
+
+    @staticmethod
+    def plausible_expected_move(expected_pct: float, daily_vol_pct: float | None) -> float:
+        """Bound a declared expected move by what the market could plausibly deliver.
+
+        The agent declared +35.31% over a few days in one replayed decision. Since
+        the entry gate is a threshold on this number, an inflated estimate lets the
+        agent unlock any entry it likes by asserting a large enough move. The raw
+        value is still recorded so calibration can measure the exaggeration; this is
+        only what the gate is allowed to act on.
+
+        The ceiling is three daily standard deviations over a three day horizon, which
+        is generous: it permits roughly a 20% move at 4% daily volatility and still
+        rejects fantasy.
+        """
+        if daily_vol_pct is None or daily_vol_pct <= 0.0:
+            return expected_pct
+        ceiling = 3.0 * daily_vol_pct * math.sqrt(3.0)
+        return min(expected_pct, ceiling)
 
 
 class LLMAgentEngine(ProtectiveDecisionEngine):
@@ -411,6 +483,45 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         )
         return self.agent.policy.decide(compose_features(vector, portfolio), portfolio)
 
+    def _fallback_decision(
+        self,
+        fallback: PolicyDecision,
+        evidence: EvidenceSnapshot,
+        *,
+        is_long: bool,
+    ) -> RealtimeDecision:
+        """Turn a fallback opinion into an action, WITHOUT letting it open a position.
+
+        The fallback exists so an LLM outage never leaves an open position
+        unmanaged. Managing a position means being able to leave it. It does not
+        require being able to enter one, and letting it enter caused a real failure:
+        the stop fired at 11:23, the LLM deliberated and chose EN LIQUIDEZ with 0.70
+        conviction, and 34 minutes later a process restart wiped the in-memory verdict
+        and the fallback immediately bought back in. A deliberate decision to hold
+        cash was reversed by a restart.
+
+        It also makes the code match what the architecture claims and the dashboard
+        displays: only the LLM stage may originate a purchase. Exits stay open to the
+        fallback because refusing to sell is the one failure with unbounded downside.
+
+        The asymmetry has a cost worth stating: if the model is unreachable for a long
+        time while flat, the account simply stays in cash. That is the safe direction,
+        and being in cash is the one position that cannot lose money.
+        """
+        reason = f"FALLBACK_QUANT_{fallback.decision.value}"
+        if fallback.decision == TradeDecision.SELL:
+            return RealtimeDecision(
+                Action.EXIT_LONG, reason, evidence, True, agent_decision=fallback
+            )
+        if fallback.decision == TradeDecision.BUY and not is_long:
+            return RealtimeDecision(
+                Action.HOLD,
+                "FALLBACK_QUANT_ENTRY_SUPPRESSED",
+                evidence,
+                agent_decision=fallback,
+            )
+        return RealtimeDecision(Action.HOLD, reason, evidence, agent_decision=fallback)
+
     def evaluate(
         self, evidence: EvidenceSnapshot, position: ReconciledPosition
     ) -> RealtimeDecision:
@@ -487,14 +598,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 "p_long": fallback.action_probabilities[ExposureAction.TARGET_LONG.value],
             }
             _LOGGER.warning("LLM no disponible (%s); usando modelo cuantitativo", failure)
-            reason = f"FALLBACK_QUANT_{fallback.decision.value}"
-            if fallback.decision == TradeDecision.BUY:
-                return RealtimeDecision(Action.ENTER_LONG, reason, evidence, agent_decision=fallback)
-            if fallback.decision == TradeDecision.SELL:
-                return RealtimeDecision(
-                    Action.EXIT_LONG, reason, evidence, True, agent_decision=fallback
-                )
-            return RealtimeDecision(Action.HOLD, reason, evidence, agent_decision=fallback)
+            return self._fallback_decision(fallback, evidence, is_long=is_long)
 
         if finished is not None:
             self._last_verdict = finished
@@ -522,14 +626,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 ),
                 "p_long": fallback.action_probabilities[ExposureAction.TARGET_LONG.value],
             }
-            reason = f"FALLBACK_QUANT_{fallback.decision.value}"
-            if fallback.decision == TradeDecision.BUY:
-                return RealtimeDecision(Action.ENTER_LONG, reason, evidence, agent_decision=fallback)
-            if fallback.decision == TradeDecision.SELL:
-                return RealtimeDecision(
-                    Action.EXIT_LONG, reason, evidence, True, agent_decision=fallback
-                )
-            return RealtimeDecision(Action.HOLD, reason, evidence, agent_decision=fallback)
+            return self._fallback_decision(fallback, evidence, is_long=is_long)
 
         if finished is None:
             # Acting on a verdict already applied would re-order on every event.
@@ -545,7 +642,13 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         )
         trade = decision_for(action, is_long)
         wants_change = trade in {TradeDecision.BUY, TradeDecision.SELL}
-        clears = self.agent.clears_cost(verdict, self.params)
+        volatility = self.agent.last_market.get("volatilidad_diaria_30d_pct")
+        clears = self.agent.clears_cost(
+            verdict,
+            self.params,
+            position_long=is_long,
+            daily_vol_pct=float(volatility) if volatility is not None else None,
+        )
 
         record = PolicyDecision(
             action=action,
