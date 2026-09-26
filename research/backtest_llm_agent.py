@@ -392,7 +392,19 @@ def main() -> None:
         # protective stop fire against real intraday lows. Checking daily closes instead
         # hid every wick that would have triggered the stop, which understated stop-outs
         # and flattered exactly the wide stops under investigation.
-        for mark in range(day, min(day + args.step_days, end_day)):
+        #
+        # Marking starts at day+2, not at day. The decision is taken on day d from data up
+        # to d and fills at the CLOSE of d+1, so the bars of d and d+1 happened before the
+        # position existed. Walking them checked a stop derived from an entry price that
+        # had not been paid yet, and in a market moving 2.5% a day two days of bars almost
+        # always contain a move past the stop. Measured on 100 replayed decisions, 11 of 12
+        # stop exits were fired by bars that preceded their own fill.
+        #
+        # The bias did NOT flatter the agent. Those phantom stops ejected it from positions
+        # before they could lose, which in a falling window improved its result from -11.95%
+        # to -0.39%. So the bear window verdict was partly an artefact, and the windows are
+        # contiguous: decision d covers d+2..d+step+1, decision d+step covers d+step+2 on.
+        for mark in range(day + 2, min(day + args.step_days + 2, end_day)):
             for bar in hourly_by_day[mark] or ():
                 if units <= 0.0:
                     break
@@ -431,6 +443,13 @@ def main() -> None:
                 "plan_stop_pct": float(plan.stop_loss_fraction * 100),
                 "plan_risk_pct": float(plan.risk_per_trade_fraction * 100),
                 "plan_horizon_hours": plan.horizon_hours,
+                # The whole plan, not a selection of it. The four percentages above say
+                # nothing about the trailing leash or the break-even floor, so a replay had
+                # to guess them, and the first version of research/counterfactual.py guessed
+                # the trailing activation at 1% where the playbook derives 2 to 3%. A
+                # plausible default in place of recorded data is how a confident number gets
+                # produced about a system that never ran.
+                "plan": plan.to_dict(),
                 "invested_share": round(
                     (units * price) / (cash + units * price) if (cash + units * price) else 0.0, 4
                 ),
@@ -508,18 +527,19 @@ def main() -> None:
     quant_result = simulate_quant(policy, closes, start_day, end_day, fee)
     hold_result = simulate_buy_and_hold(closes, start_day, end_day, fee)
 
+    window = {
+        "start_day_index": start_day,
+        "end_day_index": end_day,
+        "days": end_day - start_day,
+        "step_days": args.step_days,
+    }
     payload = {
         "generated_at": datetime.now(UTC).isoformat(),
         "dataset_id": dataset_id,
         "model": args.model,
         "think_enabled": args.think,
         "fee_per_side": fee,
-        "window": {
-            "start_day_index": start_day,
-            "end_day_index": end_day,
-            "days": end_day - start_day,
-            "step_days": args.step_days,
-        },
+        "window": window,
         "llm_agent": agent_result,
         "quant_policy": quant_result,
         "buy_and_hold": hold_result,
@@ -534,10 +554,21 @@ def main() -> None:
         "trace": trace,
     }
     REPORT.parent.mkdir(parents=True, exist_ok=True)
-    REPORT.with_suffix(".json").write_text(
-        json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    document = json.dumps(payload, indent=2, sort_keys=True) + "\n"
+    REPORT.with_suffix(".json").write_text(document, encoding="utf-8")
     REPORT.with_suffix(".md").write_text(render(payload) + "\n", encoding="utf-8")
+    # Also write an archive nobody can overwrite by accident. Archiving by hand before
+    # the NEXT launch lost a completed 100-decision run to a smoke test that reused the
+    # canonical path, and with it the trace needed to re-analyse that result.
+    stamp = (
+        f"w{window['start_day_index']}-{window['end_day_index']}"
+        f"_s{window['step_days']}_d{len(trace)}"
+        f"_{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
+    )
+    archive = REPORT.parent / "runs"
+    archive.mkdir(parents=True, exist_ok=True)
+    (archive / f"llm-agent-backtest-{stamp}.json").write_text(document, encoding="utf-8")
+    print(f"archivo inmutable: {archive / f'llm-agent-backtest-{stamp}.json'}", flush=True)
     print()
     print(render(payload))
 
@@ -601,12 +632,17 @@ def render(payload: dict[str, Any]) -> str:
         "## Advertencia sobre la simulacion",
         "",
         "Los stops se evaluan contra MINIMOS HORARIOS reales, no contra cierres "
-        "diarios, asi que una mecha que habria tocado el stop si cuenta. Queda un sesgo "
-        "en la direccion contraria: el agente solo decide cada "
+        "diarios, asi que una mecha que habria tocado el stop si cuenta. El marcado "
+        "empieza en d+2 porque la orden se llena al cierre de d+1: antes se recorrian "
+        "las barras de d y d+1, anteriores a la propia entrada, y 11 de 12 salidas por "
+        "stop las disparaban precios que ya habian pasado cuando la posicion se abrio.",
+        "",
+        "Queda un sesgo real que CASTIGA al agente y que no se puede netear: solo "
+        "decide cada "
         + str(payload["window"]["step_days"])
         + " dias por coste de computo, asi que si el stop salta el primer dia se queda "
         "en liquidez el resto del intervalo, mientras en produccion volveria a decidir "
-        "en 30 minutos. Esto CASTIGA al agente y no se puede netear con el anterior.",
+        "en 30 minutos. Medido con reentrada forzada, ese sesgo vale varios puntos.",
         f"- coincidio con el modelo cuantitativo en el {agent['agreement_with_quant']:.0%}",
         "",
         "",
