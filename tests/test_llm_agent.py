@@ -27,6 +27,7 @@ from btc_decision_agent.application.exposure_agent import (
 from btc_decision_agent.application.exposure_features import MARKET_FEATURE_NAMES
 from btc_decision_agent.application.llm_agent import (
     AGENT_VERSION,
+    FIRST_RETRY_DELAY,
     AgentVerdict,
     LLMAgentEngine,
     LLMTradingAgent,
@@ -939,3 +940,102 @@ class TestEachDecisionIsJudgedOnItsOwnHorizon:
         memory = AgentMemory(path, horizon_hours=24)
         self._record(memory, NOW, 96, "again")
         assert memory.resolve_pending(NOW + timedelta(hours=97), D("80000")) == 1
+
+
+class TestAFailedDeliberationBacksOff:
+    """Observed live, not hypothesised: 30 fallback decisions in five minutes.
+
+    A failed deliberation left `_last_verdict_at` untouched, so the cadence was never
+    consumed and a fresh attempt was spawned on every market tick. Each attempt was another
+    request to a model that was failing precisely because it was saturated, and each wrote a
+    journal entry describing the same outage.
+
+    The account was never unmanaged, because the validated numeric policy holds the wheel
+    while the model is down. What was wrong was the retry rate.
+    """
+
+    class CountingFailure(StubClient):
+        """Fails every time and counts how often it was asked."""
+
+        def __init__(self) -> None:
+            super().__init__(LLMUnavailable("ollama saturado"))
+            self.calls = 0
+
+        def verdict(
+            self, state_block: str, *, think: bool, num_predict: int = 900
+        ) -> AgentVerdict:
+            self.calls += 1
+            raise LLMUnavailable("ollama saturado")
+
+    def _settle(self, engine: LLMAgentEngine) -> None:
+        import time
+
+        for _ in range(200):
+            if not engine.deliberating:
+                return
+            time.sleep(0.01)
+
+    def test_repeated_ticks_during_an_outage_ask_the_model_once(self, tmp_path: Path) -> None:
+        # The defect, exercised through the real decision path rather than restated as
+        # arithmetic. Sixty ticks stand in for five minutes of market events.
+        client = self.CountingFailure()
+        engine = LLMAgentEngine(
+            RealtimeParams(), _agent(tmp_path, client), cadence=timedelta(minutes=30)
+        )
+        evidence, position = _evidence(), _position(PositionState.FLAT)
+        for _ in range(60):
+            engine.evaluate(evidence, position)
+            self._settle(engine)
+        # Before the backoff this was one request per tick.
+        assert client.calls <= 2, f"lanzó {client.calls} peticiones durante un corte"
+        assert engine.fallback_count >= 1
+
+    def test_the_account_is_still_managed_while_backing_off(self, tmp_path: Path) -> None:
+        client = self.CountingFailure()
+        engine = LLMAgentEngine(
+            RealtimeParams(), _agent(tmp_path, client), cadence=timedelta(minutes=30)
+        )
+        evidence, position = _evidence(), _position(PositionState.FLAT)
+        engine.evaluate(evidence, position)
+        self._settle(engine)
+        decision = engine.evaluate(evidence, position)
+        # Suppressing the retry must not suppress the decision: the validated numeric
+        # policy holds the wheel for as long as the model is unreachable.
+        assert decision.reason.startswith("FALLBACK_QUANT_")
+
+    def test_the_backoff_grows_and_never_exceeds_the_cadence(self, tmp_path: Path) -> None:
+        cadence = timedelta(minutes=30)
+        delays = [
+            min(cadence, FIRST_RETRY_DELAY * 2 ** (failures - 1)) for failures in range(1, 9)
+        ]
+        assert delays[:3] == [
+            timedelta(minutes=1),
+            timedelta(minutes=2),
+            timedelta(minutes=4),
+        ]
+        assert max(delays) == cadence
+
+    def test_a_recovered_model_clears_the_backoff(self, tmp_path: Path) -> None:
+        class FailsThenWorks(StubClient):
+            def __init__(self) -> None:
+                super().__init__(_verdict(EXPOSURE_INVESTED))
+                self.calls = 0
+
+            def verdict(
+                self, state_block: str, *, think: bool, num_predict: int = 900
+            ) -> AgentVerdict:
+                self.calls += 1
+                if self.calls == 1:
+                    raise LLMUnavailable("primer intento falla")
+                return _verdict(EXPOSURE_INVESTED)
+
+        client = FailsThenWorks()
+        engine = LLMAgentEngine(
+            RealtimeParams(), _agent(tmp_path, client), cadence=timedelta(0)
+        )
+        evidence, position = _evidence(), _position(PositionState.FLAT)
+        for _ in range(4):
+            engine.evaluate(evidence, position)
+            self._settle(engine)
+        assert engine._next_attempt_at is None
+        assert engine._consecutive_failures == 0

@@ -93,6 +93,13 @@ D = Decimal
 
 DEFAULT_ENDPOINT = "http://127.0.0.1:11434/api/chat"
 DEFAULT_MODEL = "qwen3:30b-a3b"
+
+FIRST_RETRY_DELAY = timedelta(minutes=1)
+"""How long to wait after the first failed deliberation, doubling up to the cadence.
+
+Short enough that a transient blip costs one minute of the agent's judgement rather than
+a full cadence interval, and long enough that a real outage does not become a retry storm
+against a model that is usually failing precisely because it is overloaded."""
 AGENT_VERSION = "LLM-EXPOSURE-AGENT-V1"
 
 VERDICT_SCHEMA: dict[str, Any] = {
@@ -448,6 +455,14 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         self._last_verdict: AgentVerdict | None = None
         self._last_explanation: dict[str, Any] = {}
         self._fallbacks = 0
+        # A failed deliberation did not consume the cadence, so `due` stayed true and a
+        # new attempt was spawned on every market tick. Observed live: 30 fallback
+        # decisions in five minutes while the model was saturated, each one a fresh
+        # request to the model that was already the bottleneck, and 30 journal entries
+        # describing the same outage. Backoff turns a retry storm into one retry, then
+        # two minutes, then four, up to the normal cadence.
+        self._consecutive_failures = 0
+        self._next_attempt_at: datetime | None = None
         # Deliberation runs off the event thread. A 333-second inference call on the
         # main loop starved the websocket keepalive, dropped the connection, and left
         # the protective layers unable to fire for the duration. Reasoning is slow by
@@ -624,6 +639,11 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             # Fail safe, not open: hand the wheel to the validated numeric policy
             # rather than leaving the position unmanaged.
             self._fallbacks += 1
+            self._consecutive_failures += 1
+            self._next_attempt_at = now + min(
+                self.cadence,
+                FIRST_RETRY_DELAY * 2 ** (self._consecutive_failures - 1),
+            )
             fallback = self._quant_fallback(vector, is_long, holding_hours)
             self._last_explanation = {
                 "llm_unavailable": failure,
@@ -642,10 +662,16 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         if finished is not None:
             self._last_verdict = finished
             self._last_verdict_at = now
+            self._consecutive_failures = 0
+            self._next_attempt_at = None
 
         # Start the next deliberation when the cadence allows and none is running.
         # This returns immediately; the market keeps being watched meanwhile.
         due = self._last_verdict_at is None or now - self._last_verdict_at >= self.cadence
+        if self._next_attempt_at is not None and now < self._next_attempt_at:
+            # Backing off after a failure. The numeric policy holds the wheel meanwhile,
+            # so the account stays managed; what is suppressed is only the retry.
+            due = False
         if due and not self.deliberating:
             self._spawn_deliberation(state_block, is_long)
 
