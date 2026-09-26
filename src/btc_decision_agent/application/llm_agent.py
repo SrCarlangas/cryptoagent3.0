@@ -86,7 +86,6 @@ from btc_decision_agent.application.regime_playbook import (
     RegimeTracker,
     plan_adjustment,
     render_playbook_block,
-    resolve_exposure,
     resolve_plan,
 )
 from btc_decision_agent.domain.contracts import Action, PositionState
@@ -137,35 +136,39 @@ No eliges una orden. Eliges dos cosas, evaluadas desde cero:
   NEUTRAL   = la estrategia del regimen tal cual
   AGRESIVA  = mas capital, stop mas ancho para no salir por ruido
 
-No declaras numeros de tamano ni de stop: salen de la volatilidad medida y de limites
-fijados de antemano. Cada regimen tiene su propia estrategia y su propia carga de la
-prueba, y las veras en el bloque ESTRATEGIA DEL REGIMEN. Leelas antes de decidir.
-El sistema comparara tu eleccion con la exposicion actual y derivara la orden.
+LA DIRECCION ES TUYA Y SE EJECUTA TAL COMO LA DIGAS. Nada la revierte: ni el regimen
+ni el modelo cuantitativo, que son consejo, no permiso. Lo que NO decides son las
+magnitudes: el tamano, el stop y el horizonte salen de la volatilidad medida y de
+limites fijados de antemano para cada regimen, y los veras en el bloque ESTRATEGIA DEL
+REGIMEN. Leelos antes de decidir.
+
+Esa division importa para como razonas. No tienes que protegerte de equivocarte
+eligiendo liquidez por prudencia: si dices INVERTIDO en un regimen bajista, el sistema
+te dara una fraccion pequeña del capital con un stop corto. El tamano ya es la
+prudencia. Tu trabajo es acertar la direccion, no administrar el riesgo.
 
 Como decidir:
-1. BTC tiene deriva positiva de largo plazo. Estar EN LIQUIDEZ renuncia a esa
-   deriva, asi que EN LIQUIDEZ debe justificarse con evidencia. No es el default
-   seguro. En regimen alcista fuerte esto se endurece: quedarse fuera de una
-   tendencia establecida es una decision costosa y necesita mas conviccion que
-   entrar.
-2. Estar INVERTIDO durante una caida sostenida destruye capital. INVERTIDO tambien
-   se justifica con evidencia.
-3. Declara en movimiento_esperado_pct cuanto crees que se movera el precio a tu favor
-   en los proximos dias. Se realista: una cifra inflada no desbloquea nada porque se
-   acota contra la volatilidad observada, y queda registrada para medir tu
-   calibracion.
-   ENTRAR cuesta comision: si el movimiento esperado no cubre el costo de ida y
-   vuelta, entrar destruye valor aunque tu direccion sea correcta.
-   SALIR no se bloquea por costo. Dejar de estar expuesto no es una apuesta que deba
-   cubrir comision, es dejar de sostener una. Si crees que debes estar EN LIQUIDEZ,
-   dilo sin preocuparte por la comision.
-4. Compara los analogos historicos contra el base rate. Si los analogos rinden como
-   el promedio de 5 anos, no hay senal: no es razon para actuar.
-5. Solo trata como regla lo que tu historial medido marque CON RESPALDO. Lo marcado
+1. BTC tiene deriva positiva de largo plazo. Estar EN LIQUIDEZ renuncia a esa deriva,
+   asi que EN LIQUIDEZ debe justificarse con evidencia. No es el default seguro:
+   quedarse fuera de una tendencia establecida es una decision, no una posicion neutral.
+2. Estar INVERTIDO durante una caida sostenida destruye capital. INVERTIDO tambien se
+   justifica con evidencia.
+3. TE JUZGAN POR EL HORIZONTE DE TU REGIMEN, no por manana. Si el horizonte son 168 h,
+   tu decision se mide por lo que pase en esas 168 h, y un retroceso intermedio no la
+   hace mala. Piensa en ese plazo: es el que se registra y con el que se calcula tu
+   historial medido.
+4. La CONVICCION escala el tamano, no desbloquea nada. 0.50 significa que no lo sabes y
+   dara una posicion mediana; 0.85 dara una grande. No hay umbral que cruzar, asi que no
+   inflas nada apuntando alto ni te proteges apuntando a 0.50. Di lo que crees.
+5. Declara en movimiento_esperado_pct cuanto crees que se movera el precio a tu favor
+   dentro del horizonte de tu regimen. Ya NO decide si se puede entrar: eso se comprueba
+   contra la volatilidad medida del propio horizonte. Sirve para medir tu calibracion,
+   asi que da una cifra que de verdad creas y varia con el caso.
+6. Compara los analogos historicos contra el base rate. Si los analogos rinden como el
+   promedio de 5 anos, no hay senal: no es razon para actuar.
+7. Solo trata como regla lo que tu historial medido marque CON RESPALDO. Lo marcado
    NO CONCLUYENTE es ruido todavia.
-6. Si tu calibracion muestra que aciertas menos de lo que declaras, baja tu
-   conviccion y exige mas evidencia antes de cambiar.
-7. Cita numeros concretos del estado en tu razon. No inventes cifras.
+8. Cita numeros concretos del estado en tu razon. No inventes cifras.
 
 Todos los numeros del estado ya estan calculados a partir de datos reales. No
 recalcules, no estimes: usalos."""
@@ -364,6 +367,7 @@ class LLMTradingAgent:
         *,
         position_long: bool,
         daily_vol_pct: float | None = None,
+        horizon_hours: int = 24,
     ) -> bool:
         """Economic gate on ENTERING. Exits are never blocked by it.
 
@@ -389,6 +393,7 @@ class LLMTradingAgent:
             expected_move_pct=verdict.expected_move_pct,
             round_trip_cost_bps=float(params.round_trip_cost_bps),
             daily_vol_pct=daily_vol_pct,
+            horizon_hours=horizon_hours,
         )
 
     @staticmethod
@@ -399,6 +404,7 @@ class LLMTradingAgent:
         expected_move_pct: float,
         round_trip_cost_bps: float,
         daily_vol_pct: float | None,
+        horizon_hours: int = 24,
     ) -> bool:
         """The rule itself, with no dependency on live objects.
 
@@ -406,11 +412,29 @@ class LLMTradingAgent:
         different economics than the running system measures a system that does not
         exist, and the divergence is invisible because both sides look reasonable in
         isolation.
+
+        The test is now on MEASURED volatility over the plan's horizon, not on the move the
+        agent declares. Over 60 decisions the agent declared exactly 0.50% on 51 of them
+        and used five distinct values in total, so the field it was gated on was a constant
+        it emitted rather than an estimate it made, and the gate was decoration. The
+        declared value is still recorded, because calibration needs it; it just no longer
+        decides anything.
+
+        What replaces it is objective and answers the same economic question: can a move of
+        the size this market actually produces over the period the strategy intends to hold
+        cover the round trip? Volatility scales with the square root of time, so a 168 hour
+        horizon at 2% daily is a 5.3% typical move against a 0.20% cost. The gate therefore
+        passes easily in normal conditions and bites where it should, when volatility
+        collapses or the horizon is very short.
         """
         if position_long and not wants_long:
             return True
-        expected = LLMTradingAgent.plausible_expected_move(expected_move_pct, daily_vol_pct)
-        return expected >= round_trip_cost_bps / 100.0
+        if daily_vol_pct is None or daily_vol_pct <= 0.0:
+            # No volatility reading. Fall back to the declared move rather than blocking,
+            # since a missing measurement is not evidence that the move is too small.
+            return expected_move_pct >= round_trip_cost_bps / 100.0
+        horizon_move_pct = daily_vol_pct * math.sqrt(max(1.0, horizon_hours) / 24.0)
+        return horizon_move_pct >= round_trip_cost_bps / 100.0
 
     @staticmethod
     def plausible_expected_move(expected_pct: float, daily_vol_pct: float | None) -> float:
@@ -722,21 +746,47 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         )
         self._state = replace(self._state, regime_tracker=tracker.to_dict())
         regime = tracker.regime
-        effective_long, honoured = resolve_exposure(
-            regime=regime,
-            wants_invested=verdict.wants_long,
-            conviction=verdict.conviction,
-        )
+        # THE AGENT OWNS THE DIRECTION. The regime no longer reverses it.
+        #
+        # It used to, through a conviction threshold per regime, and measured on 60
+        # recorded decisions that override cost 39 points, +60.65% against +99.70%, while
+        # nearly doubling the round trips, 27 against 14. Of 15 direction changes, 9 were
+        # imposed against what the agent had asked for.
+        #
+        # The override was added because the agent was observed sitting out a +185%
+        # advance at 0.50 conviction. That observation was real and the diagnosis was
+        # wrong: the run behind it had a break-even ratchet closing every position that
+        # went 0.5% green and a memory scoring 168 hour decisions on tomorrow's price. The
+        # agent's caution was partly a correct response to an execution layer that could
+        # not hold a position. With those fixed its calls carry signal: conviction at 0.70
+        # or above returned +1.86% per interval against +0.27% below 0.60, effect 1.7.
+        #
+        # What keeps this safe is that the regime still owns every MAGNITUDE: the size,
+        # the stop, the trailing geometry, the risk ceiling and the horizon. Saying
+        # "invested" in a deep bear buys 20% of capital behind a 1.6 sigma stop.
+        effective_long = verdict.wants_long
+        honoured = True
         action = (
             ExposureAction.TARGET_LONG if effective_long else ExposureAction.TARGET_FLAT
         )
         trade = decision_for(action, is_long)
         volatility = self.agent.last_market.get("volatilidad_diaria_30d_pct")
+        # The regime's strategy, resolved into bounded numbers. The agent chose a
+        # posture; volatility and pre-registered limits decide what it means. Resolved
+        # BEFORE the cost gate because the gate now tests the volatility over this plan's
+        # horizon, so the horizon has to exist first.
+        plan = resolve_plan(
+            regime=regime,
+            posture=verdict.posture,
+            conviction=verdict.conviction,
+            daily_vol_pct=float(volatility) if volatility is not None else None,
+        )
         clears = self.agent.clears_cost(
             verdict,
             self.params,
             position_long=is_long,
             daily_vol_pct=float(volatility) if volatility is not None else None,
+            horizon_hours=plan.horizon_hours,
         )
 
         record = PolicyDecision(
@@ -756,15 +806,6 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             dominant_regime=int(quant.get("regimen", 0)),
             confidence=verdict.conviction,
             policy_version=AGENT_VERSION,
-        )
-
-        # The regime's strategy, resolved into bounded numbers. The agent chose a
-        # posture; volatility and pre-registered limits decide what it means.
-        plan = resolve_plan(
-            regime=regime,
-            posture=verdict.posture,
-            conviction=verdict.conviction,
-            daily_vol_pct=float(volatility) if volatility is not None else None,
         )
 
         # Size the book toward the plan's target instead of only opening and closing it.

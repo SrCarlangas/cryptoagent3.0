@@ -77,7 +77,6 @@ from btc_decision_agent.application.realtime_demo import (
 from btc_decision_agent.application.regime_playbook import (
     RegimeTracker,
     plan_adjustment,
-    resolve_exposure,
     resolve_plan,
 )
 
@@ -210,7 +209,6 @@ def main() -> None:
     peak, drawdown = START_CAPITAL, 0.0
     failures = 0
     stop_exits = 0
-    burden_blocks = 0
     entries = 0
     exits = 0
     scale_ups = 0
@@ -289,38 +287,38 @@ def main() -> None:
             print(f"  [{number}/{len(decision_days)}] fallo del modelo: {error}", flush=True)
             continue
 
-        # Same burden of proof as production, applied against the regime IN FORCE rather
-        # than the label just observed. The label changed on 37% of transitions at this step
-        # and 31% of transitions inverted the default exposure, which turned a standing
-        # disagreement between the agent and the playbook into round trips nobody chose.
+        # The regime IN FORCE, not the label just observed. The label changed on 37% of
+        # transitions at this step, and it governs the SIZE, the STOP and the HORIZON, so
+        # letting it oscillate would rewrite the plan of an open position every few days.
         tracker = tracker.observe(int(quant.get("regimen", 0)), now)
         regime = tracker.regime
-        wants_long, choice_honoured = resolve_exposure(
-            regime=regime,
-            wants_invested=verdict.wants_long,
-            conviction=verdict.conviction,
-        )
+        # THE AGENT OWNS THE DIRECTION, exactly as production does. The regime's default
+        # exposure is doctrine shown in the prompt and no longer reverses a decision:
+        # measured on 60 recorded decisions the override cost 39 points and nearly doubled
+        # the round trips.
+        wants_long, choice_honoured = verdict.wants_long, True
         changing = wants_long != position_long
-        # Same economics as live, including the asymmetry: the cost threshold gates
-        # ENTRIES only, and the declared expected move is bounded by what the market's
-        # own volatility could deliver. Replaying with different rules than production
-        # would measure a system that does not exist.
-        clears = LLMTradingAgent.clears_cost_static(
-            wants_long=wants_long,
-            position_long=position_long,
-            expected_move_pct=verdict.expected_move_pct,
-            round_trip_cost_bps=float(params.round_trip_cost_bps),
-            daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
-        )
-        # The regime's strategy, resolved exactly as production resolves it.
+        # The regime's strategy, resolved exactly as production resolves it, and resolved
+        # BEFORE the cost gate because the gate now tests the measured volatility over this
+        # plan's horizon rather than the move the agent declares. The agent declared exactly
+        # 0.50% on 51 of 60 decisions, so the field the gate used to read was a constant it
+        # emitted rather than an estimate it made.
         plan = resolve_plan(
             regime=regime,
             posture=verdict.posture,
             conviction=verdict.conviction,
             daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
         )
-        if not choice_honoured:
-            burden_blocks += 1
+        clears = LLMTradingAgent.clears_cost_static(
+            wants_long=wants_long,
+            position_long=position_long,
+            expected_move_pct=verdict.expected_move_pct,
+            round_trip_cost_bps=float(params.round_trip_cost_bps),
+            daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
+            horizon_hours=plan.horizon_hours,
+        )
+        # The regime's strategy, resolved exactly as production resolves it.
+
         fill = closes[min(day + 1, end_day)]
 
         # Bring the book to the plan's target instead of only opening and closing. A
@@ -517,7 +515,6 @@ def main() -> None:
         "direction_changes": direction_changes,
         "size_adjustments": adjustments,
         "commission_paid_pct": commission_paid / START_CAPITAL * 100.0,
-        "burden_blocks": burden_blocks,
         "entries": entries,
         "exits": exits,
         "scale_ups": scale_ups,
@@ -630,8 +627,10 @@ def render(payload: dict[str, Any]) -> str:
         f"- actuo en el {agent['acted_share']:.0%} (el resto no requeria cambio o no cubria costo)",
         f"- cambios de exposicion que el costo bloqueo: {agent['blocked_changes_by_cost']}"
         f" (de ellos salidas: {agent['blocked_exits_by_cost']}, debe ser 0)",
-        f"- veces que el regimen impuso su exposicion por defecto sobre la eleccion "
-        f"del agente: {agent['burden_blocks']}",
+        "- veces que el regimen impuso su exposicion sobre la del agente: 0 por diseño. "
+        "La direccion es del agente y no se revierte; el regimen fija el tamano, el stop y "
+        "el horizonte. Quitar ese override valia +39pp y la mitad de los viajes de ida y "
+        "vuelta sobre las mismas decisiones grabadas.",
         f"- salidas por stop protector: {agent['stop_exits']}",
         f"- cambios de DIRECCION: {agent.get('direction_changes', 0)} · "
         f"ajustes de TAMANO: {agent.get('size_adjustments', 0)} · "

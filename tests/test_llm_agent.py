@@ -687,16 +687,20 @@ class TestEngineSafety:
         # Falls back to the configured defaults rather than raising or returning None.
         assert engine.active_stop(D("80000")) == D("80000") * D("0.97")
 
-    def test_an_unargued_exit_loses_to_the_regime_default(self, tmp_path: Path) -> None:
-        """Regime-dependent behaviour, not just regime-dependent parameters.
+    def test_the_agents_direction_is_executed_even_against_the_regime(
+        self, tmp_path: Path
+    ) -> None:
+        """This test used to assert the opposite, and the reversal is the point.
 
-        The synthetic evidence is a steady uptrend, so the advisor reports a bullish
-        regime, whose default exposure is invested. Moving to cash there needs 0.70; a
-        half-hearted 0.40 loses to the default and the position stays.
+        It pinned the playbook overriding a half-hearted move to cash in a bull regime.
+        Measured on 60 recorded decisions that override cost 39 points, +60.65% against
+        +99.70% without it, and nearly doubled the round trips. It was added because the
+        agent had been seen sitting out a +185% advance at 0.50 conviction, on a run whose
+        execution layer closed every position that went 0.5% green and whose memory scored
+        168 hour decisions on tomorrow's price.
 
-        The first version of this only vetoed CHANGES, which meant an agent already in
-        cash was never tested at all. It sat out a +185% advance declaring 0.50
-        conviction for cash in a strong uptrend.
+        The agent now owns the direction. What bounds the risk is that the regime owns every
+        magnitude, which the accompanying playbook tests pin.
         """
         engine = self._engine(
             tmp_path,
@@ -706,32 +710,46 @@ class TestEngineSafety:
             engine, _evidence(), _position(PositionState.LONG, btc="0.05", usdt="0")
         )
         info = engine.last_explanation
-        if info["regime"] in {2, 3}:
-            assert "_REGIMEN_MANDA" in decision.reason
-            assert info["choice_honoured"] is False
-            assert info["effective_exposure"] == EXPOSURE_INVESTED
-            # The agent's own words are still recorded, unchanged.
-            assert info["target_exposure"] == EXPOSURE_CASH
-            # The property that matters, and it is no longer "no order at all".
-            #
-            # This asserted HOLD while the only available moves were open-from-flat and
-            # close-to-zero. With scaling the engine sizes toward the regime's target, and
-            # the book in this test is 100% in BTC with no cash while the bull plan asks for
-            # 81%, so the coherent action is to TRIM to that target. What must never happen
-            # is the unargued exit: the position stays open.
-            assert decision.target_share is not None and decision.target_share > 0
-            if decision.action == Action.EXIT_LONG:
-                assert decision.reason.endswith("_REDUCE")
-        else:
-            # Cash is the default in the bearish regimes, so the exit is honoured.
-            assert info["choice_honoured"] is True
+        # Whatever the regime is, the agent asked for cash and cash is what is executed.
+        assert info["target_exposure"] == EXPOSURE_CASH
+        assert info["effective_exposure"] == EXPOSURE_CASH
+        assert info["choice_honoured"] is True
+        assert "_REGIMEN_MANDA" not in decision.reason
+        assert decision.action == Action.EXIT_LONG
+        assert decision.target_share == 0
 
-    def test_an_unargued_entry_in_a_bear_regime_loses_to_cash(self, tmp_path: Path) -> None:
-        # The rule is symmetric: it protects capital as readily as it captures trend.
-        from btc_decision_agent.application.regime_playbook import resolve_exposure
+    def test_a_low_conviction_call_is_still_the_agents_call(self, tmp_path: Path) -> None:
+        # No threshold left to clear. Conviction now only scales the SIZE, which is where
+        # it belongs: it was measured to carry information about outcomes (+1.86% per
+        # interval above 0.70 against +0.27% below 0.60) but not enough to justify a veto.
+        engine = self._engine(
+            tmp_path,
+            StubClient(_verdict(EXPOSURE_INVESTED, conviction=0.30, expected=5.0)),
+        )
+        decision = self._settle(engine, _evidence(), _position(PositionState.FLAT))
+        assert engine.last_explanation["effective_exposure"] == EXPOSURE_INVESTED
+        assert decision.action == Action.ENTER_LONG
+        # And a timid call buys less than a confident one.
+        timid = decision.target_share
+        engine = self._engine(
+            tmp_path,
+            StubClient(_verdict(EXPOSURE_INVESTED, conviction=0.90, expected=5.0)),
+        )
+        bold = self._settle(engine, _evidence(), _position(PositionState.FLAT)).target_share
+        assert timid is not None and bold is not None and timid < bold
 
-        assert resolve_exposure(regime=1, wants_invested=True, conviction=0.60) == (False, False)
-        assert resolve_exposure(regime=1, wants_invested=True, conviction=0.85) == (True, True)
+    def test_an_entry_in_a_bear_regime_is_honoured_but_sized_small(self, tmp_path: Path) -> None:
+        """This used to assert the playbook could refuse the entry outright.
+
+        It cannot any more: the agent owns the direction. What bounds the damage is that the
+        regime owns the size and the stop, so asking to be invested in a deep bear is
+        honoured at a fifth of the capital behind a tight stop.
+        """
+        from btc_decision_agent.application.regime_playbook import resolve_plan
+
+        plan = resolve_plan(regime=1, posture="AGRESIVA", conviction=0.60, daily_vol_pct=2.0)
+        assert plan.allocation_fraction <= D("0.30")
+        assert plan.allocation_fraction * plan.stop_loss_fraction <= D("0.02")
 
     def test_the_burden_never_overrides_a_breaker_or_the_stop(self, tmp_path: Path) -> None:
         # The burden applies only to the agent's own changes. Protection outranks it.

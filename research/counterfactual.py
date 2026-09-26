@@ -102,6 +102,18 @@ VETO_ONLY = "solo veto"
 ADD_ONLY = "solo sumar"
 ALWAYS_IN = "siempre invertido"
 RERESOLVED = "reresuelto"
+RAW_AGENT = "agente sin tutela"
+"""What the agent asked for, with the playbook unable to override it.
+
+FROM_AGENT is not this: it replays the RESOLVED target, which already carries the
+playbook's overrides. This uses `agent_asked_for` directly, so it answers what full
+authority would have produced. The playbook still sets the size and the stop geometry
+through resolve_plan; what it loses is the power to reverse the direction.
+"""
+
+TIE_BREAK_ONLY = "solo desempate"
+"""The agent owns the direction; the default only breaks a declared tie."""
+
 STABILISED = "regimen estabilizado"
 """Re-run the burden of proof against a regime label that has to persist first.
 
@@ -312,7 +324,15 @@ def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
         return agent_in or playbook_in
     if rules.exposure_from == ALWAYS_IN:
         return True
-    if rules.exposure_from in {RERESOLVED, STABILISED}:
+    if rules.exposure_from == TIE_BREAK_ONLY:
+        # The agent owns the direction; the regime default is only a tie-break for a model
+        # that declares less conviction than a coin flip, which is incoherent with having
+        # stated an exposure at all.
+        asked = bool(item.get("agent_asked_for") == EXPOSURE_INVESTED)
+        if float(item.get("conviction") or 0.5) >= 0.5:
+            return asked
+        return strategy_for(item["_effective_regime"]).default_exposure == EXPOSURE_INVESTED
+    if rules.exposure_from in {RERESOLVED, STABILISED, RAW_AGENT}:
         # Re-run the burden of proof from what the agent ACTUALLY asked for, which the
         # trace records separately from the resolved target. RERESOLVED uses the observed
         # regime and must reproduce the recorded target, which is the control that proves
@@ -329,10 +349,13 @@ def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
                 "Esa traza es anterior a la carga de la prueba, asi que no se puede "
                 "reresolver la exposicion sin inventar lo que el agente pidio."
             )
+        asked = bool(item.get("agent_asked_for") == EXPOSURE_INVESTED)
+        if rules.exposure_from == RAW_AGENT:
+            return asked
         regime = item["_effective_regime"] if rules.exposure_from == STABILISED else item.get("regime")
         resolved, _ = resolve_exposure(
             regime=regime,
-            wants_invested=bool(item.get("agent_asked_for") == EXPOSURE_INVESTED),
+            wants_invested=asked,
             conviction=float(item.get("conviction") or 0.5),
         )
         return resolved
@@ -579,6 +602,8 @@ VARIANTS: tuple[tuple[str, tuple[Rules, ...]], ...] = (
             Rules("como corrio", mark_from_fill=True, exposure_from=FROM_AGENT),
             Rules("reresuelto (control)", mark_from_fill=True, exposure_from=RERESOLVED),
             Rules("regimen con persistencia", mark_from_fill=True, exposure_from=STABILISED),
+            Rules("agente SIN tutela", mark_from_fill=True, exposure_from=RAW_AGENT),
+            Rules("agente + desempate 0.50", mark_from_fill=True, exposure_from=TIE_BREAK_ONLY),
         ),
     ),
     (

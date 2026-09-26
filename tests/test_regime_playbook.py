@@ -20,6 +20,7 @@ from decimal import Decimal
 
 import pytest
 
+from btc_decision_agent.application import regime_playbook
 from btc_decision_agent.application.realtime_demo import (
     ProtectiveDecisionEngine,
     RealtimeParams,
@@ -41,7 +42,6 @@ from btc_decision_agent.application.regime_playbook import (
     RegimeTracker,
     _clamp,
     render_playbook_block,
-    resolve_exposure,
     resolve_plan,
     strategy_for,
 )
@@ -177,54 +177,55 @@ class TestPlaybookShape:
         assert PLAYBOOK[1].default_exposure == EXPOSURE_CASH
         assert PLAYBOOK[0].default_exposure == EXPOSURE_CASH
 
-    def test_uncertainty_resolves_to_the_regime_default_not_to_inaction(self) -> None:
-        """The bug this replaced. Gating only CHANGES left the status quo unexamined, so
-        an agent already in cash sat out a +185% advance declaring 0.50 conviction for
-        cash in a strong uptrend, far below the 0.70 that side required.
+    def test_the_default_exposure_is_doctrine_and_not_a_control(self) -> None:
+        """What used to be here, and why it is gone.
 
-        Now an unargued preference loses to the regime's default.
+        A conviction threshold per regime let the playbook REVERSE the direction the agent
+        asked for. Three tests pinned that behaviour and they have been deleted rather than
+        weakened, because the behaviour was removed deliberately.
+
+        Measured on 60 recorded decisions the override cost 39 points, +60.65% against
+        +99.70% without it, and nearly doubled the round trips, 27 against 14. Of 15
+        direction changes, 9 were imposed against what the agent had asked for.
+
+        It was added because the agent had been OBSERVED sitting out a +185% advance at
+        0.50 conviction. That observation was real and the diagnosis was wrong: the run
+        behind it had a break-even ratchet closing every position that went 0.5% green and
+        a memory scoring 168 hour decisions on tomorrow's price. The caution was partly a
+        correct response to an execution layer that could not hold a position.
+
+        The default survives as DOCTRINE shown to the agent in its prompt. Nothing reads it
+        to reverse a decision, so nothing asserts that it does.
         """
-        # Strong uptrend: half-hearted cash becomes invested.
-        exposure, honoured = resolve_exposure(regime=3, wants_invested=False, conviction=0.50)
-        assert exposure is True
-        assert honoured is False
-        # With real conviction, the agent's own call stands.
-        exposure, honoured = resolve_exposure(regime=3, wants_invested=False, conviction=0.75)
-        assert exposure is False
-        assert honoured is True
+        from btc_decision_agent.application.llm_tools import (
+            EXPOSURE_CASH,
+            EXPOSURE_INVESTED,
+        )
 
-    def test_the_same_rule_protects_capital_in_a_deep_bear(self) -> None:
-        # Half-hearted investment in a falling market becomes cash.
-        exposure, honoured = resolve_exposure(regime=1, wants_invested=True, conviction=0.60)
-        assert exposure is False
-        assert honoured is False
-        # And a strongly argued entry is still allowed.
-        exposure, honoured = resolve_exposure(regime=1, wants_invested=True, conviction=0.85)
-        assert exposure is True
-        assert honoured is True
+        assert PLAYBOOK[3].default_exposure == EXPOSURE_INVESTED
+        assert PLAYBOOK[1].default_exposure == EXPOSURE_CASH
+        # And the threshold that used to enforce it no longer exists anywhere. A parameter
+        # that is read by nothing is the defect this whole file has been chasing.
+        assert not hasattr(PLAYBOOK[3], "min_conviction_to_deviate")
+        assert not hasattr(regime_playbook, "resolve_exposure")
 
-    def test_agreeing_with_the_default_never_needs_justification(self) -> None:
-        for conviction in (0.0, 0.5, 1.0):
-            assert resolve_exposure(regime=3, wants_invested=True, conviction=conviction) == (
-                True,
-                True,
-            )
-            assert resolve_exposure(regime=1, wants_invested=False, conviction=conviction) == (
-                False,
-                True,
-            )
+    def test_the_regime_still_owns_every_magnitude(self) -> None:
+        """What makes full direction authority safe rather than reckless.
 
-    def test_there_is_no_case_where_both_sides_fail(self) -> None:
-        """The incoherence in the first attempt: two independent minimums could reject
-        cash and investment at once, leaving no defined behaviour."""
-        candidates: list[int | None] = [*PLAYBOOK, None, 99]
-        for regime in candidates:
-            for wants in (True, False):
-                for conviction in (0.0, 0.3, 0.5, 0.7, 0.9, 1.0):
-                    exposure, _ = resolve_exposure(
-                        regime=regime, wants_invested=wants, conviction=conviction
-                    )
-                    assert isinstance(exposure, bool)
+        The agent may ask to be invested in a deep bear. The regime decides that this buys
+        a fifth of the capital behind a tight stop, so the decision is honoured and the
+        damage is still bounded.
+        """
+        bear = resolve_plan(regime=1, posture="AGRESIVA", conviction=1.0, daily_vol_pct=2.0)
+        bull = resolve_plan(regime=3, posture="AGRESIVA", conviction=1.0, daily_vol_pct=2.0)
+        assert bear.allocation_fraction < bull.allocation_fraction / 2
+        assert bear.stop_loss_fraction < bull.stop_loss_fraction
+        assert bear.horizon_hours < bull.horizon_hours
+        # The ceiling scales with posture like the stop does, so the comparison has to
+        # use the scaled figure. Checked against the plan's own recorded risk too.
+        ceiling = PLAYBOOK[1].risk_per_trade * _POSTURE_SIZE[Posture.AGRESIVA]
+        assert bear.allocation_fraction * bear.stop_loss_fraction <= ceiling
+        assert bear.risk_per_trade_fraction <= ceiling
 
     def test_an_unknown_regime_falls_back_to_the_cautious_strategy(self) -> None:
         assert strategy_for(None) is PLAYBOOK[1]
@@ -305,8 +306,14 @@ class TestPlanResolution:
     def test_the_agent_is_shown_the_strategy_it_operates_inside(self) -> None:
         block = render_playbook_block(3, 2.0)
         assert "alcista fuerte" in block
-        assert "EN LIQUIDEZ" in block  # the default and its threshold are stated
-        assert "por defecto" in block
+        assert "EN LIQUIDEZ" in block  # the regime's doctrine is stated
+        # And the two things the agent has to know to carry its own authority: that the
+        # direction is its call, and the horizon its decision will be judged on. The old
+        # version showed it a conviction threshold to clear, which both invited anchoring
+        # and is no longer true.
+        assert "LA DIRECCION LA DECIDES TU" in block
+        assert f"{PLAYBOOK[3].horizon_hours} h" in block
+        assert "no por lo que pase manana" in block
         for posture in Posture:
             assert posture.value in block
         # It must be told it chooses posture, not numbers.
