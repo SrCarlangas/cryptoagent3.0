@@ -30,7 +30,7 @@ from pathlib import Path
 from typing import Any
 
 from btc_decision_agent.application.llm_tools import EXPOSURE_INVESTED
-from btc_decision_agent.application.regime_playbook import PLAYBOOK, strategy_for
+from btc_decision_agent.application.regime_playbook import strategy_for
 
 
 def _histogram(values: list[float], label: str, *, width: int = 46) -> None:
@@ -76,18 +76,25 @@ def main() -> int:
     print(f"  POSTURA: {dict(postures)}")
 
     print()
-    print("  CONVICCION CONTRA LOS UMBRALES QUE LA LEEN")
-    print("  Un modelo que aterriza justo en el umbral que se le acaba de mostrar no esta")
-    print("  estimando, esta recitando. Por eso se cuenta la coincidencia exacta.")
-    print(f"    {'reg':>3} {'umbral':>7} {'n':>4} {'justo en el umbral':>19} {'por debajo':>11}")
-    for regime, strategy in PLAYBOOK.items():
-        rows = [item for item in trace if item.get("regime") == regime]
-        if not rows:
-            continue
-        threshold = strategy.min_conviction_to_deviate
-        exact = sum(1 for item in rows if abs(float(item["conviction"]) - threshold) < 1e-9)
-        below = sum(1 for item in rows if float(item["conviction"]) < threshold)
-        print(f"    {regime:>3} {threshold:>7.2f} {len(rows):>4} {exact:>19} {below:>11}")
+    print("  DISCRIMINACION: cuantos valores distintos usa de verdad")
+    print("  Un modelo que dice siempre lo mismo no esta juzgando. Y como la postura y la")
+    print("  conviccion son lo unico que el playbook lee para decidir el TAMANO, si ambas se")
+    print("  colapsan el tamano se vuelve constante y la modulacion por regimen desaparece.")
+    for label, values in (
+        ("conviccion", [float(item["conviction"]) for item in trace]),
+        ("mov. esperado", [float(item["expected_move_pct"]) for item in trace]),
+    ):
+        distinct = len({round(value, 2) for value in values})
+        top = Counter(round(value, 2) for value in values).most_common(1)[0]
+        print(
+            f"    {label:<14} {distinct:>2} valores distintos, "
+            f"el mas repetido {top[0]} en {top[1]}/{len(values)} = {top[1] / len(values):.0%}"
+        )
+    dominant = postures.most_common(1)[0]
+    print(
+        f"    {'postura':<14} {len(postures):>2} valores distintos, "
+        f"la mas repetida {dominant[0]} en {dominant[1]}/{len(trace)} = {dominant[1] / len(trace):.0%}"
+    )
 
     print()
     print("  LO QUE DECLARO CONTRA LO QUE PASO DESPUES")

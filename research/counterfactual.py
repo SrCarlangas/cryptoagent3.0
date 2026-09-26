@@ -74,7 +74,6 @@ from btc_decision_agent.application.regime_playbook import (
     ExecutionPlan,
     Posture,
     plan_adjustment,
-    resolve_exposure,
     resolve_plan,
     strategy_for,
 )
@@ -113,6 +112,34 @@ through resolve_plan; what it loses is the power to reverse the direction.
 
 TIE_BREAK_ONLY = "solo desempate"
 """The agent owns the direction; the default only breaks a declared tie."""
+
+OLD_BURDEN = "override retirado"
+"""The retired burden of proof, reimplemented here so it can still be measured.
+
+It was deleted from production because it cost 39 points on one replay. The real run that
+followed came in WORSE, so the replay's prediction did not hold and the rule has to be
+re-measured against the decisions the new configuration actually produced. Keeping a
+research-only copy is how a retired rule stays falsifiable instead of becoming folklore.
+"""
+
+_RETIRED_THRESHOLDS: dict[int, float] = {0: 0.60, 1: 0.80, 2: 0.55, 3: 0.70}
+"""The per-regime minimums as they stood when the override was removed."""
+
+
+def _apply_retired_burden(regime: int, asked_invested: bool, conviction: float) -> bool:
+    """The retired rule, reimplemented here rather than imported.
+
+    Production no longer has it, and that is the point: a rule that has been withdrawn
+    should not keep living in the code that trades. But it still has to be MEASURABLE,
+    because the replay that justified withdrawing it was contradicted by the run that
+    followed. A local copy keeps it falsifiable instead of turning it into folklore.
+    """
+    default_invested = strategy_for(regime).default_exposure == EXPOSURE_INVESTED
+    if asked_invested == default_invested:
+        return asked_invested
+    if conviction >= _RETIRED_THRESHOLDS.get(regime, 0.80):
+        return asked_invested
+    return default_invested
 
 STABILISED = "regimen estabilizado"
 """Re-run the burden of proof against a regime label that has to persist first.
@@ -324,15 +351,7 @@ def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
         return agent_in or playbook_in
     if rules.exposure_from == ALWAYS_IN:
         return True
-    if rules.exposure_from == TIE_BREAK_ONLY:
-        # The agent owns the direction; the regime default is only a tie-break for a model
-        # that declares less conviction than a coin flip, which is incoherent with having
-        # stated an exposure at all.
-        asked = bool(item.get("agent_asked_for") == EXPOSURE_INVESTED)
-        if float(item.get("conviction") or 0.5) >= 0.5:
-            return asked
-        return strategy_for(item["_effective_regime"]).default_exposure == EXPOSURE_INVESTED
-    if rules.exposure_from in {RERESOLVED, STABILISED, RAW_AGENT}:
+    if rules.exposure_from in {OLD_BURDEN, TIE_BREAK_ONLY, RERESOLVED, STABILISED, RAW_AGENT}:
         # Re-run the burden of proof from what the agent ACTUALLY asked for, which the
         # trace records separately from the resolved target. RERESOLVED uses the observed
         # regime and must reproduce the recorded target, which is the control that proves
@@ -352,13 +371,19 @@ def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
         asked = bool(item.get("agent_asked_for") == EXPOSURE_INVESTED)
         if rules.exposure_from == RAW_AGENT:
             return asked
-        regime = item["_effective_regime"] if rules.exposure_from == STABILISED else item.get("regime")
-        resolved, _ = resolve_exposure(
-            regime=regime,
-            wants_invested=asked,
-            conviction=float(item.get("conviction") or 0.5),
+        conviction = float(item.get("conviction") or 0.5)
+        if rules.exposure_from == TIE_BREAK_ONLY:
+            # The default only breaks a declared tie: a model stating less conviction than a
+            # coin flip has not really stated an exposure.
+            if conviction >= 0.5:
+                return asked
+            return strategy_for(item["_effective_regime"]).default_exposure == EXPOSURE_INVESTED
+        regime = int(
+            item["_effective_regime"]
+            if rules.exposure_from in {STABILISED, OLD_BURDEN}
+            else (item.get("regime") or 1)
         )
-        return resolved
+        return _apply_retired_burden(regime, asked, conviction)
     return agent_in
 
 
@@ -604,6 +629,7 @@ VARIANTS: tuple[tuple[str, tuple[Rules, ...]], ...] = (
             Rules("regimen con persistencia", mark_from_fill=True, exposure_from=STABILISED),
             Rules("agente SIN tutela", mark_from_fill=True, exposure_from=RAW_AGENT),
             Rules("agente + desempate 0.50", mark_from_fill=True, exposure_from=TIE_BREAK_ONLY),
+            Rules("con el override retirado", mark_from_fill=True, exposure_from=OLD_BURDEN),
         ),
     ),
     (
