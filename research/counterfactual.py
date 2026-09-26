@@ -70,6 +70,7 @@ from btc_decision_agent.application.realtime_demo import (
     RealtimeParams,
 )
 from btc_decision_agent.application.regime_playbook import (
+    PLAYBOOK_VERSION,
     ExecutionPlan,
     Posture,
     plan_adjustment,
@@ -509,7 +510,9 @@ VARIANTS: tuple[tuple[str, tuple[Rules, ...]], ...] = (
 )
 
 
-def reconstruct_plans(trace: list[dict[str, Any]], closes: list[float]) -> list[dict[str, Any]]:
+def reconstruct_plans(
+    trace: list[dict[str, Any]], closes: list[float], *, keep_posture: bool = False
+) -> list[dict[str, Any]]:
     """Fill missing plan fields by resolving the playbook at NEUTRAL posture.
 
     Traces recorded before the playbook carry the agent's exposure and conviction but no
@@ -524,6 +527,12 @@ def reconstruct_plans(trace: list[dict[str, Any]], closes: list[float]) -> list[
     nothing about the posture choice itself. Every result from a reconstructed trace is
     labelled, because a derived number that looks like a measured one is how a plausible
     story gets mistaken for evidence.
+
+    With keep_posture it does something different and more useful: it re-resolves the plan
+    from the CURRENT playbook using the posture the model actually chose. That answers what
+    a playbook change would have done to decisions already taken, without spending three
+    hours of GPU to find out. It is still an approximation for the usual reason, that a
+    different position path would have changed what the model saw.
     """
     vol_index = MARKET_FEATURE_NAMES.index("volatility_30d")
     filled: list[dict[str, Any]] = []
@@ -532,7 +541,11 @@ def reconstruct_plans(trace: list[dict[str, Any]], closes: list[float]) -> list[
         vector = market_features(closes[:day], closes[day])
         plan = resolve_plan(
             regime=item.get("regime"),
-            posture=Posture.NEUTRAL.value,
+            posture=(
+                str(item.get("posture") or Posture.NEUTRAL.value)
+                if keep_posture
+                else Posture.NEUTRAL.value
+            ),
             conviction=float(item.get("conviction") or 0.5),
             daily_vol_pct=vector[vol_index] * 100.0,
         )
@@ -564,6 +577,15 @@ def main() -> int:
             "recorded before the playbook can still answer execution questions"
         ),
     )
+    parser.add_argument(
+        "--replan",
+        action="store_true",
+        help=(
+            "re-resolve every plan through the CURRENT playbook, keeping the posture the "
+            "model chose. Answers what a playbook change would have done to decisions "
+            "already recorded, in seconds instead of three GPU hours"
+        ),
+    )
     args = parser.parse_args()
     path = Path(args.report)
     if not path.is_file():
@@ -588,6 +610,8 @@ def main() -> int:
     )
     if reconstructed:
         trace = reconstruct_plans(trace, closes)
+    elif args.replan:
+        trace = reconstruct_plans(trace, closes, keep_posture=True)
 
     window = payload["window"]
     print("=" * 100)
@@ -606,6 +630,12 @@ def main() -> int:
             "  conviccion son las que el modelo dijo; el plan se deriva del playbook a postura\n"
             "  NEUTRAL con la volatilidad medida de cada dia. Sirve para preguntas de\n"
             "  ejecucion a postura fija, no para juzgar la eleccion de postura."
+        )
+    elif args.replan:
+        print(
+            f"  REPLANIFICADO con el playbook actual ({PLAYBOOK_VERSION}), conservando la\n"
+            "  postura que el modelo eligio en cada decision. Las decisiones son reales; los\n"
+            "  parametros de ejecucion son los de hoy, no los de la corrida."
         )
     print("=" * 100)
     header = (

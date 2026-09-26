@@ -743,6 +743,11 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             price=evidence.price,
             acted=acted,
             posture=verdict.posture,
+            # Judge this decision on the horizon the regime's strategy declared for it, not
+            # on a fixed 24 hours. RegimeStrategy.horizon_hours always claimed to do this
+            # and nothing read it, so a 168 hour trend decision was scored by tomorrow's
+            # price and the result went into the agent's own prompt as measured fact.
+            horizon_hours=plan.horizon_hours,
         )
         self._last_explanation = {
             "agent_version": AGENT_VERSION,

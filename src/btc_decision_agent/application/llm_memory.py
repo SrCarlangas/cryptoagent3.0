@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS decisions (
     conviction REAL,
     expected_move_pct REAL,
     posture TEXT,
+    horizon_hours INTEGER,
     reason TEXT,
     thinking TEXT,
     price_at_decision TEXT NOT NULL,
@@ -84,7 +85,10 @@ CREATE INDEX IF NOT EXISTS idx_resolved ON decisions(resolved);
 CREATE INDEX IF NOT EXISTS idx_regime ON decisions(regime, target_exposure);
 """
 
-_ADDED_COLUMNS: tuple[tuple[str, str], ...] = (("posture", "TEXT"),)
+_ADDED_COLUMNS: tuple[tuple[str, str], ...] = (
+    ("posture", "TEXT"),
+    ("horizon_hours", "INTEGER"),
+)
 """Columns introduced after the first release, with their types.
 
 CREATE TABLE IF NOT EXISTS is a no-op on an existing table, so a column added later
@@ -203,15 +207,28 @@ class AgentMemory:
         price: Decimal,
         acted: bool,
         posture: str | None = None,
+        horizon_hours: int | None = None,
     ) -> None:
+        """`horizon_hours` is the holding period the decision was taken FOR.
+
+        Without it every decision was scored on one fixed horizon, 24 hours live. A regime
+        3 decision means to hold for 168 hours, and judging it on tomorrow's close scores a
+        trend-following choice on noise. Over a few hundred decisions that record teaches
+        the agent that being invested does not pay, because at a one day horizon BTC after
+        costs is close to a coin flip. The agent reads these statistics in its prompt, so
+        the mismeasurement feeds straight back into how cautious it is.
+
+        Absent, it falls back to the memory's configured horizon, which is what every row
+        written before this column existed used.
+        """
         with closing(self._connect()) as conn:
             conn.execute(
                 """INSERT OR IGNORE INTO decisions (
                     decided_at, event_id, features, regime, quant_p_long,
                     target_exposure, exposure_before, derived_order, conviction,
-                    expected_move_pct, posture, reason, thinking, price_at_decision,
-                    acted
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    expected_move_pct, posture, horizon_hours, reason, thinking,
+                    price_at_decision, acted
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (
                     decided_at.isoformat(),
                     event_id,
@@ -224,6 +241,7 @@ class AgentMemory:
                     conviction,
                     expected_move_pct,
                     posture,
+                    horizon_hours,
                     reason[:2000],
                     thinking[:4000],
                     format(price, "f"),
@@ -238,15 +256,31 @@ class AgentMemory:
         The outcome is signed by the exposure the agent chose: holding BTC earns the
         move, standing aside earns the move avoided. That way a correct decision to
         stay flat during a fall is recorded as a win, which is exactly what it was.
+
+        Each decision waits for ITS OWN horizon, the one the regime's strategy declared
+        when the decision was taken. A single global cutoff scored a 168 hour trend
+        decision on tomorrow's price, which is the wrong question asked of the right
+        decision, and the answer went into the agent's prompt as measured fact.
         """
-        cutoff = (now - self.horizon).isoformat()
+        default_hours = self.horizon.total_seconds() / 3600.0
         resolved = 0
         with closing(self._connect()) as conn:
-            rows = conn.execute(
-                "SELECT id, decided_at, target_exposure, price_at_decision "
-                "FROM decisions WHERE resolved=0 AND decided_at<=?",
-                (cutoff,),
+            # Filtered in Python rather than SQL because the cutoff is now per row. The
+            # unresolved set is small by construction: it only holds decisions whose
+            # horizon has not elapsed.
+            candidates = conn.execute(
+                "SELECT id, decided_at, target_exposure, price_at_decision, horizon_hours "
+                "FROM decisions WHERE resolved=0"
             ).fetchall()
+            rows = []
+            for candidate in candidates:
+                hours = candidate["horizon_hours"] or default_hours
+                try:
+                    decided = datetime.fromisoformat(str(candidate["decided_at"]))
+                except ValueError:
+                    continue
+                if decided + timedelta(hours=float(hours)) <= now:
+                    rows.append(candidate)
             for row in rows:
                 entry = float(row["price_at_decision"])
                 if entry <= 0:

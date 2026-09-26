@@ -817,3 +817,125 @@ class TestVerdictParsing:
 
     def test_exposure_action_mapping_is_exhaustive(self) -> None:
         assert set(ExposureAction) == {ExposureAction.TARGET_LONG, ExposureAction.TARGET_FLAT}
+
+
+class TestEachDecisionIsJudgedOnItsOwnHorizon:
+    """RegimeStrategy.horizon_hours claimed to drive this and nothing read it.
+
+    The memory used one fixed horizon for every decision, 24 hours in production. A regime
+    3 decision means to hold for 168 hours, so it was scored by the next day's price. At a
+    one day horizon BTC after costs is close to a coin flip, so the agent's own record told
+    it that being invested does not pay, and it reads that record in its prompt. A
+    mismeasured outcome with a direct route into how cautious the agent is.
+
+    Same shape of defect as ExecutionPlan.apply forgetting the break-even pair: a declared
+    parameter whose stated purpose nothing implemented, and a full green suite throughout.
+    """
+
+    def _record(
+        self, memory: AgentMemory, at: datetime, horizon: int | None, event: str
+    ) -> None:
+        memory.record(
+            decided_at=at,
+            event_id=event,
+            features=[0.0] * len(MARKET_FEATURE_NAMES),
+            regime=3,
+            quant_p_long=0.6,
+            target_exposure=EXPOSURE_INVESTED,
+            exposure_before=EXPOSURE_CASH,
+            derived_order="BUY",
+            conviction=0.8,
+            expected_move_pct=1.0,
+            reason="x",
+            thinking="",
+            price=D("80000"),
+            acted=True,
+            horizon_hours=horizon,
+        )
+
+    def test_a_long_horizon_decision_is_not_resolved_early(self, tmp_path: Path) -> None:
+        memory = AgentMemory(tmp_path / "m.sqlite3", horizon_hours=24)
+        self._record(memory, NOW, 168, "trend")
+        # A day later the old code would have scored it already.
+        assert memory.resolve_pending(NOW + timedelta(hours=25), D("84000")) == 0
+        assert memory.resolve_pending(NOW + timedelta(hours=169), D("96000")) == 1
+
+    def test_it_is_scored_at_the_price_of_its_own_horizon(self, tmp_path: Path) -> None:
+        # The point of the fix: the outcome recorded is the trend's move, not the next
+        # day's. Entry 80000, resolution 96000, invested, so +20%.
+        memory = AgentMemory(tmp_path / "m.sqlite3", horizon_hours=24)
+        self._record(memory, NOW, 168, "trend")
+        memory.resolve_pending(NOW + timedelta(hours=25), D("84000"))  # ignored, too early
+        memory.resolve_pending(NOW + timedelta(hours=169), D("96000"))
+        patterns = memory.measured_patterns()
+        means = [item.mean_realized_pct for item in patterns if item.samples == 1]
+        assert means and means[0] == pytest.approx(20.0)
+
+    def test_decisions_with_different_horizons_resolve_independently(
+        self, tmp_path: Path
+    ) -> None:
+        memory = AgentMemory(tmp_path / "m.sqlite3", horizon_hours=24)
+        self._record(memory, NOW, 24, "bear")
+        self._record(memory, NOW, 168, "trend")
+        assert memory.resolve_pending(NOW + timedelta(hours=25), D("84000")) == 1
+        assert memory.resolve_pending(NOW + timedelta(hours=169), D("96000")) == 1
+
+    def test_a_row_without_a_horizon_falls_back_to_the_configured_one(
+        self, tmp_path: Path
+    ) -> None:
+        # Every row written before the column existed. It must keep behaving as it did.
+        memory = AgentMemory(tmp_path / "m.sqlite3", horizon_hours=24)
+        self._record(memory, NOW, None, "legacy")
+        assert memory.resolve_pending(NOW + timedelta(hours=25), D("84000")) == 1
+
+    def test_opening_a_database_without_the_column_migrates_it(self, tmp_path: Path) -> None:
+        """The trap this repo already fell into once.
+
+        CREATE TABLE IF NOT EXISTS is a no-op on an existing table, so a column added later
+        needs ALTER TABLE, and anything referencing it must come after. Putting an index on
+        a new column in the main DDL crash-looped every process holding an older database,
+        and no test caught it because they all build a fresh database.
+        """
+        import sqlite3
+
+        path = tmp_path / "old.sqlite3"
+        with sqlite3.connect(path) as conn:
+            conn.executescript(
+                """CREATE TABLE decisions (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    decided_at TEXT NOT NULL,
+                    event_id TEXT,
+                    features TEXT NOT NULL,
+                    regime INTEGER,
+                    quant_p_long REAL,
+                    target_exposure TEXT NOT NULL,
+                    exposure_before TEXT NOT NULL,
+                    derived_order TEXT NOT NULL,
+                    conviction REAL,
+                    expected_move_pct REAL,
+                    reason TEXT,
+                    thinking TEXT,
+                    price_at_decision TEXT NOT NULL,
+                    acted INTEGER NOT NULL DEFAULT 0,
+                    resolved INTEGER NOT NULL DEFAULT 0,
+                    resolved_at TEXT,
+                    price_at_resolution TEXT,
+                    realized_pct REAL,
+                    UNIQUE(decided_at, event_id)
+                );"""
+            )
+            conn.commit()
+        memory = AgentMemory(path, horizon_hours=24)
+        with sqlite3.connect(path) as conn:
+            columns = {row[1] for row in conn.execute("PRAGMA table_info(decisions)")}
+        assert {"posture", "horizon_hours"} <= columns
+        # And it must be usable straight afterwards, which is what crashed last time.
+        self._record(memory, NOW, 168, "after-migration")
+        assert memory.resolve_pending(NOW + timedelta(hours=169), D("88000")) == 1
+
+    def test_the_migration_is_idempotent(self, tmp_path: Path) -> None:
+        path = tmp_path / "twice.sqlite3"
+        AgentMemory(path, horizon_hours=24)
+        memory = AgentMemory(path, horizon_hours=24)
+        self._record(memory, NOW, 96, "again")
+        assert memory.resolve_pending(NOW + timedelta(hours=97), D("80000")) == 1

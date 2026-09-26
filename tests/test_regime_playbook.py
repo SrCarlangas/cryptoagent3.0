@@ -26,15 +26,19 @@ from btc_decision_agent.application.realtime_demo import (
     size_entry_percentage,
 )
 from btc_decision_agent.application.regime_playbook import (
+    _POSTURE_SIZE,
     LEGACY_BREAK_EVEN_ACTIVATION,
     LEGACY_BREAK_EVEN_LOCK,
     MAX_ALLOCATION,
+    MAX_RISK_FRACTION,
     MAX_STOP_FRACTION,
     MIN_ALLOCATION,
+    MIN_RISK_FRACTION,
     MIN_STOP_FRACTION,
     PLAYBOOK,
     ExecutionPlan,
     Posture,
+    _clamp,
     render_playbook_block,
     resolve_exposure,
     resolve_plan,
@@ -266,7 +270,16 @@ class TestPlanResolution:
                             conviction=conviction,
                             daily_vol_pct=vol,
                         )
-                        assert MIN_ALLOCATION <= plan.allocation_fraction <= MAX_ALLOCATION
+                        # MIN_ALLOCATION is no longer a hard floor. The risk ceiling may
+                        # push the allocation below it, and that is the intended
+                        # precedence: between a floor on position size and a ceiling on
+                        # risk, the ceiling wins. Dust is handled by the exchange minimum
+                        # notional in plan_adjustment, not by inflating a position past the
+                        # risk the regime allows.
+                        assert D("0") < plan.allocation_fraction <= MAX_ALLOCATION
+                        implied = plan.allocation_fraction * plan.stop_loss_fraction
+                        if plan.allocation_fraction < MIN_ALLOCATION:
+                            assert implied <= MAX_RISK_FRACTION
                         assert MIN_STOP_FRACTION <= plan.stop_loss_fraction <= MAX_STOP_FRACTION
                         # And it must satisfy the engine's own validation.
                         plan.apply(RealtimeParams())
@@ -778,3 +791,116 @@ class TestBreakEvenRatchetIsGovernedByThePlaybook:
         # governs the exit has to be visible to the thing being judged on the outcome.
         block = render_playbook_block(3, 2.0)
         assert "piso en +" in block
+
+
+class TestTheTrailMatchesTheHorizonItProtects:
+    """A unit error, not a tuning: the multiples are unchanged.
+
+    A strategy declared how long it meant to hold and then measured its trailing exit
+    against a SINGLE DAY's volatility, so the exit rule knew nothing about the horizon it
+    was supposed to protect. 2.8 sigma means one thing over 24 hours and something else
+    entirely over 168.
+
+    Measured on 60 replayed bull-window decisions, once the break-even floor was fixed the
+    daily-scaled leash became the binding constraint: 19 stop exits on 17 entries, a
+    position open 50.6% of hours. Scaled to the horizon it is 7 exits and 81.0% of hours.
+    """
+
+    def test_a_one_day_horizon_is_unchanged_by_the_scaling(self) -> None:
+        # The check that this follows from the declared horizons rather than from a window's
+        # returns: the regime whose horizon is a single day must be untouched.
+        assert PLAYBOOK[1].horizon_hours == 24
+        plan = resolve_plan(regime=1, posture="NEUTRAL", conviction=0.5, daily_vol_pct=2.0)
+        expected = PLAYBOOK[1].trail_vol_multiple * D("0.02")
+        assert plan.trailing_stop_fraction == pytest.approx(expected)
+
+    def test_a_longer_horizon_widens_the_leash_by_root_time(self) -> None:
+        plan = resolve_plan(regime=2, posture="NEUTRAL", conviction=0.5, daily_vol_pct=2.0)
+        # 96 hours is four days, so sqrt(4) = 2.
+        expected = PLAYBOOK[2].trail_vol_multiple * D("0.02") * D("2")
+        assert plan.trailing_stop_fraction == pytest.approx(expected)
+
+    def test_a_trend_regime_tolerates_a_deeper_pullback_than_a_bear(self) -> None:
+        bull = resolve_plan(regime=3, posture="NEUTRAL", conviction=0.5, daily_vol_pct=2.0)
+        bear = resolve_plan(regime=1, posture="NEUTRAL", conviction=0.5, daily_vol_pct=2.0)
+        assert bull.trailing_stop_fraction > bear.trailing_stop_fraction * 5
+
+    def test_the_trend_leash_is_looser_than_its_own_initial_stop(self) -> None:
+        """Which is what demotes the trail from strategy to insurance.
+
+        With the leash tighter than the initial stop, the trail governed every exit in a
+        regime whose whole doctrine is to hold through noise for 168 hours. Looser, the
+        initial stop bounds the loss and the trail only takes over once the position is
+        genuinely in profit.
+        """
+        plan = resolve_plan(regime=3, posture="NEUTRAL", conviction=0.5, daily_vol_pct=2.0)
+        assert plan.trailing_stop_fraction > plan.stop_loss_fraction
+
+
+class TestRiskIsDerivedNotACompetingKnob:
+    """Three knobs for two degrees of freedom, and the third won silently.
+
+    Sizing is `min(cash * allocation, equity * risk / stop)`. The risk ceiling was a fixed
+    fraction of equity while the stop scales with volatility, so `risk / stop` FELL as
+    volatility rose and cut the position hardest exactly when volatility expanded, which in
+    a strong advance is most of the way up.
+
+    Measured on the bull window run it overrode the declared allocation in 11 of 60
+    decisions: day 1550 regime 2 asked for 75% and got 35%, day 1555 regime 3 asked for 90%
+    and got 66%. Averaged over its 19 decisions regime 2 targeted 34.5% against a declared
+    allocation of 65 to 75%.
+    """
+
+    def _effective_target(self, plan: ExecutionPlan) -> Decimal:
+        """What size_entry_percentage will actually allow."""
+        return min(
+            plan.allocation_fraction, plan.risk_per_trade_fraction / plan.stop_loss_fraction
+        )
+
+    @pytest.mark.parametrize("regime", [0, 1, 2, 3])
+    @pytest.mark.parametrize("volatility", [0.5, 1.0, 2.0, 3.0, 4.0, 6.0, 12.0])
+    @pytest.mark.parametrize("posture", list(Posture))
+    def test_the_risk_cap_never_silently_overrides_the_allocation(
+        self, regime: int, volatility: float, posture: Posture
+    ) -> None:
+        plan = resolve_plan(
+            regime=regime, posture=posture.value, conviction=0.6, daily_vol_pct=volatility
+        )
+        assert self._effective_target(plan) == pytest.approx(plan.allocation_fraction)
+
+    @pytest.mark.parametrize("volatility", [0.5, 2.0, 6.0, 12.0])
+    def test_the_risk_taken_never_exceeds_the_regimes_ceiling(self, volatility: float) -> None:
+        for regime, strategy in PLAYBOOK.items():
+            for posture in Posture:
+                plan = resolve_plan(
+                    regime=regime,
+                    posture=posture.value,
+                    conviction=1.0,
+                    daily_vol_pct=volatility,
+                )
+                ceiling = min(
+                    strategy.risk_per_trade * _POSTURE_SIZE[posture], MAX_RISK_FRACTION
+                )
+                # MIN_RISK_FRACTION can lift a very small figure, which is a floor on the
+                # recorded number rather than on the position, since the cap cannot bind
+                # below the allocation in that direction.
+                assert plan.risk_per_trade_fraction <= max(ceiling, MIN_RISK_FRACTION)
+
+    def test_violent_volatility_reduces_the_allocation_visibly(self) -> None:
+        # The behaviour that replaces the silent override: the ALLOCATION comes down, which
+        # is the number recorded, displayed and shown to the agent.
+        calm = resolve_plan(regime=3, posture="NEUTRAL", conviction=0.5, daily_vol_pct=2.0)
+        violent = resolve_plan(regime=3, posture="NEUTRAL", conviction=0.5, daily_vol_pct=6.0)
+        assert violent.allocation_fraction < calm.allocation_fraction
+        assert self._effective_target(violent) == pytest.approx(violent.allocation_fraction)
+
+    def test_ordinary_volatility_leaves_the_declared_allocation_intact(self) -> None:
+        # A ceiling that binds in ordinary conditions is not a ceiling, it is the policy.
+        for regime in (0, 1, 2, 3):
+            plan = resolve_plan(
+                regime=regime, posture="NEUTRAL", conviction=0.5, daily_vol_pct=2.0
+            )
+            expected = _clamp(
+                PLAYBOOK[regime].allocation_at_neutral, MIN_ALLOCATION, MAX_ALLOCATION
+            )
+            assert plan.allocation_fraction == pytest.approx(expected)

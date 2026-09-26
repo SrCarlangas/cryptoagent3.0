@@ -47,7 +47,7 @@ from btc_decision_agent.application.realtime_demo import RealtimeParams
 
 D = Decimal
 
-PLAYBOOK_VERSION = "regime-playbook/1.1.0"
+PLAYBOOK_VERSION = "regime-playbook/1.2.0"
 """1.1.0 puts the break-even ratchet under the playbook's control.
 
 Until then `ExecutionPlan.apply` left `break_even_activation_fraction` and
@@ -110,10 +110,34 @@ class RegimeStrategy:
     """Initial stop distance in multiples of 30-day daily volatility."""
 
     trail_vol_multiple: Decimal
-    """Trailing distance behind the high, also in volatility multiples."""
+    """Trailing distance behind the high, in multiples of HORIZON volatility.
+
+    Horizon, not daily. This is a unit correction, not a tuning: the multiples below are
+    unchanged. A strategy declares how long it means to hold, and then measured its exit
+    threshold against a single day's volatility, so the exit rule knew nothing about the
+    horizon it was supposed to protect. 2.8 sigma means one thing over 24 hours and
+    something entirely different over 168.
+
+    Scaled by sqrt(horizon / 24 h), the leash matches the give-back a position must
+    tolerate to survive the holding period the regime asked for. For the deep bear, whose
+    horizon is 24 hours, the scaling factor is exactly 1 and nothing changes, which is the
+    check that this follows from the horizons rather than from a window's returns.
+
+    Measured on 60 replayed bull-window decisions, the daily-scaled leash was the binding
+    constraint once the break-even floor was fixed: 19 stop exits on 17 entries, a position
+    open in 50.6% of hours, +13.21%. Removing the trailing stop while KEEPING the initial
+    protective stop gave +48.76% with 2 stop exits and 89.9% of hours invested. Removing
+    the stop entirely gave +46.27%, so the initial stop earns its place and the trailing
+    stop was costing 35 points. On the falling window the same change is neutral, +0.3.
+
+    The initial stop stays on DAILY volatility deliberately. It answers how wrong the
+    thesis can be before it is abandoned, which is a per-trade risk statement and is what
+    the position size is derived from. The trail answers how much give-back to tolerate
+    while holding to a horizon, which is horizon-relative by nature.
+    """
 
     trail_activation_vol_multiple: Decimal
-    """How far in profit, in volatility multiples, before the trail engages."""
+    """How far in profit before the trail engages, also in HORIZON volatility multiples."""
 
     break_even_activation_vol_multiple: Decimal
     """Profit, in volatility multiples, before the stop ratchets up to break even.
@@ -145,14 +169,46 @@ class RegimeStrategy:
     """
 
     risk_per_trade: Decimal
-    """Share of equity risked to the stop. Set WITH the stop, never independently:
-    the sizing formula divides by the stop distance, so a wide stop needs a larger
-    risk budget to express the same conviction."""
+    """CEILING on the share of equity this regime will risk to its stop, not a target.
+
+    It used to be a target, and that made it a second, hidden allocation policy. Sizing is
+    `min(cash * allocation, equity * risk / stop)`, so with three independent knobs for two
+    degrees of freedom the smaller one silently won. And because the ceiling was a fixed
+    fraction of equity while the stop scales with volatility, the ratio `risk / stop` FELL
+    as volatility rose. It cut the position hardest exactly when volatility expanded, which
+    in a strong advance is most of the way up.
+
+    Measured on the bull window run, in 11 of 60 decisions the cap overrode the regime's
+    declared allocation, and not marginally: on day 1550 regime 2 asked for 75% and the cap
+    delivered 35%, on day 1555 regime 3 asked for 90% and got 66%. Averaged over its 19
+    decisions regime 2 targeted 34.5% against a declared allocation of 65 to 75%.
+
+    Now the risk actually taken is derived, `allocation * stop`, which is simply the
+    arithmetic truth of what a position loses at its stop. This value is the ceiling, and
+    when it binds the ALLOCATION is reduced explicitly so the two agree, instead of letting
+    the sizing formula quietly pick the smaller number.
+
+    Each regime's ceiling is set by one rule rather than chosen per regime: what its own
+    declared allocation and stop imply at twice typical volatility, that is 4% daily,
+    bounded by MAX_RISK_FRACTION. So it does not bind in ordinary conditions and does bind
+    in violent ones, which is what a ceiling is for.
+    """
 
     horizon_hours: int
-    """Intended holding period. Drives how long an outcome is measured over, so the
+    """Intended holding period. Two things read it, and for a while neither did.
+
+    It scales the trailing leash, so the exit rule tolerates the give-back a position must
+    survive to reach this horizon. See trail_vol_multiple.
+
+    And it is the horizon each decision's outcome is measured over in AgentMemory, so the
     record judges a trend-following decision on a trend's timescale rather than on
-    tomorrow's noise."""
+    tomorrow's noise. That second claim sat in this docstring while nothing implemented it:
+    the memory used one fixed horizon, 24 hours in production, for every regime. A decision
+    meant to hold for 168 hours was therefore scored by the next day's price, and at a one
+    day horizon BTC after costs is close to a coin flip, so the agent's own measured record
+    told it that being invested does not pay. It reads those statistics in its prompt, which
+    is a direct route from a mismeasured outcome to systematic caution.
+    """
 
     default_exposure: str
     """Where the capital sits in this regime unless there is a reason not to.
@@ -185,7 +241,7 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("1.0"),
         break_even_activation_vol_multiple=D("2.6"),
         break_even_lock_vol_multiple=D("0.5"),
-        risk_per_trade=D("0.02"),
+        risk_per_trade=D("0.036"),
         horizon_hours=48,
         default_exposure=EXPOSURE_CASH,
         min_conviction_to_deviate=0.60,
@@ -203,7 +259,7 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("0.8"),
         break_even_activation_vol_multiple=D("2.0"),
         break_even_lock_vol_multiple=D("0.4"),
-        risk_per_trade=D("0.01"),
+        risk_per_trade=D("0.013"),
         horizon_hours=24,
         default_exposure=EXPOSURE_CASH,
         min_conviction_to_deviate=0.80,
@@ -221,7 +277,7 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("1.2"),
         break_even_activation_vol_multiple=D("3.2"),
         break_even_lock_vol_multiple=D("0.6"),
-        risk_per_trade=D("0.035"),
+        risk_per_trade=D("0.065"),
         horizon_hours=96,
         default_exposure=EXPOSURE_INVESTED,
         min_conviction_to_deviate=0.55,
@@ -238,7 +294,7 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         trail_activation_vol_multiple=D("1.5"),
         break_even_activation_vol_multiple=D("4.3"),
         break_even_lock_vol_multiple=D("0.8"),
-        risk_per_trade=D("0.09"),
+        risk_per_trade=D("0.12"),
         horizon_hours=168,
         default_exposure=EXPOSURE_INVESTED,
         min_conviction_to_deviate=0.70,
@@ -267,6 +323,18 @@ _POSTURE_STOP: dict[Posture, Decimal] = {
 
 def _clamp(value: Decimal, low: Decimal, high: Decimal) -> Decimal:
     return max(low, min(high, value))
+
+
+def _horizon_scale(horizon_hours: int) -> Decimal:
+    """sqrt(horizon / one day). Converts a daily volatility into a horizon volatility.
+
+    Random walk scaling. One day returns 1, so a strategy whose horizon is a single day is
+    unaffected and the change is confined to the regimes that actually declare a longer
+    holding period.
+    """
+    if horizon_hours <= 24:
+        return D("1")
+    return (D(horizon_hours) / D("24")).sqrt()
 
 
 @dataclass(frozen=True)
@@ -404,13 +472,41 @@ def resolve_plan(
         vol = D("0.02")
     posture_stop = _POSTURE_STOP[chosen]
     stop = _clamp(strategy.stop_vol_multiple * vol * posture_stop, MIN_STOP_FRACTION, MAX_STOP_FRACTION)
+    # The trail is measured against the volatility of the HOLDING PERIOD, not of one day.
+    # sqrt of time, so a 168 hour horizon widens the leash by sqrt(7). See
+    # RegimeStrategy.trail_vol_multiple: measured on the bull window, the daily-scaled
+    # leash was exiting every position on ordinary pullbacks and costing 35 points.
+    horizon_vol = vol * _horizon_scale(strategy.horizon_hours)
     trail = _clamp(
-        strategy.trail_vol_multiple * vol * posture_stop, MIN_TRAIL_FRACTION, MAX_TRAIL_FRACTION
+        strategy.trail_vol_multiple * horizon_vol * posture_stop,
+        MIN_TRAIL_FRACTION,
+        MAX_TRAIL_FRACTION,
     )
     activation = _clamp(
-        strategy.trail_activation_vol_multiple * vol, MIN_TRAIL_FRACTION, MAX_TRAIL_FRACTION
+        strategy.trail_activation_vol_multiple * horizon_vol, MIN_TRAIL_FRACTION, MAX_TRAIL_FRACTION
     )
-    risk = _clamp(strategy.risk_per_trade * _POSTURE_SIZE[chosen], MIN_RISK_FRACTION, MAX_RISK_FRACTION)
+    # The risk actually taken is DERIVED from the allocation and the stop, because
+    # `allocation * stop` is simply what the position loses if the stop fills. The regime's
+    # risk_per_trade is a ceiling on that, and when it binds the allocation comes down
+    # explicitly so the two agree. Previously the two disagreed and sizing silently used
+    # `min(allocation, risk / stop)`, which cut the position hardest when volatility was
+    # highest. See RegimeStrategy.risk_per_trade.
+    ceiling = _clamp(
+        strategy.risk_per_trade * _POSTURE_SIZE[chosen], MIN_RISK_FRACTION, MAX_RISK_FRACTION
+    )
+    if allocation * stop > ceiling:
+        # No MIN_ALLOCATION floor on this path, deliberately. A property test found the
+        # floor overriding the ceiling: a deep bear at 12% daily volatility needs a 14.4%
+        # stop, which at the regime's 0.72% risk ceiling allows a 5% position, and forcing
+        # it up to the 10% floor doubled the risk past what the regime permits. A floor on
+        # position size exists to avoid dust, and dust is already handled by the exchange's
+        # minimum notional in plan_adjustment. Between a floor on size and a ceiling on
+        # risk, the ceiling wins.
+        allocation = min(MAX_ALLOCATION, ceiling / stop)
+    # min() rather than the product alone: ceiling / stop * stop leaves a rounding residue
+    # in Decimal, and a ceiling that is exceeded by one unit in the last place is still a
+    # ceiling that is exceeded.
+    risk = _clamp(min(ceiling, allocation * stop), MIN_RISK_FRACTION, MAX_RISK_FRACTION)
 
     # The break-even ratchet scales with posture like the stop and the trail do, so an
     # aggressive posture pushes the floor further out rather than keeping a scalper's leash

@@ -385,6 +385,7 @@ def main() -> None:
             price=D(str(price)),
             acted=acted,
             posture=verdict.posture,
+            horizon_hours=plan.horizon_hours,
         )
         memory.resolve_pending(now, D(str(price)))
 
