@@ -75,6 +75,7 @@ from btc_decision_agent.application.realtime_demo import (
     RealtimeParams,
 )
 from btc_decision_agent.application.regime_playbook import (
+    RegimeTracker,
     plan_adjustment,
     resolve_exposure,
     resolve_plan,
@@ -236,6 +237,8 @@ def main() -> None:
     started = time.time()
     # A synthetic clock so memory horizons behave as they will live.
     clock = datetime(2020, 1, 1, tzinfo=UTC)
+    # Same persistence rule as production, so the backtest measures the system that runs.
+    tracker = RegimeTracker(regime=1)
 
     decision_days = list(range(start_day, end_day, args.step_days))
     print(
@@ -286,10 +289,14 @@ def main() -> None:
             print(f"  [{number}/{len(decision_days)}] fallo del modelo: {error}", flush=True)
             continue
 
-        # Same burden of proof as production: the regime's default exposure stands
-        # unless the agent clears the threshold to deviate from it.
+        # Same burden of proof as production, applied against the regime IN FORCE rather
+        # than the label just observed. The label changed on 37% of transitions at this step
+        # and 31% of transitions inverted the default exposure, which turned a standing
+        # disagreement between the agent and the playbook into round trips nobody chose.
+        tracker = tracker.observe(int(quant.get("regimen", 0)), now)
+        regime = tracker.regime
         wants_long, choice_honoured = resolve_exposure(
-            regime=int(quant.get("regimen", 0)),
+            regime=regime,
             wants_invested=verdict.wants_long,
             conviction=verdict.conviction,
         )
@@ -307,7 +314,7 @@ def main() -> None:
         )
         # The regime's strategy, resolved exactly as production resolves it.
         plan = resolve_plan(
-            regime=int(quant.get("regimen", 0)),
+            regime=regime,
             posture=verdict.posture,
             conviction=verdict.conviction,
             daily_vol_pct=market.get("volatilidad_diaria_30d_pct"),
@@ -385,7 +392,7 @@ def main() -> None:
             decided_at=now,
             event_id=f"bt-{day}",
             features=vector,
-            regime=int(quant.get("regimen", 0)),
+            regime=regime,
             quant_p_long=float(quant.get("p_largo", 0.0)),
             target_exposure=EXPOSURE_INVESTED if wants_long else EXPOSURE_CASH,
             exposure_before=EXPOSURE_INVESTED if position_long else EXPOSURE_CASH,
@@ -483,7 +490,8 @@ def main() -> None:
                 "acted": acted,
                 "changing": changing,
                 "clears_cost": clears,
-                "regime": quant.get("regimen"),
+                "regime": regime,
+                "regime_observed": quant.get("regimen"),
                 "quant_recommends": quant.get("recomienda"),
                 "seconds": round(verdict.seconds, 1),
                 "equity": round((cash + units * price) / START_CAPITAL, 6),

@@ -636,6 +636,15 @@ class EnginePersistentState:
     protective_client_order_id: str | None = None
     protective_stop_price: Decimal | None = None
     recovery_source: str = "NEW"
+    regime_tracker: dict[str, Any] | None = None
+    """Which regime is in force, and which label is waiting to replace it.
+
+    Persisted for the same reason `execution_plan` is: a new label has to persist before it
+    takes effect, so the elapsed time it has accumulated is state. Held only in memory, a
+    restart would reset the clock and let an oscillating label flip the default exposure
+    immediately, which is the churn this is meant to stop.
+    """
+
     execution_plan: dict[str, Any] | None = None
     """The strategy this position was opened under, as chosen for its regime.
 
@@ -671,6 +680,7 @@ class EnginePersistentState:
             "protective_client_order_id": self.protective_client_order_id,
             "protective_stop_price": decimal(self.protective_stop_price),
             "recovery_source": self.recovery_source,
+            "regime_tracker": self.regime_tracker,
             "execution_plan": self.execution_plan,
         }
 
@@ -717,6 +727,14 @@ class EnginePersistentState:
             ),
             protective_stop_price=decimal("protective_stop_price"),
             recovery_source=str(raw.get("recovery_source", "STATE_FILE")),
+            # Absent on older checkpoints, which means the persistence clock starts now.
+            # That is the safe direction: a fresh tracker holds the current label as the one
+            # in force and requires the NEXT label to earn its place.
+            regime_tracker=(
+                dict(raw["regime_tracker"])
+                if isinstance(raw.get("regime_tracker"), dict)
+                else None
+            ),
             # Absent on v2-v4 checkpoints, which simply means "no plan recorded";
             # the engine then falls back to its configured defaults.
             execution_plan=(
@@ -1529,6 +1547,7 @@ class RealtimeDemoRunner:
             else:
                 client_id = deterministic_client_order_id(decision)
                 minimum = self._rules.min_notional if self._rules else self.params.min_notional_usdt
+                adjust_declined: str | None = None
                 if decision.action == Action.ENTER_LONG:
                     # Size under the decision's own strategy. Sizing here and the stop
                     # in the engine must use the same plan, or the position is sized for
@@ -1560,7 +1579,13 @@ class RealtimeDemoRunner:
                         # engine computed. The engine decides the TARGET; what it takes to
                         # reach it depends on the position at order time, and the position
                         # can move between deciding and ordering.
-                        quote = self._adjustment(decision, before, sizing, minimum).quote_usdt
+                        adjustment = self._adjustment(decision, before, sizing, minimum)
+                        quote = adjustment.quote_usdt
+                        if adjustment.action != "COMPRAR":
+                            # The gap closed between deciding and ordering, which is not the
+                            # same thing as having no money. Reporting CAPITAL_INSUFFICIENT
+                            # for it was a label that misdescribed its own cause.
+                            adjust_declined = adjustment.reason
                     else:
                         quote = size_entry_percentage(
                             before.usdt_free,
@@ -1593,8 +1618,20 @@ class RealtimeDemoRunner:
                         quote = D("0")
 
                 if decision.action == Action.ENTER_LONG and quote == 0:
-                    decision = replace(decision, action=Action.HOLD, reason="CAPITAL_INSUFFICIENT")
-                    final_reason = decision.reason
+                    decision = replace(
+                        decision,
+                        action=Action.HOLD,
+                        reason=(
+                            "ADJUSTMENT_NO_LONGER_NEEDED"
+                            if adjust_declined is not None
+                            else "CAPITAL_INSUFFICIENT"
+                        ),
+                    )
+                    final_reason = (
+                        f"{decision.reason}:{adjust_declined}"
+                        if adjust_declined is not None
+                        else decision.reason
+                    )
                 elif (
                     decision.action == Action.EXIT_LONG
                     and requested_base is not None

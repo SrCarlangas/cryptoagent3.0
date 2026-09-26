@@ -15,7 +15,7 @@ to tell whether it still works.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -38,6 +38,7 @@ from btc_decision_agent.application.regime_playbook import (
     PLAYBOOK,
     ExecutionPlan,
     Posture,
+    RegimeTracker,
     _clamp,
     render_playbook_block,
     resolve_exposure,
@@ -904,3 +905,103 @@ class TestRiskIsDerivedNotACompetingKnob:
                 PLAYBOOK[regime].allocation_at_neutral, MIN_ALLOCATION, MAX_ALLOCATION
             )
             assert plan.allocation_fraction == pytest.approx(expected)
+
+
+class TestARegimeLabelHasToPersistBeforeItTakesEffect:
+    """The burden of proof was anchored to a label that oscillates.
+
+    Measured over 300 days at a 5 day step, the regime label changed on 37% of transitions
+    and 31% of transitions INVERTED the default exposure, because regime 0 defaults to cash
+    and regime 3 defaults to invested and the sequence alternates between them. Of 15
+    direction changes in that run, 9 were imposed by the playbook AGAINST what the agent
+    asked for: it wanted to be invested in regime 0 on 12 of 17 decisions and was forced to
+    cash on 8 of them, then forced back in when the label returned to 3.
+
+    The rule is not a tuned parameter: a new label has to persist for the horizon of the
+    strategy it would replace, and those horizons are the ones each strategy already
+    declares. A strategy is not abandoned faster than it said it meant to hold.
+    """
+
+    def _tracker(self, regime: int, at: datetime) -> RegimeTracker:
+        return RegimeTracker(regime=1).observe(regime, at)
+
+    def test_the_first_observation_takes_effect_immediately(self) -> None:
+        tracker = RegimeTracker(regime=1).observe(3, NOW)
+        assert tracker.regime == 3
+
+    def test_a_single_contrary_reading_does_not_displace_a_trend(self) -> None:
+        # Regime 3 declares a 168 hour horizon, so one 5 day reading of regime 0 is not
+        # enough to abandon it. This is the exact oscillation that generated the round trips.
+        tracker = self._tracker(3, NOW)
+        tracker = tracker.observe(0, NOW + timedelta(days=5))
+        assert tracker.regime == 3
+        assert tracker.pending == 0
+        tracker = tracker.observe(3, NOW + timedelta(days=10))
+        assert tracker.regime == 3
+        assert tracker.pending is None
+
+    def test_a_persistent_change_does_take_effect(self) -> None:
+        tracker = self._tracker(3, NOW)
+        tracker = tracker.observe(0, NOW + timedelta(days=5))
+        tracker = tracker.observe(0, NOW + timedelta(days=13))  # 8 days > 168 h
+        assert tracker.regime == 0
+
+    def test_leaving_the_deep_bear_is_immediate_by_comparison(self) -> None:
+        """The asymmetry falls out of the horizons rather than being added on top.
+
+        Regime 1's horizon is 24 hours, so its strategy is abandoned after a single day of a
+        contrary label. Being slow to leave a trend and quick to leave a panic is the
+        behaviour the horizons already describe.
+        """
+        tracker = self._tracker(1, NOW)
+        tracker = tracker.observe(3, NOW + timedelta(hours=12))
+        assert tracker.regime == 1, "aun no ha cumplido las 24 h"
+        tracker = tracker.observe(3, NOW + timedelta(hours=40))
+        assert tracker.regime == 3
+
+    def test_an_alternating_label_never_displaces_the_regime_in_force(self) -> None:
+        tracker = self._tracker(3, NOW)
+        for step in range(1, 13):
+            tracker = tracker.observe(0 if step % 2 else 3, NOW + timedelta(days=5 * step))
+        assert tracker.regime == 3
+
+    def test_an_unknown_label_leaves_the_regime_in_force(self) -> None:
+        tracker = self._tracker(3, NOW)
+        tracker = tracker.observe(None, NOW + timedelta(days=5))
+        tracker = tracker.observe(99, NOW + timedelta(days=10))
+        assert tracker.regime == 3
+
+    def test_it_survives_a_restart(self) -> None:
+        """Otherwise a restart resets the clock and the label flips freely again.
+
+        Same reason execution_plan is persisted: the elapsed time a pending label has
+        accumulated IS state, and losing it reinstates the behaviour this prevents.
+        """
+        import json
+
+        tracker = self._tracker(3, NOW).observe(0, NOW + timedelta(days=5))
+        restored = RegimeTracker.from_dict(json.loads(json.dumps(tracker.to_dict())))
+        assert restored == tracker
+        # And the pending label still cannot take effect early.
+        assert restored.observe(0, NOW + timedelta(days=6)).regime == 3
+        assert restored.observe(0, NOW + timedelta(days=14)).regime == 0
+
+    def test_an_absent_checkpoint_starts_from_the_cautious_regime(self) -> None:
+        assert RegimeTracker.from_dict(None).regime == 1
+        assert RegimeTracker.from_dict({}).regime == 1
+
+    def test_the_wait_is_the_horizon_of_the_strategy_being_left(self) -> None:
+        # Stated as a property so a change to any horizon keeps this honest.
+        for leaving, arriving in ((3, 0), (2, 1), (0, 3), (1, 2)):
+            required = timedelta(hours=PLAYBOOK[leaving].horizon_hours)
+            # The clock starts when the contrary label is FIRST seen, so the deadline is
+            # measured from that moment and not from when the regime took effect.
+            first_seen = NOW + timedelta(seconds=1)
+            in_force = RegimeTracker(regime=1).observe(leaving, NOW)
+            pending = in_force.observe(arriving, first_seen)
+            assert pending.regime == leaving, (leaving, arriving)
+            assert pending.observe(arriving, first_seen + required).regime == arriving
+            assert (
+                pending.observe(arriving, first_seen + required - timedelta(hours=1)).regime
+                == leaving
+            ), (leaving, arriving)

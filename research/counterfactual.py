@@ -74,6 +74,7 @@ from btc_decision_agent.application.regime_playbook import (
     ExecutionPlan,
     Posture,
     plan_adjustment,
+    resolve_exposure,
     resolve_plan,
     strategy_for,
 )
@@ -100,6 +101,23 @@ FROM_PLAYBOOK = "playbook"
 VETO_ONLY = "solo veto"
 ADD_ONLY = "solo sumar"
 ALWAYS_IN = "siempre invertido"
+RERESOLVED = "reresuelto"
+STABILISED = "regimen estabilizado"
+"""Re-run the burden of proof against a regime label that has to persist first.
+
+Measured on the best run so far: the label changes on 37% of 5-day transitions and 31% of
+transitions invert the default exposure, because regime 0 defaults to cash and regime 3
+defaults to invested and the sequence alternates between them. Of 15 direction changes, 9
+were imposed by the playbook AGAINST what the agent asked for: it wanted invested in regime
+0 on 12 of 17 decisions and was forced to cash on 8 of them.
+
+So the burden of proof is anchored to a label that moves faster than the strategies it
+selects intend to hold. Regime 3 declares a 168 hour horizon and the label flips every
+120 hour step. Abandoning a strategy faster than its own declared horizon is incoherent,
+which is the argument for requiring persistence, and the requirement is derived from the
+horizon of the strategy being LEFT rather than picked: leaving the deep bear needs one step,
+leaving a trend needs the trend's horizon.
+"""
 
 
 @dataclass(frozen=True)
@@ -250,6 +268,38 @@ def _plan_dict(item: dict[str, Any], rules: Rules, allocation: Decimal) -> dict[
     }
 
 
+def stabilise_regimes(trace: list[dict[str, Any]], step_days: int) -> list[int | None]:
+    """The regime each decision would see if a label had to persist to take effect.
+
+    A new label is provisional until it has held for at least the HORIZON OF THE STRATEGY
+    IT WOULD REPLACE. Leaving the deep bear, whose horizon is 24 hours, takes one step.
+    Leaving an established trend, whose horizon is 168 hours, takes as many steps as that
+    horizon covers. Nothing here is fitted: the horizons are the ones the playbook already
+    declares, and the rule is that a strategy is not abandoned faster than it said it meant
+    to hold.
+    """
+    effective: list[int | None] = []
+    current = trace[0].get("regime")
+    pending: int | None = None
+    pending_steps = 0
+    for item in trace:
+        observed = item.get("regime")
+        if observed == current:
+            pending, pending_steps = None, 0
+        else:
+            if observed == pending:
+                pending_steps += 1
+            else:
+                pending, pending_steps = observed, 1
+            needed = max(
+                1, -(-strategy_for(current).horizon_hours // (step_days * 24))
+            )  # ceil division
+            if pending_steps >= needed:
+                current, pending, pending_steps = observed, None, 0
+        effective.append(current)
+    return effective
+
+
 def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
     """Resolve the exposure for this decision under the variant's authority rule."""
     agent_in = bool(item["target"] == EXPOSURE_INVESTED)
@@ -262,6 +312,30 @@ def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
         return agent_in or playbook_in
     if rules.exposure_from == ALWAYS_IN:
         return True
+    if rules.exposure_from in {RERESOLVED, STABILISED}:
+        # Re-run the burden of proof from what the agent ACTUALLY asked for, which the
+        # trace records separately from the resolved target. RERESOLVED uses the observed
+        # regime and must reproduce the recorded target, which is the control that proves
+        # the re-resolution is faithful before the stabilised version is believed.
+        #
+        # A trace recorded before the burden of proof existed has no such field, and the
+        # first version of this read it with .get() and silently treated absence as "asked
+        # for cash". That made the control diverge from the run by 18 points on the bear
+        # window, which is the same silent-default failure the plan-field guard above was
+        # written for. Guarding it here rather than trusting the reader to notice.
+        if item.get("agent_asked_for") is None:
+            raise SystemExit(
+                f"la decision {item.get('decision')} no trae 'agent_asked_for'.\n"
+                "Esa traza es anterior a la carga de la prueba, asi que no se puede "
+                "reresolver la exposicion sin inventar lo que el agente pidio."
+            )
+        regime = item["_effective_regime"] if rules.exposure_from == STABILISED else item.get("regime")
+        resolved, _ = resolve_exposure(
+            regime=regime,
+            wants_invested=bool(item.get("agent_asked_for") == EXPOSURE_INVESTED),
+            conviction=float(item.get("conviction") or 0.5),
+        )
+        return resolved
     return agent_in
 
 
@@ -500,6 +574,14 @@ VARIANTS: tuple[tuple[str, tuple[Rules, ...]], ...] = (
         ),
     ),
     (
+        "ESTABILIDAD: la carga de la prueba cuelga de una etiqueta que oscila",
+        (
+            Rules("como corrio", mark_from_fill=True, exposure_from=FROM_AGENT),
+            Rules("reresuelto (control)", mark_from_fill=True, exposure_from=RERESOLVED),
+            Rules("regimen con persistencia", mark_from_fill=True, exposure_from=STABILISED),
+        ),
+    ),
+    (
         "ESCALADO: la banda muerta y el todo-o-nada",
         (
             Rules("sin escalar (como antes)", mark_from_fill=True, scale=False),
@@ -614,6 +696,8 @@ def main() -> int:
         trace = reconstruct_plans(trace, closes, keep_posture=True)
 
     window = payload["window"]
+    effective = stabilise_regimes(trace, int(window["step_days"]))
+    trace = [item | {"_effective_regime": regime} for item, regime in zip(trace, effective, strict=True)]
     print("=" * 100)
     print(f"CONTRAFACTUALES SOBRE LAS MISMAS DECISIONES  ·  {path.name}")
     print(

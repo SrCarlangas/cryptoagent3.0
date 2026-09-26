@@ -38,6 +38,7 @@ ones; "2.5 daily standard deviations" means the same thing in both.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from datetime import datetime, timedelta
 from decimal import ROUND_DOWN, Decimal
 from enum import Enum
 from typing import Any
@@ -552,6 +553,106 @@ def resolve_plan(
     )
 
 
+@dataclass(frozen=True)
+class RegimeTracker:
+    """The regime in force, which a new label has to earn before it replaces it.
+
+    Why this exists
+    ---------------
+    The burden of proof hangs off a regime label, and the label is not stable. Measured on
+    300 days at a 5 day step it changed on 37% of transitions, and 31% of transitions
+    INVERTED the default exposure, because regime 0 defaults to cash and regime 3 defaults
+    to invested and the sequence alternates between them.
+
+    The consequence was round trips nobody chose. Of 15 direction changes in that run, 9
+    were imposed by the playbook AGAINST what the agent asked for: it wanted to be invested
+    in regime 0 on 12 of 17 decisions and was forced to cash on 8 of them, then forced back
+    in when the label returned to 3. The agent and the playbook were fighting, and an
+    oscillating label turned the disagreement into commission.
+
+    The rule
+    --------
+    A new label is provisional until it has persisted for at least the HORIZON OF THE
+    STRATEGY IT WOULD REPLACE. Nothing here is fitted: the horizons are the ones each
+    strategy already declares, and the principle is that a strategy is not abandoned faster
+    than it said it meant to hold. Leaving the deep bear, whose horizon is 24 hours, takes
+    one observation. Leaving an established trend, whose horizon is 168 hours, takes a
+    week's worth.
+
+    What it does NOT delay
+    ----------------------
+    The protective stop, the trailing stop and the circuit breakers are untouched and still
+    fire intraday. The agent can still choose cash on its own conviction at any moment. What
+    has to wait is only the MECHANICAL default flip, which is the part that carried no
+    judgement and generated the churn.
+
+    Measured on the one window where the re-resolution could be validated against the
+    recorded run, it is worth +29.5 points and REDUCES the number of changes, so it is not
+    a return-for-churn trade. That is a single window and the argument above is what carries
+    it; the holdout is what will test it.
+    """
+
+    regime: int
+    """The regime whose strategy is in force."""
+
+    since: datetime | None = None
+    """When it took effect. None before the first observation."""
+
+    pending: int | None = None
+    """A different label seen recently, not yet in force."""
+
+    pending_since: datetime | None = None
+
+    def observe(self, label: int | None, at: datetime) -> RegimeTracker:
+        """Fold in one observation and return the tracker that results."""
+        observed = label if label is not None and label in PLAYBOOK else self.regime
+        if self.since is None:
+            return RegimeTracker(regime=observed, since=at)
+        if observed == self.regime:
+            return RegimeTracker(regime=self.regime, since=self.since)
+        if observed != self.pending:
+            return RegimeTracker(
+                regime=self.regime, since=self.since, pending=observed, pending_since=at
+            )
+        assert self.pending_since is not None
+        required = timedelta(hours=strategy_for(self.regime).horizon_hours)
+        if at - self.pending_since >= required:
+            return RegimeTracker(regime=observed, since=at)
+        return RegimeTracker(
+            regime=self.regime,
+            since=self.since,
+            pending=self.pending,
+            pending_since=self.pending_since,
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        def stamp(value: datetime | None) -> str | None:
+            return value.isoformat() if value is not None else None
+
+        return {
+            "regime": self.regime,
+            "since": stamp(self.since),
+            "pending": self.pending,
+            "pending_since": stamp(self.pending_since),
+        }
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any] | None) -> RegimeTracker:
+        if not raw:
+            return cls(regime=1)
+
+        def stamp(key: str) -> datetime | None:
+            value = raw.get(key)
+            return datetime.fromisoformat(str(value)) if value else None
+
+        return cls(
+            regime=int(raw.get("regime", 1)),
+            since=stamp("since"),
+            pending=(int(raw["pending"]) if raw.get("pending") is not None else None),
+            pending_since=stamp("pending_since"),
+        )
+
+
 def resolve_exposure(
     *, regime: int | None, wants_invested: bool, conviction: float
 ) -> tuple[bool, bool]:
@@ -635,6 +736,7 @@ __all__ = [
     "ExposureAdjustment",
     "Posture",
     "RegimeStrategy",
+    "RegimeTracker",
     "plan_adjustment",
     "render_playbook_block",
     "resolve_exposure",

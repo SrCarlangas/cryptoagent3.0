@@ -83,6 +83,7 @@ from btc_decision_agent.application.regime_playbook import (
     POSTURE_VALUES,
     ExposureAdjustment,
     Posture,
+    RegimeTracker,
     plan_adjustment,
     render_playbook_block,
     resolve_exposure,
@@ -709,8 +710,20 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         # already in the wrong place never triggered a change, so its exposure was never
         # tested. On the most bullish window available it sat out a +185% advance while
         # declaring 0.50 conviction for cash in a strong uptrend.
+        #
+        # The label the burden of proof is applied against is the one IN FORCE, not the one
+        # observed. A new label has to persist for the horizon of the strategy it would
+        # replace, because the label changed on 37% of 5-day transitions and 31% of
+        # transitions inverted the default exposure, which turned a standing disagreement
+        # between the agent and the playbook into round trips: 9 of 15 direction changes in
+        # the best run were imposed against what the agent asked for.
+        tracker = RegimeTracker.from_dict(self._state.regime_tracker).observe(
+            int(quant.get("regimen", 0)), now
+        )
+        self._state = replace(self._state, regime_tracker=tracker.to_dict())
+        regime = tracker.regime
         effective_long, honoured = resolve_exposure(
-            regime=int(quant.get("regimen", 0)),
+            regime=regime,
             wants_invested=verdict.wants_long,
             conviction=verdict.conviction,
         )
@@ -748,7 +761,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         # The regime's strategy, resolved into bounded numbers. The agent chose a
         # posture; volatility and pre-registered limits decide what it means.
         plan = resolve_plan(
-            regime=int(quant.get("regimen", 0)),
+            regime=regime,
             posture=verdict.posture,
             conviction=verdict.conviction,
             daily_vol_pct=float(volatility) if volatility is not None else None,
@@ -782,7 +795,10 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             decided_at=now,
             event_id=evidence.event_id,
             features=vector,
-            regime=int(quant.get("regimen", 0)),
+            # The regime IN FORCE, which is the one whose strategy governed this
+            # decision. Grouping the statistics by the observed label instead would
+            # attribute an outcome to a regime whose strategy was not applied.
+            regime=regime,
             quant_p_long=float(quant.get("p_largo", 0.0)),
             target_exposure=EXPOSURE_INVESTED if effective_long else EXPOSURE_CASH,
             exposure_before=EXPOSURE_INVESTED if is_long else EXPOSURE_CASH,
@@ -814,6 +830,8 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             "quant_p_long": quant.get("p_largo"),
             "quant_recommends": quant.get("recomienda"),
             "regime": quant.get("regimen"),
+            "regime_in_force": regime,
+            "regime_pending": tracker.pending,
             "regime_name": quant.get("nombre_regimen"),
             "agrees_with_quant": verdict.target_exposure == quant.get("recomienda"),
             "posture": verdict.posture,
@@ -829,9 +847,13 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
 
         suffix = "D" if verdict.deliberated else "F"
         reason = (
-            f"AGENT_{trade.value}_R{quant.get('regimen', 0)}"
+            f"AGENT_{trade.value}_R{regime}"
             f"_C{round(verdict.conviction * 100)}_{verdict.posture[:3]}_{suffix}"
             + ("" if honoured else "_REGIMEN_MANDA")
+            # Visible when the observed label differs from the one in force, so a
+            # reader can tell a decision under a persisting regime from one under a
+            # regime that has just changed.
+            + ("" if regime == int(quant.get("regimen", 0)) else "_PERSISTE")
         )
         self._reset_candidate()
 
