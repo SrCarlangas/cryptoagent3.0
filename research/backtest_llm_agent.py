@@ -154,6 +154,18 @@ def main() -> None:
     bars, dataset_id = load_bars()
     perception = build_daily_perception(bars)
     closes = perception.closes
+    # Hourly bars grouped by the day they belong to. The dataset is hourly with highs
+    # and lows, so evaluating the protective stop against daily CLOSES threw away 24x
+    # the available resolution and made an intraday wick that would have triggered the
+    # stop invisible. That matters most here, because what is being measured is deaths
+    # by stop.
+    hourly_by_day: list[list[Any]] = [[] for _ in closes]
+    # available_at_bar is the count of days strictly before the bar's own day, which is
+    # precisely that day's index. Verified: for 200 sampled days the last hourly close of
+    # each group equals the daily close, with a median of 24 bars per group.
+    for bar, day_of_bar in zip(bars, perception.available_at_bar, strict=False):
+        if 0 <= day_of_bar < len(hourly_by_day):
+            hourly_by_day[day_of_bar].append(bar)
     index = HistoryIndex(args.index)
     policy = RegimeMixturePolicy.load(args.policy)
 
@@ -376,25 +388,31 @@ def main() -> None:
         )
         memory.resolve_pending(now, D(str(price)))
 
-        # Walk every day until the next decision, marking to market and letting the
-        # protective stop fire. Only closes are available, so an intraday wick that
-        # would have triggered the stop is invisible here: this UNDERSTATES stop-outs,
-        # which flatters wide stops and is stated in the report.
+        # Walk every HOUR until the next decision, marking to market and letting the
+        # protective stop fire against real intraday lows. Checking daily closes instead
+        # hid every wick that would have triggered the stop, which understated stop-outs
+        # and flattered exactly the wide stops under investigation.
         for mark in range(day, min(day + args.step_days, end_day)):
-            close = closes[mark]
-            if units > 0.0:
-                high_since_entry = max(high_since_entry or close, close)
-                stop = current_stop(close)
-                if stop is not None and close <= stop:
-                    # Filled at the stop, or at the close when the day gapped through
-                    # it, whichever is worse for the position.
-                    exit_price = min(stop, close)
+            for bar in hourly_by_day[mark] or ():
+                if units <= 0.0:
+                    break
+                high_since_entry = max(high_since_entry or float(bar.high), float(bar.high))
+                stop = current_stop(float(bar.close))
+                if stop is not None and float(bar.low) <= stop:
+                    # A stop order triggers when the price crosses it and fills at
+                    # market. If the hour opened already below the stop the fill is near
+                    # that open, which is the honest worse case.
+                    exit_price = min(stop, float(bar.open))
                     cash += units * exit_price * (1 - fee)
                     units = 0.0
                     entry_price, high_since_entry, active_plan = None, None, None
                     holding_days = 0
                     stop_exits += 1
                     switches += 1
+                equity = cash + units * float(bar.close)
+                peak = max(peak, equity)
+                drawdown = max(drawdown, (peak - equity) / peak)
+            close = closes[mark]
             equity = cash + units * close
             peak = max(peak, equity)
             drawdown = max(drawdown, (peak - equity) / peak)
@@ -582,10 +600,13 @@ def render(payload: dict[str, Any]) -> str:
         "",
         "## Advertencia sobre la simulacion",
         "",
-        "Los stops se evaluan contra CIERRES diarios porque es lo unico que hay en el "
-        "dataset. Una mecha intradia que habria tocado el stop es invisible aqui, asi "
-        "que esto SUBESTIMA las salidas por stop y por tanto favorece a los stops "
-        "anchos. Leer la ventaja de la estrategia alcista con esa reserva.",
+        "Los stops se evaluan contra MINIMOS HORARIOS reales, no contra cierres "
+        "diarios, asi que una mecha que habria tocado el stop si cuenta. Queda un sesgo "
+        "en la direccion contraria: el agente solo decide cada "
+        + str(payload["window"]["step_days"])
+        + " dias por coste de computo, asi que si el stop salta el primer dia se queda "
+        "en liquidez el resto del intervalo, mientras en produccion volveria a decidir "
+        "en 30 minutos. Esto CASTIGA al agente y no se puede netear con el anterior.",
         f"- coincidio con el modelo cuantitativo en el {agent['agreement_with_quant']:.0%}",
         "",
         "",
