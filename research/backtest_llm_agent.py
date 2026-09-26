@@ -73,9 +73,9 @@ from btc_decision_agent.application.llm_tools import (
 from btc_decision_agent.application.realtime_demo import (
     ProtectiveDecisionEngine,
     RealtimeParams,
-    size_entry_percentage,
 )
 from btc_decision_agent.application.regime_playbook import (
+    plan_adjustment,
     resolve_exposure,
     resolve_plan,
 )
@@ -190,6 +190,10 @@ def main() -> None:
     failures = 0
     stop_exits = 0
     burden_blocks = 0
+    entries = 0
+    exits = 0
+    scale_ups = 0
+    scale_downs = 0
     # The engine itself computes the stop, rather than the backtest reimplementing it.
     # Two copies of stop geometry would drift, and the drift would be invisible because
     # each side looks reasonable alone.
@@ -290,36 +294,62 @@ def main() -> None:
         )
         if not choice_honoured:
             burden_blocks += 1
-        acted = changing and clears
         fill = closes[min(day + 1, end_day)]
 
-        if acted and wants_long:
-            sizing = plan.apply(params)
-            equity_now = cash + units * price
-            quote = float(
-                size_entry_percentage(
-                    D(str(cash)),
-                    sizing.allocation_fraction,
-                    min_notional=params.min_notional_usdt,
-                    equity=D(str(equity_now)),
-                    risk_per_trade_fraction=sizing.risk_per_trade_fraction,
-                    stop_loss_fraction=sizing.stop_loss_fraction,
-                )
-            )
-            if quote > 0.0:
-                units += (quote * (1 - fee)) / fill
-                cash -= quote
-                entry_price = fill
-                high_since_entry = fill
-                active_plan = plan.to_dict()
-                holding_days, switches = 0, switches + 1
+        # Bring the book to the plan's target instead of only opening and closing. A
+        # target of zero arrives here as a full exit, so the exposure decision still
+        # governs direction; what changes is that the SIZE can now be revised while a
+        # position is held. Without this the size stayed frozen at whatever was chosen
+        # in the moment of entry, which the previous run showed was the moment of
+        # greatest doubt: 79% of entries were defensive and 58% of holding decisions
+        # were aggressive, with zero scaling orders in 98 decisions.
+        sizing = plan.apply(params)
+        target = sizing.allocation_fraction if wants_long else D("0")
+        # The entry cost gate still applies to OPENING from flat; it never blocks a
+        # reduction, and it must not block a top-up of a position already justified.
+        if not position_long and wants_long and not clears:
+            target = D("0")
+        adjustment = plan_adjustment(
+            target_allocation=target,
+            btc_qty=D(str(units)),
+            price=D(str(fill)),
+            usdt_free=D(str(cash)),
+            risk_per_trade_fraction=sizing.risk_per_trade_fraction,
+            stop_loss_fraction=sizing.stop_loss_fraction,
+            min_notional=params.min_notional_usdt,
+            base_step=params.base_step_size,
+        )
+        acted = adjustment.acts
+        if adjustment.action == "COMPRAR":
+            bought = float(adjustment.quote_usdt) * (1 - fee) / fill
+            if units > 0.0 and entry_price is not None:
+                # Weighted average cost, exactly as the engine computes it on a fill.
+                entry_price = (entry_price * units + fill * bought) / (units + bought)
+                high_since_entry = max(high_since_entry or fill, fill)
             else:
-                acted = False
-        elif acted and not wants_long:
-            cash += units * fill * (1 - fee)
-            units = 0.0
-            entry_price, high_since_entry, active_plan = None, None, None
-            holding_days, switches = 0, switches + 1
+                entry_price, high_since_entry = fill, fill
+                holding_days = 0
+            units += bought
+            cash -= float(adjustment.quote_usdt)
+            active_plan = plan.to_dict()
+            switches += 1
+            if adjustment.current_share <= D("0.01"):
+                entries += 1
+            else:
+                scale_ups += 1
+        elif adjustment.action == "VENDER":
+            sold = float(adjustment.base_qty)
+            cash += sold * fill * (1 - fee)
+            units -= sold
+            switches += 1
+            if units <= 1e-12:
+                units = 0.0
+                entry_price, high_since_entry, active_plan = None, None, None
+                holding_days = 0
+                exits += 1
+            else:
+                # A trim keeps the cost basis and the high watermark, like the engine.
+                scale_downs += 1
         elif units > 0.0:
             holding_days += args.step_days
 
@@ -331,7 +361,11 @@ def main() -> None:
             quant_p_long=float(quant.get("p_largo", 0.0)),
             target_exposure=EXPOSURE_INVESTED if wants_long else EXPOSURE_CASH,
             exposure_before=EXPOSURE_INVESTED if position_long else EXPOSURE_CASH,
-            derived_order="BUY" if acted and wants_long else ("SELL" if acted else "HOLD"),
+            derived_order=(
+                "BUY"
+                if adjustment.action == "COMPRAR"
+                else ("SELL" if adjustment.action == "VENDER" else "HOLD")
+            ),
             conviction=verdict.conviction,
             expected_move_pct=verdict.expected_move_pct,
             reason=verdict.reason,
@@ -382,6 +416,12 @@ def main() -> None:
                 "invested_share": round(
                     (units * price) / (cash + units * price) if (cash + units * price) else 0.0, 4
                 ),
+                # Recorded at decision time, before the days that follow can stop the
+                # position out. invested_share above is measured after those days, so
+                # the two together separate "sized small" from "stopped out".
+                "share_before": float(adjustment.current_share),
+                "share_target": float(adjustment.target_share),
+                "adjustment": adjustment.action,
                 "conviction": verdict.conviction,
                 "expected_move_pct": verdict.expected_move_pct,
                 "acted": acted,
@@ -411,6 +451,10 @@ def main() -> None:
         "max_drawdown_pct": drawdown * 100.0,
         "stop_exits": stop_exits,
         "burden_blocks": burden_blocks,
+        "entries": entries,
+        "exits": exits,
+        "scale_ups": scale_ups,
+        "scale_downs": scale_downs,
         "switches": switches,
         "decisions": len(trace),
         "model_failures": failures,
@@ -510,6 +554,8 @@ def render(payload: dict[str, Any]) -> str:
         f"- veces que el regimen impuso su exposicion por defecto sobre la eleccion "
         f"del agente: {agent['burden_blocks']}",
         f"- salidas por stop protector: {agent['stop_exits']}",
+        f"- aperturas: {agent['entries']}  cierres: {agent['exits']}  "
+        f"ampliaciones: {agent['scale_ups']}  reducciones: {agent['scale_downs']}",
         "",
         "## Estrategia por regimen",
         "",
