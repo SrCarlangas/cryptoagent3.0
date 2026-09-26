@@ -194,6 +194,14 @@ def main() -> None:
     # would round every order to zero.
     START_CAPITAL = 10_000.0
     cash, units, switches = START_CAPITAL, 0.0, 0
+    # `switches` counts every order, which conflated two different things once scaling
+    # existed: changing DIRECTION, which is a round trip and is what the churn threshold
+    # was priced against, and adjusting SIZE, which is one side of a trade. Counted
+    # together, an agent that scales into a trend looks like a churner. Commission paid is
+    # the quantity that actually matters, so it is accumulated rather than inferred.
+    direction_changes = 0
+    adjustments = 0
+    commission_paid = 0.0
     entry_price: float | None = None
     high_since_entry: float | None = None
     active_plan: dict[str, Any] | None = None
@@ -332,7 +340,9 @@ def main() -> None:
             base_step=params.base_step_size,
         )
         acted = adjustment.acts
+        was_long = units > 0.0
         if adjustment.action == "COMPRAR":
+            commission_paid += float(adjustment.quote_usdt) * fee
             bought = float(adjustment.quote_usdt) * (1 - fee) / fill
             if units > 0.0 and entry_price is not None:
                 # Weighted average cost, exactly as the engine computes it on a fill.
@@ -351,6 +361,7 @@ def main() -> None:
                 scale_ups += 1
         elif adjustment.action == "VENDER":
             sold = float(adjustment.base_qty)
+            commission_paid += sold * fill * fee
             cash += sold * fill * (1 - fee)
             units -= sold
             switches += 1
@@ -364,6 +375,11 @@ def main() -> None:
                 scale_downs += 1
         elif units > 0.0:
             holding_days += args.step_days
+        if acted:
+            if (units > 0.0) != was_long:
+                direction_changes += 1
+            else:
+                adjustments += 1
 
         memory.record(
             decided_at=now,
@@ -416,7 +432,9 @@ def main() -> None:
                     # market. If the hour opened already below the stop the fill is near
                     # that open, which is the honest worse case.
                     exit_price = min(stop, float(bar.open))
+                    commission_paid += units * exit_price * fee
                     cash += units * exit_price * (1 - fee)
+                    direction_changes += 1
                     units = 0.0
                     entry_price, high_since_entry, active_plan = None, None, None
                     holding_days = 0
@@ -488,6 +506,9 @@ def main() -> None:
         "net_return_pct": (final / START_CAPITAL - 1.0) * 100.0,
         "max_drawdown_pct": drawdown * 100.0,
         "stop_exits": stop_exits,
+        "direction_changes": direction_changes,
+        "size_adjustments": adjustments,
+        "commission_paid_pct": commission_paid / START_CAPITAL * 100.0,
         "burden_blocks": burden_blocks,
         "entries": entries,
         "exits": exits,
@@ -604,6 +625,13 @@ def render(payload: dict[str, Any]) -> str:
         f"- veces que el regimen impuso su exposicion por defecto sobre la eleccion "
         f"del agente: {agent['burden_blocks']}",
         f"- salidas por stop protector: {agent['stop_exits']}",
+        f"- cambios de DIRECCION: {agent.get('direction_changes', 0)} · "
+        f"ajustes de TAMANO: {agent.get('size_adjustments', 0)} · "
+        f"comision pagada: {agent.get('commission_paid_pct', 0.0):.2f}% del capital",
+        "  El umbral de rotacion se fijo contra el coste de dar vueltas al capital, que es "
+        "un viaje de ida y vuelta. Un ajuste de tamano es un solo lado, asi que contarlos "
+        "juntos hace parecer churner a un agente que escala dentro de una tendencia. La "
+        "comision pagada es la cantidad que de verdad importa y aqui esta medida, no inferida.",
         f"- aperturas: {agent['entries']}  cierres: {agent['exits']}  "
         f"ampliaciones: {agent['scale_ups']}  reducciones: {agent['scale_downs']}",
         "",
