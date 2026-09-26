@@ -26,6 +26,8 @@ from btc_decision_agent.application.realtime_demo import (
     size_entry_percentage,
 )
 from btc_decision_agent.application.regime_playbook import (
+    LEGACY_BREAK_EVEN_ACTIVATION,
+    LEGACY_BREAK_EVEN_LOCK,
     MAX_ALLOCATION,
     MAX_STOP_FRACTION,
     MIN_ALLOCATION,
@@ -648,3 +650,131 @@ class TestFillAccountingWhenScaling:
         self._open(engine, "140", "1")
         assert engine.state.protective_order_id is None
         assert engine.state.protective_stop_price is None
+
+
+class TestBreakEvenRatchetIsGovernedByThePlaybook:
+    """The omission that overrode the whole playbook, and the tests that missed it.
+
+    `ExecutionPlan.apply` substituted the allocation, the stop, the trailing stop, the
+    trailing activation and the risk budget, but not the two break-even fields. So every
+    regime and every posture inherited the engine defaults: as soon as a trade was 0.5%
+    in profit the stop ratcheted to 0.25% above entry.
+
+    BTC covers 0.5% in an hour routinely, so this turned every position that went green
+    into a trade closed on the first quarter-percent pullback for +0.05% after fees. It
+    also pre-empted the trailing stop, whose activation sits at 2 to 3%, which is why the
+    per-regime trailing geometry the playbook computed never executed.
+
+    Measured on 100 replayed decisions, pushing the ratchet out of reach cut stop exits
+    from 10 to 5 and raised the share of hours actually holding a position by 70%.
+
+    The whole suite of 202 tests passed throughout, because every one of them built plans
+    through `resolve_plan` or `from_dict` and none asserted anything about the fields
+    `apply` forgot. These tests assert the fields and the resulting behaviour instead.
+    """
+
+    def _engine(self, plan: ExecutionPlan) -> ProtectiveDecisionEngine:
+        from dataclasses import replace as dc_replace
+
+        engine = ProtectiveDecisionEngine(plan.apply(RealtimeParams()))
+        engine.import_state(dc_replace(engine.state, execution_plan=plan.to_dict()))
+        return engine
+
+    def _long_at(self, engine: ProtectiveDecisionEngine, entry: str, high: str) -> None:
+        from dataclasses import replace as dc_replace
+
+        engine.import_state(
+            dc_replace(engine.state, entry_price=D(entry), high_since_entry=D(high))
+        )
+
+    def _bull_plan(self) -> ExecutionPlan:
+        return resolve_plan(
+            regime=3, posture=Posture.AGRESIVA.value, conviction=0.85, daily_vol_pct=2.0
+        )
+
+    def test_apply_substitutes_the_break_even_pair(self) -> None:
+        # The regression test for the actual defect. Every field `_active_stop` reads has
+        # to come from the plan, or the plan is advisory.
+        plan = self._bull_plan()
+        applied = plan.apply(RealtimeParams())
+        assert applied.break_even_activation_fraction == plan.break_even_activation_fraction
+        assert applied.break_even_lock_fraction == plan.break_even_lock_fraction
+        assert applied.break_even_activation_fraction != LEGACY_BREAK_EVEN_ACTIVATION
+
+    def test_a_trend_trade_is_not_closed_by_a_quarter_percent_pullback(self) -> None:
+        # The behaviour the regime 3 doctrine promises the agent: noise does not shake it
+        # out of a trend. Under the old geometry the stop here was entry + 0.25%.
+        plan = self._bull_plan()
+        engine = self._engine(plan)
+        self._long_at(engine, "80000", "80800")  # +1%, past the legacy activation
+        stop = engine.active_stop(D("80800"))
+        assert stop is not None
+        assert stop < D("80000"), "a 1% gain must not lift the stop above the entry"
+        assert stop == D("80000") * (D("1") - plan.stop_loss_fraction)
+
+    def test_the_ratchet_still_engages_once_the_profit_is_material(self) -> None:
+        # It is a backstop, not a scalper's leash. It must still exist.
+        plan = self._bull_plan()
+        engine = self._engine(plan)
+        activation = D("1") + plan.break_even_activation_fraction
+        self._long_at(engine, "80000", format(D("80000") * activation, "f"))
+        stop = engine.active_stop(D("80000") * activation)
+        assert stop is not None and stop > D("80000")
+
+    @pytest.mark.parametrize("regime", [0, 1, 2, 3])
+    @pytest.mark.parametrize("volatility", [0.5, 1.0, 2.0, 3.5, 6.0, 12.0])
+    @pytest.mark.parametrize("posture", list(Posture))
+    def test_the_floor_is_never_tighter_than_the_trail_already_is(
+        self, regime: int, volatility: float, posture: Posture
+    ) -> None:
+        """The invariant that keeps the ratchet from becoming the exposure policy again.
+
+        At the moment the ratchet engages the high sits at entry * (1 + activation), so the
+        trailing stop is already at entry * (1 + activation) * (1 - trail). A floor above
+        that is tighter than the trail, which is exactly how a 0.25% floor came to govern a
+        strategy advertising a 5% stop. Checked against the CLAMPED numbers, because
+        clamping is what breaks the relationship the multiples were chosen to satisfy.
+        """
+        plan = resolve_plan(
+            regime=regime, posture=posture.value, conviction=0.7, daily_vol_pct=volatility
+        )
+        ceiling = (D("1") + plan.break_even_activation_fraction) * (
+            D("1") - plan.trailing_stop_fraction
+        ) - D("1")
+        assert plan.break_even_lock_fraction <= ceiling
+
+    def test_a_bull_regime_tolerates_more_give_back_than_a_bear(self) -> None:
+        bull = resolve_plan(
+            regime=3, posture=Posture.NEUTRAL.value, conviction=0.7, daily_vol_pct=2.0
+        )
+        bear = resolve_plan(
+            regime=1, posture=Posture.NEUTRAL.value, conviction=0.7, daily_vol_pct=2.0
+        )
+        assert bull.break_even_activation_fraction > bear.break_even_activation_fraction
+
+    def test_a_plan_persisted_before_this_change_keeps_its_original_geometry(self) -> None:
+        """Loosening a stop underneath an open position is the costly direction of surprise.
+
+        An older build persisted plans without these fields. Resolving absence to the new
+        regime geometry would widen the stop on a position that was opened under the old
+        one, so absence resolves to the legacy values instead.
+        """
+        raw = self._bull_plan().to_dict()
+        del raw["break_even_activation_fraction"]
+        del raw["break_even_lock_fraction"]
+        restored = ExecutionPlan.from_dict(raw)
+        assert restored.break_even_activation_fraction == LEGACY_BREAK_EVEN_ACTIVATION
+        assert restored.break_even_lock_fraction == LEGACY_BREAK_EVEN_LOCK
+
+    def test_the_pair_survives_a_round_trip_through_disk(self) -> None:
+        import json
+
+        plan = self._bull_plan()
+        restored = ExecutionPlan.from_dict(json.loads(json.dumps(plan.to_dict())))
+        assert restored == plan
+
+    def test_the_agent_is_told_the_floor_it_is_actually_operating_under(self) -> None:
+        # The prompt promised a wide stop while the engine ran a 0.25% leash. Whatever
+        # governs the exit has to be visible to the thing being judged on the outcome.
+        block = render_playbook_block(3, 2.0)
+        assert "piso en +" in block

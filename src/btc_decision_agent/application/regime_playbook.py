@@ -47,7 +47,13 @@ from btc_decision_agent.application.realtime_demo import RealtimeParams
 
 D = Decimal
 
-PLAYBOOK_VERSION = "regime-playbook/1.0.0"
+PLAYBOOK_VERSION = "regime-playbook/1.1.0"
+"""1.1.0 puts the break-even ratchet under the playbook's control.
+
+Until then `ExecutionPlan.apply` left `break_even_activation_fraction` and
+`break_even_lock_fraction` at the engine defaults of 0.5% and 0.25%, so the per-regime
+stop geometry this module computes was overridden on every trade that went green.
+"""
 
 
 class Posture(str, Enum):
@@ -76,6 +82,20 @@ MIN_RISK_FRACTION = D("0.005")
 MAX_RISK_FRACTION = D("0.12")
 MIN_TRAIL_FRACTION = D("0.010")
 MAX_TRAIL_FRACTION = D("0.18")
+MIN_BREAK_EVEN_ACTIVATION = D("0.02")
+MAX_BREAK_EVEN_ACTIVATION = D("0.30")
+MIN_BREAK_EVEN_LOCK = D("0.002")
+MAX_BREAK_EVEN_LOCK = D("0.06")
+
+LEGACY_BREAK_EVEN_ACTIVATION = D("0.005")
+LEGACY_BREAK_EVEN_LOCK = D("0.0025")
+"""The engine defaults that governed every exit before the playbook owned this.
+
+They are kept only so a plan persisted by an older build keeps the geometry its open
+position was opened under. Changing the stop rule underneath a live position is the
+failure this class was written to prevent, so a legacy plan keeps legacy behaviour and
+only new plans get the regime's own break-even geometry.
+"""
 
 
 @dataclass(frozen=True)
@@ -94,6 +114,35 @@ class RegimeStrategy:
 
     trail_activation_vol_multiple: Decimal
     """How far in profit, in volatility multiples, before the trail engages."""
+
+    break_even_activation_vol_multiple: Decimal
+    """Profit, in volatility multiples, before the stop ratchets up to break even.
+
+    This exists because leaving it out silently overrode everything else here. The engine
+    defaults were 0.5% to activate and a floor at 0.25% above entry, and
+    `ExecutionPlan.apply` substituted the allocation, the stop, the trailing stop, the
+    trailing activation and the risk budget but not these two. So every regime and every
+    posture inherited a quarter-percent leash the moment a trade went 0.5% green.
+
+    BTC covers 0.5% in an hour routinely. Measured on 100 replayed decisions the effect
+    was not marginal: it fired on half of all exits, and pushing it out of reach cut stop
+    exits from 10 to 5 and raised the time actually holding a position by 70%. It also
+    pre-empted the trailing stop completely, which is why disabling the trailing stop
+    changed nothing at all: at 0.5% the break-even floor engaged long before the trailing
+    stop's 2 to 3% activation, so the trailing geometry the playbook computed per regime
+    was dead code.
+
+    The regime 3 doctrine shown to the agent promises a wide stop so noise cannot shake it
+    out of a trend it intends to hold for 168 hours. The engine had it on a 0.25% leash.
+    """
+
+    break_even_lock_vol_multiple: Decimal
+    """Where the floor sits above entry once the ratchet engages, in volatility multiples.
+
+    Bound by an invariant rather than chosen freely: the floor may never be tighter than
+    the trailing stop already is at the moment the ratchet engages. Otherwise the ratchet
+    becomes the exposure policy again, just at a different number.
+    """
 
     risk_per_trade: Decimal
     """Share of equity risked to the stop. Set WITH the stop, never independently:
@@ -134,6 +183,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         stop_vol_multiple=D("2.0"),
         trail_vol_multiple=D("1.6"),
         trail_activation_vol_multiple=D("1.0"),
+        break_even_activation_vol_multiple=D("2.6"),
+        break_even_lock_vol_multiple=D("0.5"),
         risk_per_trade=D("0.02"),
         horizon_hours=48,
         default_exposure=EXPOSURE_CASH,
@@ -150,6 +201,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         stop_vol_multiple=D("1.6"),
         trail_vol_multiple=D("1.2"),
         trail_activation_vol_multiple=D("0.8"),
+        break_even_activation_vol_multiple=D("2.0"),
+        break_even_lock_vol_multiple=D("0.4"),
         risk_per_trade=D("0.01"),
         horizon_hours=24,
         default_exposure=EXPOSURE_CASH,
@@ -166,6 +219,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         stop_vol_multiple=D("2.5"),
         trail_vol_multiple=D("2.0"),
         trail_activation_vol_multiple=D("1.2"),
+        break_even_activation_vol_multiple=D("3.2"),
+        break_even_lock_vol_multiple=D("0.6"),
         risk_per_trade=D("0.035"),
         horizon_hours=96,
         default_exposure=EXPOSURE_INVESTED,
@@ -181,6 +236,8 @@ PLAYBOOK: dict[int, RegimeStrategy] = {
         stop_vol_multiple=D("3.5"),
         trail_vol_multiple=D("2.8"),
         trail_activation_vol_multiple=D("1.5"),
+        break_even_activation_vol_multiple=D("4.3"),
+        break_even_lock_vol_multiple=D("0.8"),
         risk_per_trade=D("0.09"),
         horizon_hours=168,
         default_exposure=EXPOSURE_INVESTED,
@@ -227,6 +284,8 @@ class ExecutionPlan:
     stop_loss_fraction: Decimal
     trailing_stop_fraction: Decimal
     trailing_activation_fraction: Decimal
+    break_even_activation_fraction: Decimal
+    break_even_lock_fraction: Decimal
     risk_per_trade_fraction: Decimal
     horizon_hours: int
     daily_vol_pct: float | None
@@ -238,6 +297,11 @@ class ExecutionPlan:
 
         `replace` re-runs RealtimeParams.__post_init__, so an out-of-range plan fails
         loudly here rather than reaching the exchange.
+
+        Every field `_active_stop` reads must be listed here. The break-even pair was
+        missing and that single omission overrode the whole playbook: the regime's stop
+        geometry was computed, persisted and displayed while a hard-coded 0.25% floor
+        decided the actual exits.
         """
         return replace(
             params,
@@ -245,6 +309,8 @@ class ExecutionPlan:
             stop_loss_fraction=self.stop_loss_fraction,
             trailing_stop_fraction=self.trailing_stop_fraction,
             trailing_activation_fraction=self.trailing_activation_fraction,
+            break_even_activation_fraction=self.break_even_activation_fraction,
+            break_even_lock_fraction=self.break_even_lock_fraction,
             risk_per_trade_fraction=self.risk_per_trade_fraction,
         )
 
@@ -258,6 +324,8 @@ class ExecutionPlan:
             "stop_loss_fraction": format(self.stop_loss_fraction, "f"),
             "trailing_stop_fraction": format(self.trailing_stop_fraction, "f"),
             "trailing_activation_fraction": format(self.trailing_activation_fraction, "f"),
+            "break_even_activation_fraction": format(self.break_even_activation_fraction, "f"),
+            "break_even_lock_fraction": format(self.break_even_lock_fraction, "f"),
             "risk_per_trade_fraction": format(self.risk_per_trade_fraction, "f"),
             "horizon_hours": self.horizon_hours,
             "daily_vol_pct": self.daily_vol_pct,
@@ -272,6 +340,16 @@ class ExecutionPlan:
             stop_loss_fraction=D(str(raw["stop_loss_fraction"])),
             trailing_stop_fraction=D(str(raw["trailing_stop_fraction"])),
             trailing_activation_fraction=D(str(raw["trailing_activation_fraction"])),
+            # A plan persisted before the playbook owned the break-even ratchet keeps the
+            # geometry its position was opened under. Loosening a stop underneath an open
+            # position is the one direction of surprise that costs capital rather than
+            # opportunity, so absence resolves to the legacy values, not to the new ones.
+            break_even_activation_fraction=D(
+                str(raw.get("break_even_activation_fraction", LEGACY_BREAK_EVEN_ACTIVATION))
+            ),
+            break_even_lock_fraction=D(
+                str(raw.get("break_even_lock_fraction", LEGACY_BREAK_EVEN_LOCK))
+            ),
             risk_per_trade_fraction=D(str(raw["risk_per_trade_fraction"])),
             horizon_hours=int(raw["horizon_hours"]),
             daily_vol_pct=(
@@ -334,6 +412,34 @@ def resolve_plan(
     )
     risk = _clamp(strategy.risk_per_trade * _POSTURE_SIZE[chosen], MIN_RISK_FRACTION, MAX_RISK_FRACTION)
 
+    # The break-even ratchet scales with posture like the stop and the trail do, so an
+    # aggressive posture pushes the floor further out rather than keeping a scalper's leash
+    # on a trend trade.
+    break_even_activation = _clamp(
+        strategy.break_even_activation_vol_multiple * vol * posture_stop,
+        MIN_BREAK_EVEN_ACTIVATION,
+        MAX_BREAK_EVEN_ACTIVATION,
+    )
+    break_even_lock = _clamp(
+        strategy.break_even_lock_vol_multiple * vol * posture_stop,
+        MIN_BREAK_EVEN_LOCK,
+        MAX_BREAK_EVEN_LOCK,
+    )
+    # The invariant. At the moment the ratchet engages the high sits at
+    # entry * (1 + activation), so the trailing stop is already at
+    # entry * (1 + activation) * (1 - trail). A floor above that level would be TIGHTER
+    # than the trail, which is how a 0.25% floor came to govern a strategy that advertised
+    # a 5% stop. Computed from the clamped numbers rather than the multiples, because it is
+    # clamping that breaks the relationship the multiples were chosen to satisfy.
+    floor_ceiling = (D("1") + break_even_activation) * (D("1") - trail) - D("1")
+    if floor_ceiling < MIN_BREAK_EVEN_LOCK:
+        # No floor can sit below the trail here. Push the ratchet out of reach and let the
+        # trailing stop do the job alone rather than silently tighten the leash.
+        break_even_activation = MAX_BREAK_EVEN_ACTIVATION
+        break_even_lock = MIN_BREAK_EVEN_LOCK
+    else:
+        break_even_lock = min(break_even_lock, floor_ceiling)
+
     return ExecutionPlan(
         regime=int(regime) if regime is not None else 1,
         posture=chosen.value,
@@ -341,6 +447,8 @@ def resolve_plan(
         stop_loss_fraction=stop,
         trailing_stop_fraction=trail,
         trailing_activation_fraction=activation,
+        break_even_activation_fraction=break_even_activation,
+        break_even_lock_fraction=break_even_lock,
         risk_per_trade_fraction=risk,
         horizon_hours=strategy.horizon_hours,
         daily_vol_pct=daily_vol_pct,
@@ -400,7 +508,10 @@ def render_playbook_block(regime: int | None, daily_vol_pct: float | None) -> st
         lines.append(
             f"  postura {posture.value:<10} -> asignacion {plan.allocation_fraction * 100:.0f}%, "
             f"stop {plan.stop_loss_fraction * 100:.1f}%, "
-            f"arrastre {plan.trailing_stop_fraction * 100:.1f}%"
+            f"arrastre {plan.trailing_stop_fraction * 100:.1f}% "
+            f"(activa en +{plan.trailing_activation_fraction * 100:.1f}%), "
+            f"piso en +{plan.break_even_lock_fraction * 100:.1f}% "
+            f"tras +{plan.break_even_activation_fraction * 100:.1f}%"
         )
     lines.append(
         "  Eliges la POSTURA, no los numeros: se derivan de la volatilidad medida y "
@@ -411,9 +522,15 @@ def render_playbook_block(regime: int | None, daily_vol_pct: float | None) -> st
 
 __all__ = [
     "DEAD_BAND",
+    "LEGACY_BREAK_EVEN_ACTIVATION",
+    "LEGACY_BREAK_EVEN_LOCK",
     "MAX_ALLOCATION",
+    "MAX_BREAK_EVEN_ACTIVATION",
+    "MAX_BREAK_EVEN_LOCK",
     "MAX_STOP_FRACTION",
     "MIN_ALLOCATION",
+    "MIN_BREAK_EVEN_ACTIVATION",
+    "MIN_BREAK_EVEN_LOCK",
     "MIN_STOP_FRACTION",
     "PLAYBOOK",
     "PLAYBOOK_VERSION",
