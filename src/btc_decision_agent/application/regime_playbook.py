@@ -38,7 +38,7 @@ ones; "2.5 daily standard deviations" means the same thing in both.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from decimal import Decimal
+from decimal import ROUND_DOWN, Decimal
 from enum import Enum
 from typing import Any
 
@@ -410,6 +410,7 @@ def render_playbook_block(regime: int | None, daily_vol_pct: float | None) -> st
 
 
 __all__ = [
+    "DEAD_BAND",
     "MAX_ALLOCATION",
     "MAX_STOP_FRACTION",
     "MIN_ALLOCATION",
@@ -418,10 +419,157 @@ __all__ = [
     "PLAYBOOK_VERSION",
     "POSTURE_VALUES",
     "ExecutionPlan",
+    "ExposureAdjustment",
     "Posture",
     "RegimeStrategy",
+    "plan_adjustment",
     "render_playbook_block",
     "resolve_exposure",
     "resolve_plan",
     "strategy_for",
 ]
+
+
+DEAD_BAND = D("0.15")
+"""How far the position may drift from its target before it is worth adjusting.
+
+Expressed in fractions of equity, so 0.15 is fifteen percentage points of exposure.
+
+Derived from the measured noise in the target rather than picked. Over 98 replayed
+decisions the posture changed on 49% of them, and adjacent postures differ by roughly
+45 percentage points of allocation in the bull regime (50% defensive against 95%
+aggressive). A 15 point band therefore absorbs the flicker that comes from conviction
+wobbling inside one posture, while a genuine change of posture still moves the book.
+
+It is a judgement and it is the parameter to watch: too narrow and the agent churns,
+too wide and it never reaches its target. The gate already caps the switch rate at 30%,
+so the churn side is measured rather than assumed.
+"""
+
+
+@dataclass(frozen=True)
+class ExposureAdjustment:
+    """What to do to bring the book to the plan's target exposure."""
+
+    action: str
+    """COMPRAR, VENDER or MANTENER."""
+
+    quote_usdt: Decimal
+    """Notional to buy. Zero unless action is COMPRAR."""
+
+    base_qty: Decimal
+    """Base quantity to sell. Zero unless action is VENDER."""
+
+    current_share: Decimal
+    target_share: Decimal
+    reason: str
+
+    @property
+    def acts(self) -> bool:
+        return self.action != "MANTENER"
+
+
+def plan_adjustment(
+    *,
+    target_allocation: Decimal,
+    btc_qty: Decimal,
+    price: Decimal,
+    usdt_free: Decimal,
+    risk_per_trade_fraction: Decimal,
+    stop_loss_fraction: Decimal,
+    min_notional: Decimal,
+    base_step: Decimal,
+    dead_band: Decimal = DEAD_BAND,
+) -> ExposureAdjustment:
+    """Bring exposure to its target, scaling up or down rather than only on or off.
+
+    This exists because of a measured failure, not a preference. Over 98 replayed
+    decisions the agent entered while cautious (79% of entries were DEFENSIVA, which
+    halves the position) and then turned aggressive while already holding (58% of
+    holding decisions were AGRESIVA, asking for 95%). There were ZERO scaling orders in
+    the whole run, because the only paths available were open-from-flat and close-to-
+    zero. Participation froze at the size chosen in the moment of greatest doubt, which
+    is the worst possible moment to freeze it, and the run captured +27.6% of a +184%
+    advance.
+
+    The target is a share of EQUITY, not of free cash. Asking for "95%" is only
+    well defined against equity once a position already exists; against free cash it
+    would mean something different at every moment. When the book is flat the two
+    coincide, so entry sizing is unchanged.
+
+    The risk cap still binds: a target is never larger than the loss budget divided by
+    the stop distance, which is what keeps a wide stop from quietly becoming a large bet.
+    """
+    equity = usdt_free + btc_qty * price
+    if equity <= 0 or price <= 0:
+        return ExposureAdjustment(
+            "MANTENER", D("0"), D("0"), D("0"), D("0"), "sin capital valorable"
+        )
+
+    capped = target_allocation
+    if stop_loss_fraction > 0:
+        by_risk = risk_per_trade_fraction / stop_loss_fraction
+        capped = min(capped, by_risk)
+    capped = max(D("0"), min(D("1"), capped))
+
+    current_share = (btc_qty * price) / equity
+    gap = capped - current_share
+
+    # Opening and fully closing are changes of state, not drift, so the dead band does
+    # not apply to them. Without this exemption a risk-capped target smaller than the
+    # band could never be reached at all: a 10% target with a 15 point band left the
+    # agent permanently flat, which a test caught before it ever ran.
+    opening = current_share <= D("0.01") and capped > D("0")
+    closing = capped <= D("0") and current_share > D("0")
+    if not opening and not closing and abs(gap) < dead_band:
+        return ExposureAdjustment(
+            "MANTENER",
+            D("0"),
+            D("0"),
+            current_share,
+            capped,
+            f"desvio {gap * 100:+.1f}pp dentro de la banda de {dead_band * 100:.0f}pp",
+        )
+
+    if gap > 0:
+        quote = min(gap * equity, usdt_free).quantize(D("0.01"), rounding=ROUND_DOWN)
+        if quote < min_notional:
+            return ExposureAdjustment(
+                "MANTENER",
+                D("0"),
+                D("0"),
+                current_share,
+                capped,
+                f"ampliacion de {quote} por debajo del minimo nocional {min_notional}",
+            )
+        return ExposureAdjustment(
+            "COMPRAR",
+            quote,
+            D("0"),
+            current_share,
+            capped,
+            f"ampliar {gap * 100:+.1f}pp hasta {capped * 100:.0f}%",
+        )
+
+    # Reducing. Selling the whole position is left to the exposure decision itself; this
+    # only trims the excess, so a target of zero still arrives here as a full exit.
+    excess_value = (-gap) * equity
+    raw_qty = min(excess_value / price, btc_qty)
+    qty = (raw_qty / base_step).to_integral_value(rounding=ROUND_DOWN) * base_step
+    if qty <= 0 or qty * price < min_notional:
+        return ExposureAdjustment(
+            "MANTENER",
+            D("0"),
+            D("0"),
+            current_share,
+            capped,
+            f"reduccion de {qty} por debajo del minimo nocional",
+        )
+    return ExposureAdjustment(
+        "VENDER",
+        D("0"),
+        qty,
+        current_share,
+        capped,
+        f"reducir {gap * 100:+.1f}pp hasta {capped * 100:.0f}%",
+    )

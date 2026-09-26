@@ -778,7 +778,52 @@ class ProtectiveDecisionEngine:
         base_quantity: Decimal,
         at: datetime,
     ) -> None:
-        if side == OrderSide.BUY:
+        held = self._state.position_base_qty or _ZERO
+        if side == OrderSide.BUY and self._state.entry_price is not None and held > 0:
+            # Adding to an existing position, not opening one. Treating this as a fresh
+            # entry would rewrite entry_price to the new, higher fill and reset
+            # high_since_entry, which tightens the stop on the whole position at the
+            # exact moment of scaling up and throws away the trailing high watermark.
+            #
+            # The cost basis becomes the weighted average of what was paid, because that
+            # is what the stop is measured from and what the profit is measured against.
+            total = held + base_quantity
+            averaged = (
+                (self._state.entry_price * held + fill_price * base_quantity) / total
+            )
+            self._state = replace(
+                self._state,
+                candidate=None,
+                candidate_since=None,
+                candidate_last_seen=None,
+                entry_price=averaged,
+                high_since_entry=max(self._state.high_since_entry or fill_price, fill_price),
+                position_base_qty=total,
+                # The resting stop no longer covers the position, so it is recorded as
+                # absent and the forced sync that follows a fill places one for the
+                # full quantity. The exchange order is still discoverable by its client
+                # id prefix, so it can be cancelled.
+                protective_order_id=None,
+                protective_client_order_id=None,
+                protective_stop_price=None,
+                recovery_source="FILL",
+            )
+        elif side == OrderSide.SELL and held > 0 and base_quantity < held:
+            # Trimming, not leaving. Selling part of a position does not change what was
+            # paid for the remainder, so the cost basis and the high watermark stand and
+            # the position keeps the strategy it was opened under.
+            self._state = replace(
+                self._state,
+                candidate=None,
+                candidate_since=None,
+                candidate_last_seen=None,
+                position_base_qty=held - base_quantity,
+                protective_order_id=None,
+                protective_client_order_id=None,
+                protective_stop_price=None,
+                recovery_source="FILL",
+            )
+        elif side == OrderSide.BUY:
             self._state = replace(
                 self._state,
                 candidate=None,

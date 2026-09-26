@@ -385,3 +385,266 @@ class TestMemoryMigration:
             "SELECT posture FROM decisions WHERE event_id='e2'"
         ).fetchone()
         assert stored == ("AGRESIVA",)
+
+
+class TestExposureAdjustment:
+    """Scaling a position instead of only opening and closing it.
+
+    The measured failure this fixes: over 98 replayed decisions the agent entered while
+    cautious (79% of entries DEFENSIVA, which halves the position) and then turned
+    aggressive while already holding (58% of holding decisions AGRESIVA, asking for 95%),
+    and there were ZERO scaling orders in the whole run. Participation froze at 51%
+    against a 95% target and the run captured +27.6% of a +184% advance.
+    """
+
+    def _adjust(self, **kwargs):  # type: ignore[no-untyped-def]
+        from btc_decision_agent.application.regime_playbook import plan_adjustment
+
+        defaults = dict(
+            target_allocation=D("0.95"),
+            btc_qty=D("0"),
+            price=D("100"),
+            usdt_free=D("10000"),
+            risk_per_trade_fraction=D("0.117"),
+            stop_loss_fraction=D("0.10"),
+            min_notional=D("10"),
+            base_step=D("0.00001"),
+        )
+        defaults.update(kwargs)
+        return plan_adjustment(**defaults)  # type: ignore[arg-type]
+
+    def test_a_flat_book_buys_up_to_the_target(self) -> None:
+        adjustment = self._adjust()
+        assert adjustment.action == "COMPRAR"
+        assert adjustment.quote_usdt == D("9500.00")
+
+    def test_a_held_position_is_topped_up_when_conviction_rises(self) -> None:
+        """The exact case that produced the gap: holding 50%, plan asks for 95%."""
+        adjustment = self._adjust(btc_qty=D("50"), usdt_free=D("5000"))
+        assert adjustment.current_share == D("0.5")
+        assert adjustment.action == "COMPRAR"
+        # 45pp of a 10,000 equity.
+        assert adjustment.quote_usdt == D("4500.00")
+
+    def test_an_over_large_position_is_trimmed_rather_than_closed(self) -> None:
+        adjustment = self._adjust(
+            target_allocation=D("0.50"), btc_qty=D("90"), usdt_free=D("1000")
+        )
+        assert adjustment.action == "VENDER"
+        assert adjustment.base_qty > 0
+        # It trims, it does not liquidate.
+        assert adjustment.base_qty < D("90")
+
+    def test_the_dead_band_absorbs_small_drift(self) -> None:
+        # Holding 90% against a 95% target: five points is not worth a commission.
+        adjustment = self._adjust(btc_qty=D("90"), usdt_free=D("1000"))
+        assert adjustment.action == "MANTENER"
+        assert "banda" in adjustment.reason
+
+    def test_the_dead_band_does_not_block_a_real_posture_change(self) -> None:
+        # Defensive to aggressive in the bull regime is roughly 45pp and must act.
+        adjustment = self._adjust(btc_qty=D("50"), usdt_free=D("5000"))
+        assert adjustment.acts
+
+    def test_the_risk_cap_still_binds_the_target(self) -> None:
+        """A wide stop must not quietly become a large bet."""
+        adjustment = self._adjust(
+            btc_qty=D("0"),
+            usdt_free=D("10000"),
+            risk_per_trade_fraction=D("0.02"),
+            stop_loss_fraction=D("0.20"),
+        )
+        # Risk cap is 0.02 / 0.20 = 10% of equity, well under the 95% asked for.
+        assert adjustment.target_share == D("0.1")
+        assert adjustment.quote_usdt == D("1000.00")
+
+    def test_it_never_buys_more_cash_than_it_has(self) -> None:
+        adjustment = self._adjust(btc_qty=D("60"), usdt_free=D("100"))
+        assert adjustment.quote_usdt <= D("100")
+
+    def test_an_adjustment_below_the_minimum_notional_is_skipped(self) -> None:
+        adjustment = self._adjust(
+            target_allocation=D("0.95"),
+            btc_qty=D("0"),
+            usdt_free=D("12"),
+            min_notional=D("100"),
+        )
+        assert adjustment.action == "MANTENER"
+        assert "minimo nocional" in adjustment.reason
+
+    def test_a_zero_target_still_arrives_as_a_full_exit(self) -> None:
+        adjustment = self._adjust(
+            target_allocation=D("0"), btc_qty=D("100"), usdt_free=D("0")
+        )
+        assert adjustment.action == "VENDER"
+        assert adjustment.base_qty == D("100")
+
+    def test_an_empty_book_does_nothing(self) -> None:
+        adjustment = self._adjust(btc_qty=D("0"), usdt_free=D("0"))
+        assert adjustment.action == "MANTENER"
+
+    def test_the_sell_quantity_respects_the_lot_step(self) -> None:
+        adjustment = self._adjust(
+            target_allocation=D("0.50"),
+            btc_qty=D("90"),
+            usdt_free=D("1000"),
+            base_step=D("1"),
+        )
+        assert adjustment.base_qty == adjustment.base_qty.to_integral_value()
+
+    def test_target_is_a_share_of_equity_not_of_free_cash(self) -> None:
+        """Asking for 95% is only well defined against equity once a position exists.
+
+        Against free cash the same number would mean something different at every
+        moment, which is why scaling could not be expressed before.
+        """
+        flat = self._adjust(btc_qty=D("0"), usdt_free=D("10000"))
+        half = self._adjust(btc_qty=D("50"), usdt_free=D("5000"))
+        assert flat.target_share == half.target_share == D("0.95")
+        # And the two requests differ only by what is already held.
+        assert flat.quote_usdt - half.quote_usdt == D("5000.00")
+
+    def test_the_dead_band_never_prevents_opening_a_position(self) -> None:
+        """Caught by a test before it ever ran.
+
+        With the risk cap holding the target at 10% and a 15 point band, the gap from
+        flat is 10pp and the agent would have stayed permanently flat: unable to open,
+        because opening looked like drift. Opening and fully closing are changes of
+        state, not drift.
+        """
+        adjustment = self._adjust(
+            btc_qty=D("0"),
+            usdt_free=D("10000"),
+            risk_per_trade_fraction=D("0.02"),
+            stop_loss_fraction=D("0.20"),
+        )
+        assert adjustment.action == "COMPRAR"
+        assert adjustment.quote_usdt == D("1000.00")
+
+    def test_a_full_exit_is_never_blocked_by_the_dead_band(self) -> None:
+        # Holding only 5% and the plan says out: the band must not trap the remainder.
+        adjustment = self._adjust(
+            target_allocation=D("0"), btc_qty=D("5"), usdt_free=D("9500")
+        )
+        assert adjustment.action == "VENDER"
+        assert adjustment.base_qty == D("5")
+
+
+class TestFillAccountingWhenScaling:
+    """What a fill does to the cost basis, the high watermark and the stop.
+
+    This is the protective stop's input, so it gets tests before it gets changes. The
+    bug being prevented: treating a top-up as a fresh entry rewrites entry_price to the
+    new higher fill and resets high_since_entry, which tightens the stop across the whole
+    position at the exact moment of scaling into a trend and discards the trailing high.
+    """
+
+    def _engine(self) -> ProtectiveDecisionEngine:
+        return ProtectiveDecisionEngine(RealtimeParams())
+
+    def _open(self, engine: ProtectiveDecisionEngine, price: str, qty: str) -> None:
+        from btc_decision_agent.application.execution import OrderSide
+
+        engine.on_fill(OrderSide.BUY, D(price), D(qty), NOW)
+
+    def test_a_fresh_entry_sets_the_cost_basis_to_its_fill(self) -> None:
+        engine = self._engine()
+        self._open(engine, "100", "1")
+        assert engine.state.entry_price == D("100")
+        assert engine.state.high_since_entry == D("100")
+        assert engine.state.position_base_qty == D("1")
+
+    def test_a_top_up_averages_the_cost_basis(self) -> None:
+        engine = self._engine()
+        self._open(engine, "100", "1")
+        self._open(engine, "140", "1")
+        # (100 * 1 + 140 * 1) / 2
+        assert engine.state.entry_price == D("120")
+        assert engine.state.position_base_qty == D("2")
+
+    def test_a_top_up_preserves_the_trailing_high_watermark(self) -> None:
+        """The destructive part of treating a top-up as a new entry."""
+        from dataclasses import replace as dc_replace
+
+        engine = self._engine()
+        self._open(engine, "100", "1")
+        # The trade ran to 200 before the agent added at 140.
+        engine.import_state(dc_replace(engine.state, high_since_entry=D("200")))
+        self._open(engine, "140", "1")
+        assert engine.state.high_since_entry == D("200")
+
+    def test_a_top_up_keeps_the_stop_aware_of_the_real_profit(self) -> None:
+        """Averaging the basis and keeping the high leaves MORE profit protected.
+
+        Averaged, the position is entered at 120 with a high of 140, so the trade is up
+        17% and the trailing stop engages at 140 * (1 - 2.5%) = 136.50.
+
+        Treated as a fresh entry at 140 the high equals the entry, the trail has not
+        activated, and the stop would be 140 * (1 - 3%) = 135.80. Lower, because it has
+        forgotten that the trade is in profit at all.
+        """
+        engine = self._engine()
+        self._open(engine, "100", "1")
+        self._open(engine, "140", "1")
+        after = engine.active_stop(D("140"))
+        assert after is not None
+        assert engine.state.entry_price == D("120")
+        assert after == D("140") * D("0.975")
+        # Strictly better protection than the fresh-entry treatment would have given.
+        assert after > D("140") * D("0.97")
+
+    def test_a_trim_keeps_the_cost_basis_and_the_position(self) -> None:
+        from btc_decision_agent.application.execution import OrderSide
+
+        engine = self._engine()
+        self._open(engine, "100", "2")
+        engine.on_fill(OrderSide.SELL, D("150"), D("1"), NOW)
+        # Selling half does not change what was paid for the other half.
+        assert engine.state.entry_price == D("100")
+        assert engine.state.position_base_qty == D("1")
+        assert engine.active_stop(D("150")) is not None
+
+    def test_a_trim_keeps_the_strategy_the_position_was_opened_under(self) -> None:
+        from dataclasses import replace as dc_replace
+
+        from btc_decision_agent.application.execution import OrderSide
+
+        engine = self._engine()
+        self._open(engine, "100", "2")
+        plan = resolve_plan(regime=3, posture="AGRESIVA", conviction=0.8, daily_vol_pct=3.0)
+        engine.import_state(dc_replace(engine.state, execution_plan=plan.to_dict()))
+        engine.on_fill(OrderSide.SELL, D("150"), D("1"), NOW)
+        assert engine.state.execution_plan == plan.to_dict()
+        assert engine.effective_params.stop_loss_fraction == plan.stop_loss_fraction
+
+    def test_selling_everything_still_closes_the_position(self) -> None:
+        from btc_decision_agent.application.execution import OrderSide
+
+        engine = self._engine()
+        self._open(engine, "100", "2")
+        engine.on_fill(OrderSide.SELL, D("150"), D("2"), NOW)
+        assert engine.state.entry_price is None
+        assert engine.state.position_base_qty is None
+        assert engine.state.execution_plan is None
+        assert engine.active_stop(D("150")) is None
+
+    def test_a_scaling_fill_marks_the_resting_stop_as_absent(self) -> None:
+        """The resting order no longer covers the position, so it must be replaced.
+
+        Recorded as absent rather than left in place, because the forced sync that
+        follows every fill is what puts a correctly sized one on the exchange.
+        """
+        from dataclasses import replace as dc_replace
+
+        engine = self._engine()
+        self._open(engine, "100", "1")
+        engine.import_state(
+            dc_replace(
+                engine.state,
+                protective_order_id="orden-vieja",
+                protective_stop_price=D("97"),
+            )
+        )
+        self._open(engine, "140", "1")
+        assert engine.state.protective_order_id is None
+        assert engine.state.protective_stop_price is None
