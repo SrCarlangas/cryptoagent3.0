@@ -707,12 +707,21 @@ class TestEngineSafety:
         )
         info = engine.last_explanation
         if info["regime"] in {2, 3}:
-            assert decision.action == Action.HOLD
-            assert decision.reason.endswith("_REGIMEN_MANDA")
+            assert "_REGIMEN_MANDA" in decision.reason
             assert info["choice_honoured"] is False
             assert info["effective_exposure"] == EXPOSURE_INVESTED
             # The agent's own words are still recorded, unchanged.
             assert info["target_exposure"] == EXPOSURE_CASH
+            # The property that matters, and it is no longer "no order at all".
+            #
+            # This asserted HOLD while the only available moves were open-from-flat and
+            # close-to-zero. With scaling the engine sizes toward the regime's target, and
+            # the book in this test is 100% in BTC with no cash while the bull plan asks for
+            # 81%, so the coherent action is to TRIM to that target. What must never happen
+            # is the unargued exit: the position stays open.
+            assert decision.target_share is not None and decision.target_share > 0
+            if decision.action == Action.EXIT_LONG:
+                assert decision.reason.endswith("_REDUCE")
         else:
             # Cash is the default in the bearish regimes, so the exit is honoured.
             assert info["choice_honoured"] is True

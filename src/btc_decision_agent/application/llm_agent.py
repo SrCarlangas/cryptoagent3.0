@@ -81,7 +81,9 @@ from btc_decision_agent.application.realtime_demo import (
 )
 from btc_decision_agent.application.regime_playbook import (
     POSTURE_VALUES,
+    ExposureAdjustment,
     Posture,
+    plan_adjustment,
     render_playbook_block,
     resolve_exposure,
     resolve_plan,
@@ -716,7 +718,6 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             ExposureAction.TARGET_LONG if effective_long else ExposureAction.TARGET_FLAT
         )
         trade = decision_for(action, is_long)
-        wants_change = trade in {TradeDecision.BUY, TradeDecision.SELL}
         volatility = self.agent.last_market.get("volatilidad_diaria_30d_pct")
         clears = self.agent.clears_cost(
             verdict,
@@ -752,7 +753,31 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             conviction=verdict.conviction,
             daily_vol_pct=float(volatility) if volatility is not None else None,
         )
-        acted = wants_change and clears
+
+        # Size the book toward the plan's target instead of only opening and closing it.
+        # `decision_for` collapses TARGET_LONG while already long to HOLD, which froze
+        # participation at whatever size was chosen in the moment of entry. Over 98
+        # replayed decisions 79% of entries were DEFENSIVA and 58% of holding decisions
+        # were AGRESIVA, with zero scaling orders, because the only paths available were
+        # open-from-flat and close-to-zero. Replaying the same decisions with scaling is
+        # worth 22 points on the bull window.
+        sizing = plan.apply(self.params)
+        target = sizing.allocation_fraction if effective_long else D("0")
+        adjustment = plan_adjustment(
+            target_allocation=target,
+            btc_qty=position.btc_qty,
+            price=evidence.price,
+            usdt_free=position.usdt_free,
+            risk_per_trade_fraction=sizing.risk_per_trade_fraction,
+            stop_loss_fraction=sizing.stop_loss_fraction,
+            min_notional=self.params.min_notional_usdt,
+            base_step=self.params.base_step_size,
+        )
+        # The entry gate applies to OPENING from flat. It must not block a top-up of a
+        # position whose entry already cleared it, and it never blocks a reduction.
+        gated = not is_long and effective_long and not clears
+        wants_change = adjustment.acts and not gated
+        acted = wants_change
         self.agent.memory.record(
             decided_at=now,
             event_id=evidence.event_id,
@@ -810,23 +835,56 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         )
         self._reset_candidate()
 
-        if not wants_change:
-            return RealtimeDecision(Action.HOLD, reason, evidence, agent_decision=record)
-        if not clears:
-            # It wants to move but its own expected move does not cover the round
-            # trip. Refusing here is the economics the agent itself declared.
+        if gated:
+            # It wants to OPEN and its own expected move does not cover the round trip.
+            # Refusing here is the economics the agent itself declared. A top-up of an
+            # existing position and any reduction are exempt.
+            #
+            # Checked BEFORE the no-change branch, not after. Zeroing the target first and
+            # letting plan_adjustment report "nothing to do" made the journal say
+            # BANDA_MUERTA for a decision the cost gate had refused, which is a metric that
+            # misdescribes its own cause.
             return RealtimeDecision(
                 Action.HOLD, f"{reason}_BELOW_COST", evidence, agent_decision=record
             )
-        if trade == TradeDecision.BUY:
+        if not wants_change:
+            # Includes the dead band: a few points of drift is not worth a commission.
+            # The reason carries which it was so the journal can tell them apart.
+            return RealtimeDecision(
+                Action.HOLD, f"{reason}_{_hold_suffix(adjustment)}", evidence, agent_decision=record
+            )
+        if adjustment.action == "COMPRAR":
             return RealtimeDecision(
                 Action.ENTER_LONG,
-                reason,
+                reason if not is_long else f"{reason}_AMPLIA",
                 evidence,
                 agent_decision=record,
-                execution_plan=plan.to_dict(),
+                # A position is managed under the strategy it was OPENED under, so a
+                # top-up must not carry a new plan: that would move the stop for the whole
+                # position, which is exactly what effective_params exists to prevent.
+                execution_plan=None if is_long else plan.to_dict(),
+                target_share=adjustment.target_share,
+                share_before=adjustment.current_share,
             )
-        return RealtimeDecision(Action.EXIT_LONG, reason, evidence, True, agent_decision=record)
+        full_exit = adjustment.target_share <= 0
+        return RealtimeDecision(
+            Action.EXIT_LONG,
+            reason if full_exit else f"{reason}_REDUCE",
+            evidence,
+            True,
+            agent_decision=record,
+            target_share=adjustment.target_share,
+            share_before=adjustment.current_share,
+        )
+
+
+def _hold_suffix(adjustment: ExposureAdjustment) -> str:
+    """Why nothing was done, in one token, so the journal is readable."""
+    if "banda" in adjustment.reason:
+        return "BANDA_MUERTA"
+    if "nocional" in adjustment.reason:
+        return "BAJO_MINIMO"
+    return "SIN_CAMBIO"
 
 
 def build_agent(

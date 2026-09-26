@@ -20,7 +20,7 @@ from datetime import UTC, datetime, timedelta
 from decimal import ROUND_DOWN, Decimal
 from enum import Enum
 from pathlib import Path
-from typing import Any, ClassVar, Protocol
+from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from btc_decision_agent.adapters.binance_stream import StreamEvent, StreamEventType
 from btc_decision_agent.application.execution import (
@@ -35,6 +35,11 @@ from btc_decision_agent.application.execution import (
 from btc_decision_agent.application.execution_intents import ExecutionIntentStore
 from btc_decision_agent.application.exposure_agent import PolicyDecision
 from btc_decision_agent.domain.contracts import Action, PositionState
+
+if TYPE_CHECKING:
+    # Import only for typing: regime_playbook imports RealtimeParams from this module, so
+    # a runtime import here would be circular. The call sites import it locally.
+    from btc_decision_agent.application.regime_playbook import ExposureAdjustment
 from btc_decision_agent.observability.journal import ActivityJournal, entry_from_live
 from btc_decision_agent.policies.exposure_v1 import PARAMETER_VERSION, STRATEGY_VERSION
 
@@ -57,6 +62,11 @@ _DEFAULT_BREAK_EVEN_ACTIVATION = D("0.005")
 _DEFAULT_BREAK_EVEN_LOCK = D("0.0025")
 _DEFAULT_MIN_COVERAGE = D("0.65")
 _DEFAULT_MIN_NOTIONAL = D("10")
+_ADJUSTMENT_DUST = D("0.01")
+"""Share of equity below which a book counts as flat for scaling purposes.
+
+The same threshold `plan_adjustment` uses to decide that a buy is an opening rather than a
+top-up, so the engine and the runner cannot disagree about which one happened."""
 _DEFAULT_BASE_STEP = D("0.00001")
 _DEFAULT_RISK_PER_TRADE = D("0.02")
 _DEFAULT_DAILY_LOSS = D("0.05")
@@ -570,6 +580,42 @@ class RealtimeDecision:
     the two must agree on the same plan. A position sized for a 10% stop and then
     protected by a 3% one is a different bet than the one that was decided.
     """
+
+    target_share: Decimal | None = None
+    """Share of EQUITY this decision is aiming for, when it is a size change.
+
+    None means the old all-or-nothing behaviour: an entry deploys the cash allocation and
+    an exit sells everything.
+
+    Set, it means the action is an adjustment toward a target rather than a transition
+    between flat and long, so ENTER_LONG may arrive while already LONG (a top-up) and
+    EXIT_LONG may sell only part (a trim). The quantities come from `plan_adjustment`,
+    which sizes against the exposure GAP rather than against free cash.
+
+    Measured on 60 replayed bull-window decisions, running the same agent decisions
+    without scaling gives +5.91% against +28.45% with it. The backtest has had this since
+    the playbook landed and the live path did not, which meant every number being used to
+    judge the agent described a system that was not deployed.
+    """
+
+    share_before: Decimal | None = None
+    """The exposure share the book held when this was decided.
+
+    Kept so the staleness guard stays meaningful. `expected_state` used to derive the
+    expected position from the action alone, which works only while ENTER_LONG means
+    "open" and EXIT_LONG means "close everything". With scaling, an ENTER_LONG can be a
+    top-up, so the guard reads this instead: a decision taken from a flat book still
+    requires a flat book, and one taken from a held position still requires the position.
+    """
+
+    @property
+    def is_adjustment(self) -> bool:
+        return self.target_share is not None
+
+    @property
+    def tops_up(self) -> bool:
+        """A buy that adds to a position rather than opening one."""
+        return self.share_before is not None and self.share_before > _ADJUSTMENT_DUST
 
 
 @dataclass(frozen=True)
@@ -1087,7 +1133,17 @@ def size_exit_base(btc_free: Decimal, step_size: Decimal) -> Decimal:
 
 
 def deterministic_client_order_id(decision: RealtimeDecision) -> str:
-    raw = f"{decision.action.value}:{decision.evidence.event_id}:{decision.evidence.model_version}"
+    """Stable id for one intended order, so a retry cannot double-fill.
+
+    The target share is part of it. Without it two different adjustments of the same kind
+    within one event would share an id and the second would be dropped as a duplicate,
+    which with scaling turns a legitimate second order into a silent no-op.
+    """
+    target = format(decision.target_share, "f") if decision.target_share is not None else "-"
+    raw = (
+        f"{decision.action.value}:{decision.evidence.event_id}"
+        f":{decision.evidence.model_version}:{target}"
+    )
     return "rt-" + hashlib.sha256(raw.encode()).hexdigest()[:28]
 
 
@@ -1243,6 +1299,48 @@ class RealtimeDemoRunner:
         self._persist_state()
         return reconcile_realtime_position(
             self.adapter, dust_usdt=self._rules.min_notional
+        )
+
+    def _remainder_is_protectable(
+        self, position: ReconciledPosition, selling: Decimal
+    ) -> bool:
+        """Whether what is left after a trim can still carry an exchange stop order."""
+        if self._rules is None:
+            return True
+        remainder = self._quantize_down(position.btc_qty - selling, self._rules.lot_step_size)
+        if remainder <= 0:
+            return True  # nothing left to protect, which is a full exit
+        return (
+            remainder >= self._rules.min_quantity
+            and remainder * position.price >= self._rules.min_notional
+        )
+
+    def _adjustment(
+        self,
+        decision: RealtimeDecision,
+        position: ReconciledPosition,
+        sizing: RealtimeParams,
+        minimum: Decimal,
+    ) -> ExposureAdjustment:
+        """Re-derive the order that moves the book to the decision's target share.
+
+        The same primitive the backtest uses, so the two cannot drift. Recomputed here
+        rather than carried on the decision because the book can change between the
+        deliberation and the order, and the right response to that is a correctly sized
+        order, not a stale one.
+        """
+        from btc_decision_agent.application.regime_playbook import plan_adjustment
+
+        assert decision.target_share is not None
+        return plan_adjustment(
+            target_allocation=decision.target_share,
+            btc_qty=position.btc_qty,
+            price=position.price,
+            usdt_free=position.usdt_free,
+            risk_per_trade_fraction=sizing.risk_per_trade_fraction,
+            stop_loss_fraction=sizing.stop_loss_fraction,
+            min_notional=minimum,
+            base_step=self._rules.market_step_size if self._rules else self.params.base_step_size,
         )
 
     def bootstrap(self) -> None:
@@ -1414,20 +1512,35 @@ class RealtimeDemoRunner:
                 self._position = after
         elif not self.dry_run:
             before = self._reconcile(now)
-            expected_state = (
-                PositionState.FLAT if decision.action == Action.ENTER_LONG else PositionState.LONG
-            )
+            # A top-up is an ENTER_LONG that arrives while already LONG, so the guard can no
+            # longer derive the expected position from the action alone. It reads what the
+            # book held when the decision was taken instead, which preserves exactly the
+            # protection it had: a decision taken flat still requires a flat book, and one
+            # taken while holding still requires the position to be there.
+            if decision.action == Action.ENTER_LONG and decision.tops_up:
+                expected_state = PositionState.LONG
+            elif decision.action == Action.ENTER_LONG:
+                expected_state = PositionState.FLAT
+            else:
+                expected_state = PositionState.LONG
             if before.state != expected_state:
                 decision = replace(decision, action=Action.HOLD, reason="POSITION_CHANGED")
                 final_reason = decision.reason
             else:
                 client_id = deterministic_client_order_id(decision)
+                minimum = self._rules.min_notional if self._rules else self.params.min_notional_usdt
                 if decision.action == Action.ENTER_LONG:
-                    minimum = self._rules.min_notional if self._rules else self.params.min_notional_usdt
                     # Size under the decision's own strategy. Sizing here and the stop
                     # in the engine must use the same plan, or the position is sized for
                     # one bet and protected for another.
-                    sizing = self.params
+                    # A top-up carries no plan, deliberately, so that it cannot move the
+                    # stop of the position it is adding to. Its SIZE must still come from
+                    # that position's strategy, which is what effective_params holds.
+                    # Falling back to self.params here sized a top-up under the engine
+                    # defaults: a test caught it buying 1,666 where the position's own plan
+                    # called for 3,000, because the default 2% risk over a 3% stop caps the
+                    # target at 67% instead of the plan's 90%.
+                    sizing = self.engine.effective_params if decision.tops_up else self.params
                     if decision.execution_plan:
                         try:
                             from btc_decision_agent.application.regime_playbook import (
@@ -1441,15 +1554,22 @@ class RealtimeDemoRunner:
                             _LOGGER.warning(
                                 "plan de ejecucion invalido; se usa la configuracion por defecto"
                             )
-                    quote = size_entry_percentage(
-                        before.usdt_free,
-                        sizing.allocation_fraction,
-                        min_notional=minimum,
-                        equity=before.equity,
-                        risk_per_trade_fraction=sizing.risk_per_trade_fraction,
-                        stop_loss_fraction=sizing.stop_loss_fraction,
-                    )
                     requested_base: Decimal | None = None
+                    if decision.is_adjustment:
+                        # Sized against the fresh book, not against the quantities the
+                        # engine computed. The engine decides the TARGET; what it takes to
+                        # reach it depends on the position at order time, and the position
+                        # can move between deciding and ordering.
+                        quote = self._adjustment(decision, before, sizing, minimum).quote_usdt
+                    else:
+                        quote = size_entry_percentage(
+                            before.usdt_free,
+                            sizing.allocation_fraction,
+                            min_notional=minimum,
+                            equity=before.equity,
+                            risk_per_trade_fraction=sizing.risk_per_trade_fraction,
+                            stop_loss_fraction=sizing.stop_loss_fraction,
+                        )
                 else:
                     self._cancel_protection()
                     before = self._reconcile(now)
@@ -1460,7 +1580,16 @@ class RealtimeDemoRunner:
                         requested_base = None
                     else:
                         step = self._rules.market_step_size if self._rules else self.params.base_step_size
-                        requested_base = size_exit_base(before.btc_free, step)
+                        if decision.is_adjustment and decision.target_share is not None and decision.target_share > 0:
+                            # A trim. The stop geometry comes from the position's own plan,
+                            # which is what effective_params holds, because a trim does not
+                            # change the strategy the position was opened under.
+                            trim = self._adjustment(
+                                decision, before, self.engine.effective_params, minimum
+                            )
+                            requested_base = self._quantize_down(trim.base_qty, step)
+                        else:
+                            requested_base = size_exit_base(before.btc_free, step)
                         quote = D("0")
 
                 if decision.action == Action.ENTER_LONG and quote == 0:
@@ -1474,6 +1603,22 @@ class RealtimeDemoRunner:
                 ):
                     decision = replace(
                         decision, action=Action.HOLD, reason="RESIDUAL_BELOW_MIN_NOTIONAL"
+                    )
+                    final_reason = decision.reason
+                elif (
+                    decision.action == Action.EXIT_LONG
+                    and requested_base is not None
+                    and decision.is_adjustment
+                    and decision.target_share is not None
+                    and decision.target_share > 0
+                    and not self._remainder_is_protectable(before, requested_base)
+                ):
+                    # A trim that leaves too little behind to carry an exchange-side stop
+                    # would make _sync_protection raise, which takes the process down and
+                    # leaves the remainder naked. Refusing the trim keeps the position
+                    # whole and protected; the exposure decision itself can still close it.
+                    decision = replace(
+                        decision, action=Action.HOLD, reason="REMAINDER_UNPROTECTABLE"
                     )
                     final_reason = decision.reason
                 elif decision.action != Action.HOLD:
@@ -1549,6 +1694,15 @@ class RealtimeDemoRunner:
                     if after.state == PositionState.LONG:
                         after = self._sync_protection(after, force=True)
                         self._position = after
+                if order is None and decision.action == Action.HOLD:
+                    # A sell was vetoed AFTER protection had been cancelled, which the exit
+                    # branch does before it knows the size. Without this the position sits
+                    # naked until some later event happens to re-sync, and a trim leaves a
+                    # position behind where a full exit left none.
+                    after = self._reconcile(now)
+                    if after.state == PositionState.LONG:
+                        after = self._sync_protection(after, force=True)
+                    self._position = after
         else:
             final_reason = f"DRY_RUN:{decision.reason}"
 
