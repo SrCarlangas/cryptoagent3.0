@@ -76,6 +76,7 @@ from btc_decision_agent.application.realtime_demo import (
 )
 from btc_decision_agent.application.regime_playbook import (
     RegimeTracker,
+    corroborated_regime,
     plan_adjustment,
     resolve_plan,
     resolve_target_allocation,
@@ -291,7 +292,14 @@ def main() -> None:
         # The regime IN FORCE, not the label just observed. The label changed on 37% of
         # transitions at this step, and it governs the SIZE, the STOP and the HORIZON, so
         # letting it oscillate would rewrite the plan of an open position every few days.
-        tracker = tracker.observe(int(quant.get("regimen", 0)), now)
+        # The label is checked against the condition its own doctrine names, exactly as
+        # production does. Eight uncorroborated regime 3 labels on the falling window, price
+        # 6.4% BELOW its 200-day average where the doctrine says "established uptrend", cost
+        # -10.39% at an effect of 1.3, three quarters of that window's entire loss.
+        observed_regime = corroborated_regime(
+            int(quant.get("regimen", 0)), market.get("precio_vs_media_200d_pct")
+        )
+        tracker = tracker.observe(observed_regime, now)
         regime = tracker.regime
         # THE AGENT OWNS THE DIRECTION, exactly as production does. A disagreement with the
         # regime is expressed as SIZE below, through resolve_target_allocation, because both
@@ -498,6 +506,7 @@ def main() -> None:
                 "clears_cost": clears,
                 "regime": regime,
                 "regime_observed": quant.get("regimen"),
+                "regime_corroborated": observed_regime,
                 "quant_recommends": quant.get("recomienda"),
                 "seconds": round(verdict.seconds, 1),
                 "equity": round((cash + units * price) / START_CAPITAL, 6),

@@ -84,6 +84,7 @@ from btc_decision_agent.application.regime_playbook import (
     ExposureAdjustment,
     Posture,
     RegimeTracker,
+    corroborated_regime,
     plan_adjustment,
     render_playbook_block,
     resolve_plan,
@@ -751,8 +752,16 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         # transitions inverted the default exposure, which turned a standing disagreement
         # between the agent and the playbook into round trips: 9 of 15 direction changes in
         # the best run were imposed against what the agent asked for.
+        # The label is checked against the condition its own doctrine names before anything
+        # reads it. Eight uncorroborated regime 3 labels on the falling window, price 6.4%
+        # BELOW its 200-day average where the doctrine says "established uptrend", cost
+        # -10.39% at an effect of 1.3, three quarters of that window's entire loss.
+        observed_regime = corroborated_regime(
+            int(quant.get("regimen", 0)),
+            self.agent.last_market.get("precio_vs_media_200d_pct"),
+        )
         tracker = RegimeTracker.from_dict(self._state.regime_tracker).observe(
-            int(quant.get("regimen", 0)), now
+            observed_regime, now
         )
         self._state = replace(self._state, regime_tracker=tracker.to_dict())
         regime = tracker.regime
@@ -897,6 +906,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             "quant_p_long": quant.get("p_largo"),
             "quant_recommends": quant.get("recomienda"),
             "regime": quant.get("regimen"),
+            "regime_corroborated": observed_regime,
             "regime_in_force": regime,
             "regime_pending": tracker.pending,
             "regime_name": quant.get("nombre_regimen"),

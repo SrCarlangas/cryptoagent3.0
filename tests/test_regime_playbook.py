@@ -37,10 +37,13 @@ from btc_decision_agent.application.regime_playbook import (
     MIN_RISK_FRACTION,
     MIN_STOP_FRACTION,
     PLAYBOOK,
+    TREND_SIDE_ABOVE,
+    TREND_SIDE_BELOW,
     ExecutionPlan,
     Posture,
     RegimeTracker,
     _clamp,
+    corroborated_regime,
     render_playbook_block,
     resolve_plan,
     resolve_target_allocation,
@@ -1122,3 +1125,86 @@ class TestADisagreementMovesTheSizeNotTheDirection:
         block = render_playbook_block(3, 2.0)
         assert "a medio camino" in block
         assert "0.50 cede al regimen" in block
+
+
+class TestAStrategyIsOnlyGrantedWhenItsDoctrineFits:
+    """The eighth defect of the same shape: a doctrine in words, a label from a model.
+
+    Regime 3's doctrine reads "tendencia alcista establecida" and its strategy is the largest
+    allocation the playbook allows behind its widest stop. On the falling window the agent was
+    exposed only 6% of the time and still lost 13.90%, and three quarters of that came from
+    eight segments out of fifty-nine carrying that label: -10.39% at an effect of 1.3 standard
+    errors, so not noise.
+
+    In those eight the price averaged 6.4% BELOW its own 200-day average and seven of eight
+    were below it. On the rising window the same label carried price 35.7% ABOVE that average,
+    with two of thirty-four below. The label meant two different things, and in one of them the
+    playbook handed a failing bounce its biggest position.
+
+    The substitute is not chosen, it is the regime whose own description fits the observation.
+    """
+
+    def test_a_corroborated_label_is_left_alone(self) -> None:
+        assert corroborated_regime(3, 35.7) == 3
+        assert corroborated_regime(2, 19.1) == 2
+        assert corroborated_regime(0, -12.7) == 0
+        assert corroborated_regime(1, -24.0) == 1
+
+    def test_a_strong_bull_below_its_own_average_is_not_an_established_uptrend(self) -> None:
+        # The measured case: the mean of the eight losing segments.
+        assert corroborated_regime(3, -6.4) == 0
+
+    def test_a_consolidation_above_trend_below_the_average_is_not_above_trend(self) -> None:
+        assert corroborated_regime(2, -5.0) == 0
+
+    def test_a_below_average_regime_above_the_average_is_routed_up(self) -> None:
+        # Symmetric, because the incoherence is symmetric. Regime 0 describes "lateral bajo la
+        # media de 200d"; above it, the description that fits is regime 2.
+        assert corroborated_regime(0, 4.2) == 2
+        assert corroborated_regime(1, 10.0) == 2
+
+    def test_the_substitute_is_never_the_most_extreme_strategy_of_its_side(self) -> None:
+        """An uncorroborated label must not win a maximum allocation nor a minimum one.
+
+        This is what makes the rule safe in both directions: regime 3's 90% and regime 1's
+        20% are only ever granted when the price agrees with their doctrine.
+        """
+        for label in (0, 1, 2, 3):
+            for reading in (-30.0, -6.4, -0.1, 0.1, 6.4, 40.0):
+                resolved = corroborated_regime(label, reading)
+                if resolved != label:
+                    assert resolved in {TREND_SIDE_BELOW, TREND_SIDE_ABOVE}
+                    assert resolved not in {1, 3}
+
+    def test_the_resolved_regime_always_agrees_with_the_price(self) -> None:
+        # The property the whole rule exists to guarantee, checked over a grid.
+        for label in (0, 1, 2, 3):
+            for reading in (-40.0, -12.7, -1.0, 1.0, 12.7, 35.7):
+                resolved = corroborated_regime(label, reading)
+                expects_above = resolved in {TREND_SIDE_ABOVE, 3}
+                assert expects_above == (reading > 0.0), (label, reading, resolved)
+
+    def test_a_missing_reading_leaves_the_classifier_alone(self) -> None:
+        # No measurement is not evidence against the label.
+        assert corroborated_regime(3, None) == 3
+        assert corroborated_regime(1, None) == 1
+
+    def test_an_unknown_label_still_falls_back_to_the_cautious_strategy(self) -> None:
+        assert corroborated_regime(None, 10.0) == 1
+        assert corroborated_regime(99, -10.0) == 1
+
+    def test_it_would_have_removed_the_measured_loss_source(self) -> None:
+        """The eight segments would have been sized as regime 0 rather than regime 3.
+
+        Regime 0 defaults to cash, allocates a third as much and stops out three times
+        sooner, which is what a bounce below the long-run average deserves.
+        """
+        bounce = strategy_for(corroborated_regime(3, -6.4))
+        trend = strategy_for(3)
+        # Exactly half as it happens, 45% against 90%, so the bound is inclusive.
+        assert bounce.allocation_at_neutral <= trend.allocation_at_neutral / 2
+        assert bounce.stop_vol_multiple < trend.stop_vol_multiple
+        assert bounce.horizon_hours < trend.horizon_hours
+        from btc_decision_agent.application.llm_tools import EXPOSURE_CASH
+
+        assert bounce.default_exposure == EXPOSURE_CASH

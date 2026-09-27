@@ -48,7 +48,7 @@ from btc_decision_agent.application.realtime_demo import RealtimeParams
 
 D = Decimal
 
-PLAYBOOK_VERSION = "regime-playbook/1.3.0"
+PLAYBOOK_VERSION = "regime-playbook/1.4.0"
 """1.1.0 puts the break-even ratchet under the playbook's control.
 
 Until then `ExecutionPlan.apply` left `break_even_activation_fraction` and
@@ -431,6 +431,57 @@ class ExecutionPlan:
         )
 
 
+TREND_SIDE_BELOW = 0
+TREND_SIDE_ABOVE = 2
+"""The neutral strategy on each side of the 200-day average.
+
+Regime 0 is "lateral below the 200d average" and regime 2 is "consolidation above trend".
+They are the cautious option on their own side, which is what an uncorroborated label should
+receive: never regime 3's maximum allocation, never regime 1's minimum."""
+
+
+def corroborated_regime(regime: int | None, price_over_ma200_pct: float | None) -> int:
+    """The regime whose DOCTRINE matches what the price is actually doing.
+
+    Why this exists
+    ---------------
+    Every strategy here describes a condition in words and then acts on a label produced by a
+    mixture model over features. The two can disagree, and when they do the playbook grants a
+    strategy to a market its doctrine was not written for.
+
+    Measured. On the falling window the agent was exposed only 6% of the time and still lost
+    13.90%, and three quarters of that loss came from eight segments out of fifty-nine
+    labelled regime 3, whose doctrine reads "tendencia alcista establecida": -10.39% at an
+    effect of 1.3 standard errors. In those eight the price averaged 6.4% BELOW its own
+    200-day average and seven of the eight were below it. On the rising window the same label
+    carried price 35.7% ABOVE that average, with only two of thirty-four below.
+
+    So the label meant two different things in the two windows, and in one of them it handed
+    a failing bounce the largest position the playbook allows behind its widest stop.
+
+    The rule
+    --------
+    A regime's doctrine names which side of the 200-day average it is describing. If the price
+    is on the other side, the label is not corroborated and the strategy used is the cautious
+    one from the side the price is actually on. Nothing is invented and no threshold is
+    chosen: the substitute is the regime whose own description fits the observation.
+
+    This is not a tuning. It is the same defect as the other seven found in this sequence, a
+    declared intent with a mechanism doing something else, and the fix is stated in terms of
+    the doctrine rather than in terms of a return.
+    """
+    if regime is None or regime not in PLAYBOOK:
+        return 1
+    if price_over_ma200_pct is None:
+        # No reading, no grounds to override the classifier.
+        return int(regime)
+    above = price_over_ma200_pct > 0.0
+    doctrine_expects_above = regime in {TREND_SIDE_ABOVE, 3}
+    if above == doctrine_expects_above:
+        return int(regime)
+    return TREND_SIDE_ABOVE if above else TREND_SIDE_BELOW
+
+
 def strategy_for(regime: int | None) -> RegimeStrategy:
     """The regime's strategy, defaulting to the most cautious one.
 
@@ -773,6 +824,7 @@ __all__ = [
     "Posture",
     "RegimeStrategy",
     "RegimeTracker",
+    "corroborated_regime",
     "plan_adjustment",
     "render_playbook_block",
     "resolve_plan",

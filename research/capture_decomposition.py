@@ -126,11 +126,17 @@ def main() -> int:
     )
     print("  " + "-" * 100)
     for result in usable:
-        efficiency = result["capture"] / result["mean_exposure"] if result["mean_exposure"] else 0.0
+        # Meaningless when exposure is tiny: dividing a capture by 6% exposure produced
+        # 1834%, which is a number that looks like a finding and is an artefact of the
+        # denominator. Below 20% exposure the ratio is not reported at all.
+        efficiency = (
+            result["capture"] / result["mean_exposure"] if result["mean_exposure"] >= 0.20 else None
+        )
         label = result["name"].replace("2026-09-2", "…2").replace("-60d-paso5", "")
         print(
             f"  {label[:38]:<38} {result['capture']:>4.0%} {result['mean_exposure']:>10.0%} "
-            f"{efficiency:>9.0%} {result['flat_decisions']:>5.0%} {result['stop_exits']:>6} "
+            f"{(format(efficiency, '.0%') if efficiency is not None else 'n/d'):>9} "
+            f"{result['flat_decisions']:>5.0%} {result['stop_exits']:>6} "
             f"{result['commission']:>8.2f}% {result['timing']:>+8.2f}"
         )
     print()
