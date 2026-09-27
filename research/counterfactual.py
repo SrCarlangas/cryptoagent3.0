@@ -42,6 +42,29 @@ The agent is the only participant paying that dead time, which makes the compari
 unfair by an amount nobody had measured. `hours_invested_pct` measures it directly, and
 the re-entry variants price it.
 
+VALID FOR EXECUTION RULES, NOT FOR DECISION RULES
+-------------------------------------------------
+Learned the expensive way, twice, and it is the most important thing on this page.
+
+For EXECUTION changes the replay held up. The break-even ratchet, the phantom stops, the
+horizon-scaled trail and the derived risk budget were all found here and all reproduced in
+real runs, because those rules barely move what the agent sees: the position is still there,
+the prompt is unchanged, and only the arithmetic around it differs.
+
+For EXPOSURE POLICY it failed every time:
+
+    removing the regime override    replay +99.70%   real run +59.51%
+    blending the disagreement       replay +99.48%   real run +53.08%
+
+The reason is structural rather than bad luck. An exposure rule changes the position the
+agent holds when it is next asked, which changes what it decides, which changes the outcomes
+written into its memory, which changes the statistics it reads in the prompt after that.
+Freezing the decisions removes exactly the feedback the change acts through, so the replay
+measures a system in which the agent cannot respond to the rule being tested.
+
+Use it to find defects in how a decision is carried out. Do not use it to choose between
+policies for deciding, and never quote its number for one as a prediction.
+
 Usage:
     python -m research.counterfactual [report.json] [--reconstruct-plans]
 """
@@ -827,10 +850,15 @@ def main() -> int:
     print("  'fantasma' son stops disparados por barras ANTERIORES al llenado de la orden:")
     print("  precios que ya habian pasado cuando la posicion se abrio. Son imposibles.")
     print()
-    print("  APROXIMACION: las decisiones del agente estan CONGELADAS y solo cambia como se")
-    print("  ejecutan. Un camino de posicion distinto habria cambiado lo que el agente veia y")
-    print("  por tanto lo que decidia. Esto acota el tamano de un efecto y ordena las opciones;")
-    print("  no predice lo que daria una corrida nueva. Lo que prometa aqui hay que confirmarlo.")
+    print("  SIRVE PARA REGLAS DE EJECUCION, NO PARA REGLAS DE DECISION.")
+    print("  Con cambios de ejecucion esta replica acerto: el piso de break-even, los stops")
+    print("  fantasma, el arrastre por horizonte y el riesgo derivado se encontraron aqui y se")
+    print("  reprodujeron en corridas reales. Con POLITICA DE EXPOSICION fallo dos veces:")
+    print("  predijo +99.70% y salio +59.51%, predijo +99.48% y salio +53.08%. La razon es")
+    print("  estructural: una regla de exposicion cambia la posicion que el agente tiene al")
+    print("  decidir, lo que cambia lo que decide, lo que cambia lo que se escribe en su")
+    print("  memoria y las estadisticas que lee en el prompt siguiente. Congelar las decisiones")
+    print("  elimina justo la realimentacion por la que actua el cambio.")
     return 0
 
 
