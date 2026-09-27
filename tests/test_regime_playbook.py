@@ -43,6 +43,7 @@ from btc_decision_agent.application.regime_playbook import (
     _clamp,
     render_playbook_block,
     resolve_plan,
+    resolve_target_allocation,
     strategy_for,
 )
 
@@ -1012,3 +1013,112 @@ class TestARegimeLabelHasToPersistBeforeItTakesEffect:
                 pending.observe(arriving, first_seen + required - timedelta(hours=1)).regime
                 == leaving
             ), (leaving, arriving)
+
+
+class TestADisagreementMovesTheSizeNotTheDirection:
+    """The third attempt at the same question, after two binary answers both failed.
+
+    The override let the regime REVERSE the agent. On 60 recorded decisions from a cautious
+    agent that cost 39 points and nearly doubled the round trips. It was removed, and the run
+    that followed came in worse: replaying THAT run's decisions with the override restored
+    gives +90.93% against +61.18%. So the rule helped a confident agent and hurt a cautious
+    one, which means neither answer generalises and picking between them on one window is
+    fitting to the window.
+
+    A disagreement now moves the size, weighted by the agent's own stated departure from
+    indifference. No new parameter: the weight is 2 * (conviction - 0.5).
+    """
+
+    ALLOCATION = D("0.90")
+
+    def _target(self, regime: int, wants_invested: bool, conviction: float) -> Decimal:
+        target, _ = resolve_target_allocation(
+            regime=regime,
+            wants_invested=wants_invested,
+            conviction=conviction,
+            allocation=self.ALLOCATION,
+        )
+        return target
+
+    def test_agreement_changes_nothing(self) -> None:
+        # The common case has to be untouched, or this is a rewrite rather than a blend.
+        assert self._target(3, True, 0.85) == self.ALLOCATION
+        assert self._target(1, False, 0.55) == D("0")
+        for conviction in (0.0, 0.5, 1.0):
+            _, weight = resolve_target_allocation(
+                regime=3,
+                wants_invested=True,
+                conviction=conviction,
+                allocation=self.ALLOCATION,
+            )
+            assert weight == D("1")
+
+    def test_indifference_cedes_to_the_regime(self) -> None:
+        # 0.50 is the agent saying it does not know, so the regime's doctrine stands.
+        assert self._target(3, False, 0.50) == self.ALLOCATION
+        assert self._target(0, True, 0.50) == D("0")
+
+    def test_total_conviction_carries_it_entirely(self) -> None:
+        assert self._target(3, False, 1.0) == D("0")
+        assert self._target(0, True, 1.0) == self.ALLOCATION
+
+    def test_half_conviction_splits_the_difference(self) -> None:
+        # 2 * (0.75 - 0.5) = 0.5
+        assert self._target(3, False, 0.75) == self.ALLOCATION / 2
+
+    def test_a_conviction_below_indifference_carries_no_weight(self) -> None:
+        """Not abs(). The first version gave 0.40 the same weight as 0.60.
+
+        A model less than half convinced of its own stated exposure must not move the book as
+        much as one more than half convinced. Values under 0.5 appear in the record: 0.30,
+        0.40 and 0.45 all occur.
+        """
+        for conviction in (0.0, 0.30, 0.40, 0.45, 0.50):
+            assert self._target(3, False, conviction) == self.ALLOCATION
+            _, weight = resolve_target_allocation(
+                regime=3,
+                wants_invested=False,
+                conviction=conviction,
+                allocation=self.ALLOCATION,
+            )
+            assert weight == D("0")
+
+    @pytest.mark.parametrize("regime", [0, 1, 2, 3])
+    @pytest.mark.parametrize("wants_invested", [True, False])
+    @pytest.mark.parametrize("conviction", [0.0, 0.3, 0.5, 0.6, 0.75, 0.9, 1.0])
+    def test_the_result_always_lies_between_the_two_views(
+        self, regime: int, wants_invested: bool, conviction: float
+    ) -> None:
+        """Which is what makes it impossible for the blend to be worse than both extremes."""
+        target = self._target(regime, wants_invested, conviction)
+        assert D("0") <= target <= self.ALLOCATION
+
+    def test_it_is_monotone_in_conviction(self) -> None:
+        # More conviction must never move the book less toward what the agent asked for.
+        previous = self._target(3, False, 0.0)
+        for conviction in (0.5, 0.6, 0.7, 0.8, 0.9, 1.0):
+            current = self._target(3, False, conviction)
+            assert current <= previous
+            previous = current
+
+    def test_a_regime_flip_now_costs_a_trim_instead_of_a_round_trip(self) -> None:
+        """The original complaint about the override, measured as a property.
+
+        The label oscillated between regime 3, whose default is invested, and regime 0, whose
+        default is cash, on 31% of transitions. Under the override an agent asking to stay
+        invested was emptied and refilled on every flip. Now the same flip trims.
+        """
+        invested_regime = self._target(3, True, 0.85)
+        cash_regime = self._target(0, True, 0.85)
+        assert invested_regime == self.ALLOCATION
+        swing = invested_regime - cash_regime
+        assert swing < self.ALLOCATION, "un giro de etiqueta ya no vacia la posicion"
+        # And the swing is what the conviction says it should be: at 0.85 the agent carries
+        # 0.70, so it keeps 70% of what it asked for.
+        assert cash_regime == pytest.approx(self.ALLOCATION * D("0.70"))
+
+    def test_the_agent_is_told_how_the_disagreement_resolves(self) -> None:
+        # It cannot calibrate a mechanism it is not shown.
+        block = render_playbook_block(3, 2.0)
+        assert "a medio camino" in block
+        assert "0.50 cede al regimen" in block

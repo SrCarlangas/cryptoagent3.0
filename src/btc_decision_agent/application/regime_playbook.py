@@ -48,7 +48,7 @@ from btc_decision_agent.application.realtime_demo import RealtimeParams
 
 D = Decimal
 
-PLAYBOOK_VERSION = "regime-playbook/1.2.0"
+PLAYBOOK_VERSION = "regime-playbook/1.3.0"
 """1.1.0 puts the break-even ratchet under the playbook's control.
 
 Until then `ExecutionPlan.apply` left `break_even_activation_fraction` and
@@ -655,6 +655,68 @@ class RegimeTracker:
         )
 
 
+def resolve_target_allocation(
+    *,
+    regime: int | None,
+    wants_invested: bool,
+    conviction: float,
+    allocation: Decimal,
+) -> tuple[Decimal, Decimal]:
+    """The share of equity to hold, expressing any disagreement as SIZE, not direction.
+
+    Returns (target share of equity, weight the agent's view carried).
+
+    Why this shape
+    --------------
+    Two previous attempts both failed, in opposite directions, and the failure was the same
+    each time: a binary answer to a question that is not binary.
+
+    The first let the regime REVERSE the agent's direction when conviction fell below a
+    per-regime threshold. On one set of 60 recorded decisions that cost 39 points and nearly
+    doubled the round trips, because 9 of 15 direction changes were the playbook and the
+    agent overruling each other through an oscillating label.
+
+    So it was removed, and the run that followed came in WORSE. Replaying that run's
+    decisions with the override restored gives +90.93% against +61.18%: on a cautious agent
+    the override destroyed value by forcing it out of positions, and on a confident agent it
+    created value by keeping it in. The sign of the rule depends on the behaviour of the
+    agent, which means neither answer generalises and choosing between them on one window is
+    fitting to that window.
+
+    The blend
+    ---------
+    On agreement, nothing happens: the agent's direction is executed at the plan's size.
+
+    On disagreement the two are mixed, and the agent's weight is its own stated departure
+    from indifference: `2 * |conviction - 0.5|`. There is no new parameter to choose. At 0.50
+    the agent has said it does not know, so the regime's default stands. At 1.0 the agent
+    carries it entirely. At 0.75 they split.
+
+    What this buys, beyond not having to pick a side: a disagreement now costs a TRIM instead
+    of a round trip. When the regime label flips under an agent asking to stay invested at
+    0.85 conviction, the target moves from 90% to 63% rather than from 90% to 0%, so the same
+    disagreement pays a quarter of the commission. The round trips were the original
+    complaint about the override, and this removes the mechanism that produced them rather
+    than removing the regime's voice.
+
+    It also cannot be worse than both extremes at once: every target it produces lies between
+    what the agent asked for and what the regime would have imposed.
+    """
+    strategy = strategy_for(regime)
+    default_invested = strategy.default_exposure == EXPOSURE_INVESTED
+    agent_target = allocation if wants_invested else D("0")
+    if wants_invested == default_invested:
+        return agent_target, D("1")
+    regime_target = allocation if default_invested else D("0")
+    # Not abs(): a conviction BELOW indifference must carry no weight, not the same weight
+    # as the mirror value above it. The first version used abs() and gave 0.40 the same
+    # 0.20 weight as 0.60, which would let a model that is less than half convinced of its
+    # own call move the book as much as one that is more. Values under 0.5 appear in the
+    # record (0.30, 0.40, 0.45), so this is a case that occurs rather than a hypothetical.
+    weight = _clamp(D("2") * (D(str(conviction)) - D("0.5")), D("0"), D("1"))
+    return agent_target * weight + regime_target * (D("1") - weight), weight
+
+
 def render_playbook_block(regime: int | None, daily_vol_pct: float | None) -> str:
     """What the agent is told about the strategy it is operating inside."""
     strategy = strategy_for(regime)
@@ -665,8 +727,12 @@ def render_playbook_block(regime: int | None, daily_vol_pct: float | None) -> st
         f"  horizonte previsto: {strategy.horizon_hours} h. Tu decision se juzgara por lo "
         f"que pase en esas {strategy.horizon_hours} h, no por lo que pase manana.",
         f"  lo habitual en este regimen: {strategy.default_exposure}",
-        "  Es descripcion del regimen, no una regla: LA DIRECCION LA DECIDES TU y se "
-        "ejecuta tal como la digas. El regimen decide el tamano, el stop y el horizonte.",
+        "  LA DIRECCION LA DECIDES TU y nada la invierte. El regimen decide el tamano, el "
+        "stop y el horizonte.",
+        "  Si tu direccion contradice lo habitual del regimen, la posicion queda a medio "
+        "camino y tu conviccion decide cuanto pesa tu criterio: 0.50 cede al regimen, 1.00 "
+        "manda del todo, 0.75 reparte. Contradecir al regimen sin conviccion te deja donde "
+        "el regimen, no donde tu dijiste.",
     ]
     for posture in Posture:
         plan = resolve_plan(
@@ -710,6 +776,7 @@ __all__ = [
     "plan_adjustment",
     "render_playbook_block",
     "resolve_plan",
+    "resolve_target_allocation",
     "strategy_for",
 ]
 

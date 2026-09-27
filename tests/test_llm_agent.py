@@ -687,20 +687,19 @@ class TestEngineSafety:
         # Falls back to the configured defaults rather than raising or returning None.
         assert engine.active_stop(D("80000")) == D("80000") * D("0.97")
 
-    def test_the_agents_direction_is_executed_even_against_the_regime(
+    def test_a_disagreement_is_expressed_as_size_not_as_a_reversal(
         self, tmp_path: Path
     ) -> None:
-        """This test used to assert the opposite, and the reversal is the point.
+        """This test has now asserted three different things, which is the point of it.
 
-        It pinned the playbook overriding a half-hearted move to cash in a bull regime.
-        Measured on 60 recorded decisions that override cost 39 points, +60.65% against
-        +99.70% without it, and nearly doubled the round trips. It was added because the
-        agent had been seen sitting out a +185% advance at 0.50 conviction, on a run whose
-        execution layer closed every position that went 0.5% green and whose memory scored
-        168 hour decisions on tomorrow's price.
+        First it pinned the playbook REVERSING a half-hearted move to cash in a bull regime.
+        Then it pinned the agent's direction being executed regardless. Both were binary and
+        both failed in opposite directions: on a cautious agent the override cost 39 points,
+        on a confident one removing it cost 30.
 
-        The agent now owns the direction. What bounds the risk is that the regime owns every
-        magnitude, which the accompanying playbook tests pin.
+        A disagreement now moves the SIZE. The agent asks for cash at 0.40 conviction, which
+        is below indifference, so it carries no weight and the book stays near the regime's
+        own allocation. The position is neither reversed nor emptied.
         """
         engine = self._engine(
             tmp_path,
@@ -710,13 +709,32 @@ class TestEngineSafety:
             engine, _evidence(), _position(PositionState.LONG, btc="0.05", usdt="0")
         )
         info = engine.last_explanation
-        # Whatever the regime is, the agent asked for cash and cash is what is executed.
+        # The agent's own words are recorded unchanged, whatever the book ends up doing.
         assert info["target_exposure"] == EXPOSURE_CASH
-        assert info["effective_exposure"] == EXPOSURE_CASH
-        assert info["choice_honoured"] is True
-        assert "_REGIMEN_MANDA" not in decision.reason
-        assert decision.action == Action.EXIT_LONG
-        assert decision.target_share == 0
+        if info["regime"] in {2, 3}:
+            # Regime default is invested and the agent argued for cash at 0.40, under
+            # indifference, so its view carries nothing.
+            assert info["agent_weight"] == 0.0
+            assert info["choice_honoured"] is False
+            assert info["target_share"] > 0, "no debe vaciarse"
+            assert "_MEZCLA" in decision.reason
+        else:
+            assert info["agent_weight"] == 1.0
+            assert info["target_share"] == 0
+
+    def test_a_confident_disagreement_moves_the_book_most_of_the_way(
+        self, tmp_path: Path
+    ) -> None:
+        engine = self._engine(
+            tmp_path,
+            StubClient(_verdict(EXPOSURE_CASH, conviction=0.90, expected=5.0)),
+        )
+        self._settle(engine, _evidence(), _position(PositionState.LONG, btc="0.05", usdt="0"))
+        info = engine.last_explanation
+        if info["regime"] in {2, 3}:
+            # 2 * (0.90 - 0.5) = 0.80 of the way toward the agent's zero.
+            assert info["agent_weight"] == pytest.approx(0.80)
+            assert 0 < info["target_share"] < 0.25
 
     def test_a_low_conviction_call_is_still_the_agents_call(self, tmp_path: Path) -> None:
         # No threshold left to clear. Conviction now only scales the SIZE, which is where

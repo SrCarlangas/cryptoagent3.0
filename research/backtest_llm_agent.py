@@ -78,6 +78,7 @@ from btc_decision_agent.application.regime_playbook import (
     RegimeTracker,
     plan_adjustment,
     resolve_plan,
+    resolve_target_allocation,
 )
 
 D = Decimal
@@ -292,11 +293,11 @@ def main() -> None:
         # letting it oscillate would rewrite the plan of an open position every few days.
         tracker = tracker.observe(int(quant.get("regimen", 0)), now)
         regime = tracker.regime
-        # THE AGENT OWNS THE DIRECTION, exactly as production does. The regime's default
-        # exposure is doctrine shown in the prompt and no longer reverses a decision:
-        # measured on 60 recorded decisions the override cost 39 points and nearly doubled
-        # the round trips.
-        wants_long, choice_honoured = verdict.wants_long, True
+        # THE AGENT OWNS THE DIRECTION, exactly as production does. A disagreement with the
+        # regime is expressed as SIZE below, through resolve_target_allocation, because both
+        # binary answers failed in opposite directions: the override cost 39 points on a
+        # cautious agent and earned 30 on a confident one.
+        wants_long = verdict.wants_long
         changing = wants_long != position_long
         # The regime's strategy, resolved exactly as production resolves it, and resolved
         # BEFORE the cost gate because the gate now tests the measured volatility over this
@@ -329,10 +330,16 @@ def main() -> None:
         # greatest doubt: 79% of entries were defensive and 58% of holding decisions
         # were aggressive, with zero scaling orders in 98 decisions.
         sizing = plan.apply(params)
-        target = sizing.allocation_fraction if wants_long else D("0")
+        target, agent_weight = resolve_target_allocation(
+            regime=regime,
+            wants_invested=wants_long,
+            conviction=verdict.conviction,
+            allocation=sizing.allocation_fraction,
+        )
+        choice_honoured = agent_weight >= D("1")
         # The entry cost gate still applies to OPENING from flat; it never blocks a
         # reduction, and it must not block a top-up of a position already justified.
-        if not position_long and wants_long and not clears:
+        if not position_long and target > 0 and not clears:
             target = D("0")
         adjustment = plan_adjustment(
             target_allocation=target,
@@ -461,6 +468,7 @@ def main() -> None:
                 "target": EXPOSURE_INVESTED if wants_long else EXPOSURE_CASH,
                 "agent_asked_for": verdict.target_exposure,
                 "choice_honoured": choice_honoured,
+                "agent_weight": float(agent_weight),
                 "posture": verdict.posture,
                 "strategy": plan.strategy_name,
                 "plan_allocation_pct": float(plan.allocation_fraction * 100),

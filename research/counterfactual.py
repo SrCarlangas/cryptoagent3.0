@@ -75,6 +75,7 @@ from btc_decision_agent.application.regime_playbook import (
     Posture,
     plan_adjustment,
     resolve_plan,
+    resolve_target_allocation,
     strategy_for,
 )
 
@@ -112,6 +113,9 @@ through resolve_plan; what it loses is the power to reverse the direction.
 
 TIE_BREAK_ONLY = "solo desempate"
 """The agent owns the direction; the default only breaks a declared tie."""
+
+BLENDED = "mezcla por tamano"
+"""The disagreement expressed as size, which is what production now does."""
 
 OLD_BURDEN = "override retirado"
 """The retired burden of proof, reimplemented here so it can still be measured.
@@ -339,19 +343,33 @@ def stabilise_regimes(trace: list[dict[str, Any]], step_days: int) -> list[int |
     return effective
 
 
-def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
-    """Resolve the exposure for this decision under the variant's authority rule."""
+def _target_fraction(item: dict[str, Any], rules: Rules) -> Decimal:
+    """Share of the plan's allocation to hold, under this variant's authority rule.
+
+    A fraction rather than a boolean because the blend production now uses is continuous:
+    a disagreement lands between the two views instead of picking one.
+    """
+    full, none = D("1"), D("0")
     agent_in = bool(item["target"] == EXPOSURE_INVESTED)
     playbook_in = strategy_for(item.get("regime")).default_exposure == EXPOSURE_INVESTED
+    if rules.exposure_from == FROM_AGENT:
+        return full if agent_in else none
     if rules.exposure_from == FROM_PLAYBOOK:
-        return playbook_in
+        return full if playbook_in else none
     if rules.exposure_from == VETO_ONLY:
-        return agent_in and playbook_in
+        return full if (agent_in and playbook_in) else none
     if rules.exposure_from == ADD_ONLY:
-        return agent_in or playbook_in
+        return full if (agent_in or playbook_in) else none
     if rules.exposure_from == ALWAYS_IN:
-        return True
-    if rules.exposure_from in {OLD_BURDEN, TIE_BREAK_ONLY, RERESOLVED, STABILISED, RAW_AGENT}:
+        return full
+    if rules.exposure_from in {
+        BLENDED,
+        OLD_BURDEN,
+        TIE_BREAK_ONLY,
+        RERESOLVED,
+        STABILISED,
+        RAW_AGENT,
+    }:
         # Re-run the burden of proof from what the agent ACTUALLY asked for, which the
         # trace records separately from the resolved target. RERESOLVED uses the observed
         # regime and must reproduce the recorded target, which is the control that proves
@@ -369,22 +387,33 @@ def _wants_invested(item: dict[str, Any], rules: Rules) -> bool:
                 "reresolver la exposicion sin inventar lo que el agente pidio."
             )
         asked = bool(item.get("agent_asked_for") == EXPOSURE_INVESTED)
-        if rules.exposure_from == RAW_AGENT:
-            return asked
         conviction = float(item.get("conviction") or 0.5)
+        regime = int(
+            item["_effective_regime"]
+            if rules.exposure_from in {STABILISED, OLD_BURDEN, BLENDED}
+            else (item.get("regime") or 1)
+        )
+        if rules.exposure_from == RAW_AGENT:
+            return full if asked else none
+        if rules.exposure_from == BLENDED:
+            # The same primitive production uses, so the two cannot disagree. Called with an
+            # allocation of 1 so the result is the fraction of the plan to hold.
+            fraction, _ = resolve_target_allocation(
+                regime=regime,
+                wants_invested=asked,
+                conviction=conviction,
+                allocation=D("1"),
+            )
+            return fraction
         if rules.exposure_from == TIE_BREAK_ONLY:
             # The default only breaks a declared tie: a model stating less conviction than a
             # coin flip has not really stated an exposure.
             if conviction >= 0.5:
-                return asked
-            return strategy_for(item["_effective_regime"]).default_exposure == EXPOSURE_INVESTED
-        regime = int(
-            item["_effective_regime"]
-            if rules.exposure_from in {STABILISED, OLD_BURDEN}
-            else (item.get("regime") or 1)
-        )
-        return _apply_retired_burden(regime, asked, conviction)
-    return agent_in
+                return full if asked else none
+            return full if strategy_for(regime).default_exposure == EXPOSURE_INVESTED else none
+        resolved = _apply_retired_burden(regime, asked, conviction)
+        return full if resolved else none
+    return full if agent_in else none
 
 
 def simulate(
@@ -454,7 +483,7 @@ def simulate(
         day = int(item["day_index"])
         step = int(trace[index + 1]["day_index"]) - day if index + 1 < len(trace) else 1
         fill = closes[min(day + 1, len(closes) - 1)]
-        wants_long = _wants_invested(item, rules)
+        hold_fraction = _target_fraction(item, rules)
 
         allocation = D(str(item["plan_allocation_pct"])) / 100
         if rules.allocation_override is not None:
@@ -462,7 +491,7 @@ def simulate(
         plan_dict = _plan_dict(item, rules, allocation)
         sizing = ExecutionPlan.from_dict(plan_dict).apply(params)
 
-        target = sizing.allocation_fraction if wants_long else D("0")
+        target = sizing.allocation_fraction * hold_fraction
         if not rules.scale and units > 0.0 and target > 0:
             target = D(str((units * fill) / (cash + units * fill)))  # freeze the size
 
@@ -512,7 +541,7 @@ def simulate(
                             phantom_stops += 1
                 elif (
                     rules.reentry_cooldown_hours is not None
-                    and wants_long
+                    and hold_fraction > 0
                     and hours_since_stop is not None
                     and hours_since_stop >= rules.reentry_cooldown_hours
                     and buy(float(bar.close), sizing, target, plan_dict)
@@ -630,6 +659,7 @@ VARIANTS: tuple[tuple[str, tuple[Rules, ...]], ...] = (
             Rules("agente SIN tutela", mark_from_fill=True, exposure_from=RAW_AGENT),
             Rules("agente + desempate 0.50", mark_from_fill=True, exposure_from=TIE_BREAK_ONLY),
             Rules("con el override retirado", mark_from_fill=True, exposure_from=OLD_BURDEN),
+            Rules("MEZCLA por tamano", mark_from_fill=True, exposure_from=BLENDED),
         ),
     ),
     (

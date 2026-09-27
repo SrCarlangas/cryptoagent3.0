@@ -87,6 +87,7 @@ from btc_decision_agent.application.regime_playbook import (
     plan_adjustment,
     render_playbook_block,
     resolve_plan,
+    resolve_target_allocation,
 )
 from btc_decision_agent.domain.contracts import Action, PositionState
 
@@ -773,8 +774,12 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         # What keeps this safe is that the regime still owns every MAGNITUDE: the size,
         # the stop, the trailing geometry, the risk ceiling and the horizon. Saying
         # "invested" in a deep bear buys 20% of capital behind a 1.6 sigma stop.
+        #
+        # And a DISAGREEMENT with the regime is expressed as size rather than as a reversal,
+        # which is resolved below by resolve_target_allocation. Both previous attempts were
+        # binary and both failed in opposite directions: the override cost 39 points on a
+        # cautious agent and earned 30 on a confident one, so neither answer generalises.
         effective_long = verdict.wants_long
-        honoured = True
         action = (
             ExposureAction.TARGET_LONG if effective_long else ExposureAction.TARGET_FLAT
         )
@@ -825,7 +830,13 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         # open-from-flat and close-to-zero. Replaying the same decisions with scaling is
         # worth 22 points on the bull window.
         sizing = plan.apply(self.params)
-        target = sizing.allocation_fraction if effective_long else D("0")
+        target, agent_weight = resolve_target_allocation(
+            regime=regime,
+            wants_invested=effective_long,
+            conviction=verdict.conviction,
+            allocation=sizing.allocation_fraction,
+        )
+        honoured = agent_weight >= D("1")
         adjustment = plan_adjustment(
             target_allocation=target,
             btc_qty=position.btc_qty,
@@ -837,8 +848,10 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             base_step=self.params.base_step_size,
         )
         # The entry gate applies to OPENING from flat. It must not block a top-up of a
-        # position whose entry already cleared it, and it never blocks a reduction.
-        gated = not is_long and effective_long and not clears
+        # position whose entry already cleared it, and it never blocks a reduction. Keyed off
+        # the resolved TARGET rather than the declared direction, because with the blend a
+        # disagreement can leave a target of zero without the agent having asked for cash.
+        gated = not is_long and target > 0 and not clears
         wants_change = adjustment.acts and not gated
         acted = wants_change
         self.agent.memory.record(
@@ -850,6 +863,10 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             # attribute an outcome to a regime whose strategy was not applied.
             regime=regime,
             quant_p_long=float(quant.get("p_largo", 0.0)),
+            # What the AGENT asked for, not the blended result. These statistics go into the
+            # agent's own prompt to tell it whether its calls pay, so they have to be signed
+            # by its call. Signing them by a 27% position nobody chose would measure the
+            # blend and show it to the agent as if it were its own record.
             target_exposure=EXPOSURE_INVESTED if effective_long else EXPOSURE_CASH,
             exposure_before=EXPOSURE_INVESTED if is_long else EXPOSURE_CASH,
             derived_order=trade.value,
@@ -887,6 +904,8 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
             "posture": verdict.posture,
             "strategy": plan.strategy_name,
             "choice_honoured": honoured,
+            "agent_weight": float(agent_weight),
+            "target_share": float(target),
             "effective_exposure": EXPOSURE_INVESTED if effective_long else EXPOSURE_CASH,
             "plan_allocation_pct": float(plan.allocation_fraction * 100),
             "plan_stop_pct": float(plan.stop_loss_fraction * 100),
@@ -899,7 +918,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         reason = (
             f"AGENT_{trade.value}_R{regime}"
             f"_C{round(verdict.conviction * 100)}_{verdict.posture[:3]}_{suffix}"
-            + ("" if honoured else "_REGIMEN_MANDA")
+            + ("" if honoured else f"_MEZCLA{round(float(agent_weight) * 100)}")
             # Visible when the observed label differs from the one in force, so a
             # reader can tell a decision under a persisting regime from one under a
             # regime that has just changed.
