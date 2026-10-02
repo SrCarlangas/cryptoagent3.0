@@ -1,0 +1,23 @@
+{
+  "btc_drawdown_pct": 69.22,
+  "btc_risk_matched_pct": 248.29,
+  "btc_total_pct": 265.04,
+  "capped": {
+    "btc_exposure": 0.284,
+    "btc_pct": 73.68,
+    "cap_pct": 25.0,
+    "strategy_exposure": 0.337,
+    "strategy_pct": 199.67
+  },
+  "effect": 1.293,
+  "effect_trimmed": 0.838,
+  "mean_spread": 0.027476,
+  "median_spread": 0.003155,
+  "oos_periods": 60,
+  "sign_test_p": 0.448711,
+  "strategy_drawdown_pct": 62.29,
+  "strategy_total_pct": 977.43,
+  "survivorship_bias": "not eliminated; hand-picked universe biases results UP",
+  "verdict": "EL FACTOR NO PASA EL CRITERIO COMPLETO",
+  "wins": 31
+}

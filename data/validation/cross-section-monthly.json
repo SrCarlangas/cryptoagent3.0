@@ -1,0 +1,13 @@
+{
+  "effect": 1.385,
+  "effect_without_best_period": 0.976,
+  "mean_btc": 0.036837,
+  "mean_rotation": 0.088954,
+  "mean_spread": 0.052116,
+  "median_spread": -0.035381,
+  "periods": 60,
+  "rotation_wins": 29,
+  "sign_test_p": 0.650558,
+  "standard_error": 0.037638,
+  "verdict": "LA ROTACION NO SUPERA A BTC DE FORMA ESTABLECIBLE"
+}

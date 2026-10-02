@@ -1,0 +1,111 @@
+{
+  "criterion": {
+    "adverse_fee_per_side": 0.002,
+    "drawdown_cap": 0.25,
+    "effect_floor": 1.0,
+    "embargo_days": 30,
+    "min_segments": 4
+  },
+  "dataset_id": "sha256:c475ef34e42f948abd4ed3c3e3dbddc213b026ecdb9dc64b3cd8b6b41a58cfc7",
+  "folds": [
+    {
+      "chosen": "USDT (control)",
+      "fold": 1,
+      "test_drawdown": 0.0,
+      "test_end": "2020-02-09",
+      "test_return": 0.0,
+      "test_segments": 1,
+      "train_end": "2019-02-09",
+      "train_return": 0.0,
+      "train_segments": 0,
+      "usdt_return": 0.0
+    },
+    {
+      "chosen": "USDT (control)",
+      "fold": 2,
+      "test_drawdown": 0.0,
+      "test_end": "2021-02-08",
+      "test_return": 0.0,
+      "test_segments": 3,
+      "train_end": "2020-02-09",
+      "train_return": 0.0,
+      "train_segments": 0,
+      "usdt_return": 0.0
+    },
+    {
+      "chosen": "USDT (control)",
+      "fold": 3,
+      "test_drawdown": 0.0,
+      "test_end": "2022-02-08",
+      "test_return": 0.0,
+      "test_segments": 1,
+      "train_end": "2021-02-08",
+      "train_return": 0.0,
+      "train_segments": 0,
+      "usdt_return": 0.0
+    },
+    {
+      "chosen": "USDT (control)",
+      "fold": 4,
+      "test_drawdown": 0.0,
+      "test_end": "2023-02-08",
+      "test_return": 0.0,
+      "test_segments": 0,
+      "train_end": "2022-02-08",
+      "train_return": 0.0,
+      "train_segments": 0,
+      "usdt_return": 0.0
+    },
+    {
+      "chosen": "USDT (control)",
+      "fold": 5,
+      "test_drawdown": 0.0,
+      "test_end": "2024-02-08",
+      "test_return": 0.0,
+      "test_segments": 3,
+      "train_end": "2023-02-08",
+      "train_return": 0.0,
+      "train_segments": 0,
+      "usdt_return": 0.0
+    },
+    {
+      "chosen": "USDT (control)",
+      "fold": 6,
+      "test_drawdown": 0.0,
+      "test_end": "2025-02-07",
+      "test_return": 0.0,
+      "test_segments": 3,
+      "train_end": "2024-02-08",
+      "train_return": 0.0,
+      "train_segments": 0,
+      "usdt_return": 0.0
+    },
+    {
+      "chosen": "USDT (control)",
+      "fold": 7,
+      "test_drawdown": 0.0,
+      "test_end": "2026-02-07",
+      "test_return": 0.0,
+      "test_segments": 2,
+      "train_end": "2025-02-07",
+      "train_return": 0.0,
+      "train_segments": 0,
+      "usdt_return": 0.0
+    }
+  ],
+  "params": {
+    "direction_axis": "drawdown",
+    "drawdown_threshold": 0.2,
+    "efficiency_threshold": 0.35,
+    "efficiency_window": 30,
+    "min_regime_days": 30,
+    "near_peak_threshold": 0.1,
+    "peak_window_days": 180,
+    "persistence_days": 5,
+    "trend_ma_days": 100,
+    "volatility_percentile": 0.7,
+    "volatility_reference_days": 365,
+    "volatility_window": 30
+  },
+  "regime": "ALCISTA"
+}

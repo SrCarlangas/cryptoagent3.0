@@ -4,6 +4,27 @@ These criteria are written and committed BEFORE the backtest result is read. Tha
 ordering is the whole point: a gate defined after seeing the number is not a gate,
 it is a justification. The script exits 0 only if every criterion passes.
 
+The product this gate now scores
+--------------------------------
+REWRITTEN 2026-10-01 around the pivot declared in advance in `roadmap.md`: the product is
+not "beat buy and hold", it is **buy and hold with the drawdown cut**. Four independent
+measurements of the timing correlation (+0.01, +0.02, -0.11, +0.03, standard error 0.15)
+say the momentum edge that "beat buy and hold" requires is not there, and a gate that
+demands it would either reject every honest agent or push the search until noise looked
+like signal.
+
+The rewrite does NOT relax anything. It closes a hole. The old gate compared the agent to
+RAW buy and hold, so simply being less exposed counted as a win on drawdown -- but holding
+less BTC achieves exactly that trade with no skill whatever. A constant 0.6x position
+delivers roughly 0.6x the return and 0.6x the drawdown for free. So the null hypothesis for
+"buy and hold with the tail cut" is **static de-risking**, and the agent is now scored
+against a buy and hold DE-LEVERAGED TO THE AGENT'S OWN DRAWDOWN. Two criteria are added and
+none is removed or loosened.
+
+Measured against the runs that exist, the new gate is STRICTER on the window that matters:
+on the bull window the retired capture criterion demanded +92.2% and the new one demands
++125.4%. The agent reached +68.94%. It FAILS, and that is recorded here rather than tuned.
+
 What is deliberately NOT required
 ---------------------------------
 Beating buy and hold is not a criterion. Three independent studies in this project
@@ -39,8 +60,58 @@ MIN_DECISIONS = 50
 """Fewer than this and the sample says nothing about behaviour."""
 
 MIN_MINORITY_SHARE = 0.05
-"""Both exposures must appear. A constant agent is either buy and hold in
-disguise or a machine that never invests; neither needs an LLM."""
+"""RETIRED 2026-10-01, superseded by MIN_REGIME_EXPOSURE_SPREAD. Kept for the record, and
+still used as a fallback for older reports whose trace carries no regime field, so a
+historical verdict is never silently recomputed.
+
+Original intent, which the replacement keeps: both exposures must appear, because a constant
+agent is either buy and hold in disguise or a machine that never invests, and neither needs
+an LLM.
+
+Why it was wrong. Within-window minority share counts DECISIONS, not conditioning, so a
+handful of decisions in a rarely-visited regime satisfies it without the agent having
+discriminated at all. Measured on the bear window: the agent showed a 12% minority and
+passed, but that 12% came from **4 decisions** in regimes r2 and r3 (3 and 1 decisions, at
+78% and 95% exposure). In the two regimes it actually saw -- r0 with 40 decisions at 2.9%
+exposure and r1 with 16 at 0.0% -- its exposure differed by **2.9%**. It was flat, and the
+criterion reported discrimination.
+
+This also corrects a looser claim made when the repair was proposed: the defect is not that
+the criterion "punishes a correct constant answer". It is that minority share is not evidence
+of conditioning in either direction."""
+
+MIN_DECISIONS_PER_REGIME = 5
+"""Decisions a regime needs before its mean exposure may carry the criterion.
+
+A regime visited once or twice has a mean exposure that is one decision, not a behaviour. On
+the bear window r3 appeared exactly once at 95% exposure, and allowing that to count is how a
+flat agent looked discriminating."""
+
+MIN_REGIME_EXPOSURE_SPREAD = 0.30
+"""ADDED 2026-10-01. Required gap between the agent's most and least exposed regime.
+
+Discrimination is conditioning, so it is measured ACROSS the regimes the agent actually saw
+rather than as a headcount within the window. A constant agent has a spread of zero no matter
+how its decisions are distributed.
+
+Derived, not fitted. Exposure per decision lies in [0, 1] with a standard deviation around
+0.4 at these allocations; with roughly 15 decisions in a regime the standard error of its
+mean is about 0.10, so the standard error of the difference between two regime means is about
+0.15. A 0.30 requirement is therefore about two standard errors -- the point at which a gap
+stops being explicable as sampling noise. The number was committed from that argument before
+either archived run was measured against it.
+
+Requires at least two regimes with MIN_DECISIONS_PER_REGIME decisions. Fewer than two and the
+criterion CANNOT BE EVALUATED, so it fails: a window that never made the agent choose is not
+evidence that it chooses well, which is the asymmetry `handover.md` section 3 already warned
+about when it said the bear window's approval was not symmetric with the bull window's
+rejection.
+
+Measured consequences on the archived runs:
+- Bull window: r0 0.0% (11 decisions), r2 71.6% (21), r3 84.5% (28). Spread 84.5%, PASSES.
+  The agent genuinely conditions on its own regime labels there.
+- Bear window: only r0 (40 decisions, 2.9%) and r1 (16, 0.0%) clear the decision floor.
+  Spread 2.9%, FAILS. The old criterion passed this window at 12%."""
 
 MAX_SWITCH_RATE = 0.30
 """DIRECTION changes per decision. The threshold is unchanged; what is counted is.
@@ -68,7 +139,70 @@ from a count. Whichever of the two binds first, the churn is capped.
 
 MIN_DRAWDOWN_ADVANTAGE_PP = 3.0
 """Percentage points of drawdown it must save versus buy and hold. This is the
-effect that replicated across every earlier study, so it is the one demanded."""
+effect that replicated across every earlier study, so it is the one demanded.
+
+Unchanged at 3.0. It is kept as a FLOOR rather than raised, because on a window whose
+reference barely falls, any absolute pp threshold is either trivial or impossible -- the
+same defect that retired MAX_RETURN_SHORTFALL_PP. The binding test is now the scale-free
+ratio below, and this remains only so a window with a tiny reference drawdown cannot be
+passed by a ratio alone."""
+
+MAX_DRAWDOWN_RATIO = 0.60
+"""ADDED 2026-10-01. The agent's drawdown as a fraction of the reference's.
+
+The primary claim of the pivoted product is the tail cut, so the pivot cannot be allowed to
+make the gate cheaper: the claim now has to be demonstrated in a form that does not depend
+on how far the window happened to fall. Cutting the drawdown to at most three fifths of buy
+and hold's is what "materially cut" has to mean to be worth a sentence in a product
+description.
+
+Derived rather than chosen: at 0.60 the agent must do strictly better than the de-risking
+that criterion MIN_CAPTURE_OF_RISK_MATCHED_HOLD prices, because a static 0.60x position
+also pays 0.60x of the return, and the pair of criteria together therefore demand a cut in
+risk AND retention of return beyond what static sizing gives. Either alone is passable by
+simply holding less.
+
+On the bull window this demands at most 12.0% against buy and hold's 20.0%; the best run
+measured 17.0% and FAILS. On the bear window it demands at most 23.7% against 39.5% and the
+run measured 6.1%, which passes comfortably."""
+
+MIN_CAPTURE_OF_RISK_MATCHED_HOLD = 1.00
+"""ADDED 2026-10-01. Share of a RISK-MATCHED buy and hold the agent must earn.
+
+This is the criterion that makes the pivot honest, and it is the one the old gate lacked.
+
+"Buy and hold with the drawdown cut" is not an achievement by itself: holding a constant
+fraction f of BTC delivers approximately f times the return and f times the drawdown, with
+no forecasting, no model and no LLM. So the benchmark is constructed to match the agent's
+OWN realised risk:
+
+    f               = agent_drawdown / reference_drawdown
+    risk_matched    = f * reference_return
+
+and the agent must at least MATCH that, net of the commission it paid and a one-shot static
+holder did not. Falling short means a passive investor who simply held less BTC would have
+done better at the same risk, which is a reason not to run an agent at all, not a tradeoff.
+
+Set to 1.00 rather than a fraction, and the first draft of this rewrite got that wrong. At
+0.80 the gate would have approved an agent delivering 80% of what static sizing gives for
+free -- a product strictly dominated by doing nothing. A tolerance below 1.00 has no
+defensible size, because any shortfall against a free alternative is a shortfall. The real
+tolerance the agent deserves is the commission a static holder avoids, so that is what is
+granted, measured from the run instead of chosen.
+
+Applied only when the reference RISES, for the same reason as the retired criterion it
+replaces: capturing a fraction of a loss is not a virtue, and the falling leg is tested by
+the drawdown criteria.
+
+Measured consequences, stated before any new run:
+- Bull window: f = 16.99/20.00 = 0.85, risk-matched = +156.6%, requirement = +154.9% after
+  the 1.68% commission allowance. The best run reached +68.94% and FAILS. The retired
+  criterion demanded +92.2%, so this is HARDER by 63 percentage points.
+- Bear window: f = 6.1/39.5 = 0.154, risk-matched = -1.98%, requirement = -2.34% after the
+  0.36% commission allowance. The agent returned -2.39% and FAILS BY 0.05pp -- a tie. Its
+  celebrated bear result is approximately what static de-risking to the same drawdown
+  produces by itself, which is the single most important thing this rewrite surfaces and the
+  reason the criterion had to apply in the falling leg too."""
 
 MAX_RETURN_SHORTFALL_PP = 25.0
 """RETIRED. Kept so the record shows what the earlier runs were judged against.
@@ -84,7 +218,16 @@ does not depend on the size of the window's move.
 """
 
 MIN_CAPTURE_OF_RISING_REFERENCE = 0.50
-"""Share of a RISING reference's move the agent must capture.
+"""RETIRED 2026-10-01, superseded by MIN_CAPTURE_OF_RISK_MATCHED_HOLD. Kept for the record.
+
+Retired because it compared against RAW buy and hold, which ignores the risk the agent
+actually took and so could be satisfied, or failed, for reasons that have nothing to do with
+skill. Its replacement is strictly harder on the development window (+125.4% required
+against this one's +92.2%), so this is a repair of the instrument and not a relaxation.
+
+Original rationale follows, unchanged.
+
+Share of a RISING reference's move the agent must capture.
 
 Changed at the owner's instruction, after a run, and that sequence is stated plainly
 because it is the thing pre-registration exists to prevent. What justifies it is that the
@@ -180,6 +323,106 @@ def _capture_check(
     )
 
 
+def _risk_matched_check(
+    *,
+    agent_return: float,
+    agent_drawdown: float,
+    reference_return: float,
+    reference_drawdown: float,
+    minimum: float,
+    commission_pct: float | None,
+) -> tuple[str, bool, str]:
+    """Score the agent against a buy and hold de-leveraged to the agent's own drawdown.
+
+    This is the null hypothesis of the pivoted product: holding a constant fraction of BTC
+    cuts the drawdown by roughly that fraction and costs roughly that fraction of the
+    return, with no model involved. An agent that does not beat it is not delivering "buy
+    and hold with the tail cut", it is delivering a more expensive way to hold less.
+
+    Applied in BOTH legs, and that symmetry is deliberate. The retired capture criterion
+    skipped the falling leg on the grounds that capturing a share of a loss is no virtue,
+    which is true of RAW buy and hold but false of a risk-matched one: losing more than a
+    static position of the same realised risk means the deciding added nothing. Skipping it
+    is what allowed the bear window to be approved on a basis that static de-risking
+    reproduces for free.
+    """
+    name = "bate a comprar y mantener con el MISMO riesgo"
+    if reference_drawdown <= 0.0:
+        # Cannot be evaluated, so it must not pass.
+        return (name, False, "la referencia no reporta caida: criterio no evaluable, FALLA")
+
+    fraction = agent_drawdown / reference_drawdown
+    risk_matched = fraction * reference_return
+
+    # One formula, both legs. A static f-sized position earns f times a rising reference and
+    # loses f times a falling one, so "at least match it" is the same inequality either way.
+    # The only concession is the commission the agent paid and a one-shot holder did not.
+    allowance = commission_pct or 0.0
+    required = risk_matched * minimum - allowance
+    verb = "habria dado" if reference_return > 0.0 else "habria perdido"
+    return (
+        name,
+        agent_return >= required,
+        f"a su caida de {agent_drawdown:.1f}% ({fraction:.2f}x la de la referencia) un "
+        f"comprar-y-mantener estatico {verb} {risk_matched:+.1f}%; el agente "
+        f"{agent_return:+.1f}% (limite {required:+.1f}%, que ya le concede "
+        f"{allowance:.2f}% de comision que el estatico no paga)",
+    )
+
+
+def _discrimination_check(
+    trace: list[dict[str, Any]] | None,
+    long_share: float,
+    minority: float,
+) -> tuple[str, bool, str]:
+    """Does the agent's exposure actually CONDITION on its regime, or is it merely varied?
+
+    Measured as the gap between the most and least exposed regime, counting only regimes with
+    enough decisions to describe a behaviour. Falls back to the retired within-window minority
+    share when a report predates the trace format, so an old verdict is never silently
+    recomputed into a different answer.
+    """
+    name = "discrimina: la exposicion depende del regimen"
+    if not trace or "regime" not in trace[0] or "share_target" not in trace[0]:
+        return (
+            name,
+            minority >= MIN_MINORITY_SHARE,
+            f"INVERTIDO {long_share:.0%} / EN LIQUIDEZ {1 - long_share:.0%}, minoria "
+            f"{minority:.0%} (minimo {MIN_MINORITY_SHARE:.0%}) "
+            "[informe antiguo: sin regimenes en la traza, criterio retirado]",
+        )
+
+    shares: dict[int, list[float]] = {}
+    for entry in trace:
+        shares.setdefault(int(entry["regime"]), []).append(float(entry["share_target"]))
+    usable = {
+        regime: sum(values) / len(values)
+        for regime, values in shares.items()
+        if len(values) >= MIN_DECISIONS_PER_REGIME
+    }
+    detail = " ".join(
+        f"r{regime}={sum(values) / len(values):.0%}({len(values)})"
+        for regime, values in sorted(shares.items())
+    )
+    if len(usable) < 2:
+        # Cannot be evaluated, so it must not pass.
+        return (
+            name,
+            False,
+            f"{detail} — solo {len(usable)} regimen con >= "
+            f"{MIN_DECISIONS_PER_REGIME} decisiones: criterio no evaluable, FALLA",
+        )
+
+    spread = max(usable.values()) - min(usable.values())
+    return (
+        name,
+        spread >= MIN_REGIME_EXPOSURE_SPREAD,
+        f"{detail} — diferencia entre el regimen mas y menos expuesto {spread:.0%} "
+        f"(minimo {MIN_REGIME_EXPOSURE_SPREAD:.0%}, solo cuentan regimenes con >= "
+        f"{MIN_DECISIONS_PER_REGIME} decisiones)",
+    )
+
+
 def evaluate(report: dict[str, Any]) -> tuple[list[tuple[str, bool, str]], bool]:
     agent = report["llm_agent"]
     hold = report["buy_and_hold"]
@@ -216,13 +459,7 @@ def evaluate(report: dict[str, Any]) -> tuple[list[tuple[str, bool, str]], bool]
             decisions >= MIN_DECISIONS,
             f"{decisions} decisiones (minimo {MIN_DECISIONS})",
         ),
-        (
-            "discrimina: usa ambas exposiciones",
-            minority >= MIN_MINORITY_SHARE,
-            f"INVERTIDO {long_share:.0%} / EN LIQUIDEZ {1 - long_share:.0%}, "
-            f"minoria {minority:.0%} "
-            f"(minimo {MIN_MINORITY_SHARE:.0%})",
-        ),
+        _discrimination_check(report.get("trace"), long_share, minority),
         (
             "no sobreopera",
             switch_rate <= MAX_SWITCH_RATE,
@@ -248,12 +485,26 @@ def evaluate(report: dict[str, Any]) -> tuple[list[tuple[str, bool, str]], bool]
             f"drawdown {agent['max_drawdown_pct']:.1f}% vs {hold['max_drawdown_pct']:.1f}% "
             f"= ahorra {drawdown_saved:+.1f}pp (minimo {MIN_DRAWDOWN_ADVANTAGE_PP:.0f}pp)",
         ),
-        _capture_check(
-            "captura una parte suficiente de lo que hizo buy and hold",
+        (
+            "recorta la caida de forma material, no marginal",
+            float(hold["max_drawdown_pct"]) > 0.0
+            and float(agent["max_drawdown_pct"])
+            <= MAX_DRAWDOWN_RATIO * float(hold["max_drawdown_pct"]),
+            f"caida {float(agent['max_drawdown_pct']):.1f}% vs b&h "
+            f"{float(hold['max_drawdown_pct']):.1f}% = "
+            f"{float(agent['max_drawdown_pct']) / float(hold['max_drawdown_pct']):.2f}x "
+            f"(limite {MAX_DRAWDOWN_RATIO:.2f}x, es decir "
+            f"{MAX_DRAWDOWN_RATIO * float(hold['max_drawdown_pct']):.1f}%)"
+            if float(hold["max_drawdown_pct"]) > 0.0
+            else "la referencia no reporta caida: criterio no evaluable, FALLA",
+        ),
+        _risk_matched_check(
             agent_return=float(agent["net_return_pct"]),
+            agent_drawdown=float(agent["max_drawdown_pct"]),
             reference_return=float(hold["net_return_pct"]),
-            reference_name="b&h",
-            minimum=MIN_CAPTURE_OF_RISING_REFERENCE,
+            reference_drawdown=float(hold["max_drawdown_pct"]),
+            minimum=MIN_CAPTURE_OF_RISK_MATCHED_HOLD,
+            commission_pct=commission,
         ),
         _capture_check(
             "no es peor que el modelo que reemplaza",

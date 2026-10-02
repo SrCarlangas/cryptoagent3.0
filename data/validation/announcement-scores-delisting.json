@@ -1,0 +1,3079 @@
+{
+ "model": "qwen3:30b-a3b",
+ "scores": {
+  "0": {
+   "t": 1645069676026,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "1": {
+   "t": 1645495079687,
+   "catalog": "delisting",
+   "asset": "AXS",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "2": {
+   "t": 1646103749930,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "3": {
+   "t": 1646107170632,
+   "catalog": "delisting",
+   "asset": "BCD",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "4": {
+   "t": 1646705386426,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "5": {
+   "t": 1646963927030,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "6": {
+   "t": 1648107904072,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "7": {
+   "t": 1649049710096,
+   "catalog": "delisting",
+   "asset": "1000BTTC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "8": {
+   "t": 1649066280853,
+   "catalog": "delisting",
+   "asset": "HEGIC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "9": {
+   "t": 1649322306941,
+   "catalog": "delisting",
+   "asset": "XTZUP",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "10": {
+   "t": 1650333603777,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "11": {
+   "t": 1650938402498,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "12": {
+   "t": 1652070302529,
+   "catalog": "delisting",
+   "asset": "FTTBUSD",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "13": {
+   "t": 1652148002556,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "14": {
+   "t": 1652320802285,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "15": {
+   "t": 1652331009976,
+   "catalog": "delisting",
+   "asset": "LUNA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "16": {
+   "t": 1652353160901,
+   "catalog": "delisting",
+   "asset": "LUNA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "17": {
+   "t": 1652367541271,
+   "catalog": "delisting",
+   "asset": "LUNA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "18": {
+   "t": 1652401725571,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "19": {
+   "t": 1652408842500,
+   "catalog": "delisting",
+   "asset": "ANC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "20": {
+   "t": 1652424609208,
+   "catalog": "delisting",
+   "asset": "ANC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "21": {
+   "t": 1652447761674,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "22": {
+   "t": 1652871565804,
+   "catalog": "delisting",
+   "asset": "AKRO",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "23": {
+   "t": 1652925601555,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "24": {
+   "t": 1653962401938,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "25": {
+   "t": 1654165095432,
+   "catalog": "delisting",
+   "asset": "TLM",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "26": {
+   "t": 1654567202690,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "27": {
+   "t": 1654743904185,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "28": {
+   "t": 1654855342935,
+   "catalog": "delisting",
+   "asset": "SC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "29": {
+   "t": 1655953224692,
+   "catalog": "delisting",
+   "asset": "CRV",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "30": {
+   "t": 1656561693806,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "31": {
+   "t": 1656658181710,
+   "catalog": "delisting",
+   "asset": "GRS",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "32": {
+   "t": 1657273103633,
+   "catalog": "delisting",
+   "asset": "EZ",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "33": {
+   "t": 1659591197638,
+   "catalog": "delisting",
+   "asset": "EZ",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "34": {
+   "t": 1660013959306,
+   "catalog": "delisting",
+   "asset": "BTS",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "35": {
+   "t": 1660730127229,
+   "catalog": "delisting",
+   "asset": "BLZ",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "36": {
+   "t": 1662966001479,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "37": {
+   "t": 1663229120786,
+   "catalog": "delisting",
+   "asset": "TCT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "38": {
+   "t": 1665028826479,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "39": {
+   "t": 1665633628184,
+   "catalog": "delisting",
+   "asset": "DNT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "40": {
+   "t": 1667905204536,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "41": {
+   "t": 1668332838510,
+   "catalog": "delisting",
+   "asset": "FTT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "42": {
+   "t": 1668401726864,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "43": {
+   "t": 1668409204880,
+   "catalog": "delisting",
+   "asset": "RAY",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "44": {
+   "t": 1668650316774,
+   "catalog": "delisting",
+   "asset": "SRM",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "45": {
+   "t": 1668765625978,
+   "catalog": "delisting",
+   "asset": "GTO",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "46": {
+   "t": 1669101669372,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "47": {
+   "t": 1669352405367,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "48": {
+   "t": 1669606227750,
+   "catalog": "delisting",
+   "asset": "CVC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "49": {
+   "t": 1669617922401,
+   "catalog": "delisting",
+   "asset": "CVC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "50": {
+   "t": 1669779905243,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "51": {
+   "t": 1670325826754,
+   "catalog": "delisting",
+   "asset": "ACA",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "52": {
+   "t": 1670382304520,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "53": {
+   "t": 1670497371715,
+   "catalog": "delisting",
+   "asset": "BNX",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "54": {
+   "t": 1670912849285,
+   "catalog": "delisting",
+   "asset": "ANC",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "55": {
+   "t": 1671076804887,
+   "catalog": "delisting",
+   "asset": "MITH",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "56": {
+   "t": 1671085221101,
+   "catalog": "delisting",
+   "asset": "CHESS",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "57": {
+   "t": 1671614083784,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "58": {
+   "t": 1671710396824,
+   "catalog": "delisting",
+   "asset": "FET",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "59": {
+   "t": 1671768907038,
+   "catalog": "delisting",
+   "asset": "GALA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "60": {
+   "t": 1672193412555,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "61": {
+   "t": 1672290931854,
+   "catalog": "delisting",
+   "asset": "ATA",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "62": {
+   "t": 1672801227284,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "63": {
+   "t": 1672907126372,
+   "catalog": "delisting",
+   "asset": "AGLD",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "64": {
+   "t": 1673592309526,
+   "catalog": "delisting",
+   "asset": "FLM",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "65": {
+   "t": 1674100806617,
+   "catalog": "delisting",
+   "asset": "BEAM",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "66": {
+   "t": 1674112226735,
+   "catalog": "delisting",
+   "asset": "NEXO",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "67": {
+   "t": 1674623421071,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "68": {
+   "t": 1674799803614,
+   "catalog": "delisting",
+   "asset": "JST",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "69": {
+   "t": 1675653983239,
+   "catalog": "delisting",
+   "asset": "MINA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "70": {
+   "t": 1675749621021,
+   "catalog": "delisting",
+   "asset": "FIO",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "71": {
+   "t": 1675830028030,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "72": {
+   "t": 1676865785355,
+   "catalog": "delisting",
+   "asset": "AION",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "73": {
+   "t": 1677063603612,
+   "catalog": "delisting",
+   "asset": "LOOM",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "74": {
+   "t": 1677549604336,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "75": {
+   "t": 1678688117686,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "76": {
+   "t": 1678759204801,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "77": {
+   "t": 1679036475726,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "78": {
+   "t": 1679296806814,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "79": {
+   "t": 1679461803177,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "80": {
+   "t": 1679900403355,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "81": {
+   "t": 1680253507407,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "82": {
+   "t": 1680597004561,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "83": {
+   "t": 1680660330406,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "84": {
+   "t": 1680776103366,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "85": {
+   "t": 1681196422114,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "86": {
+   "t": 1681466509865,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "87": {
+   "t": 1682071224769,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "88": {
+   "t": 1682577903228,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "89": {
+   "t": 1682678706662,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "90": {
+   "t": 1682996404484,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "91": {
+   "t": 1683251412529,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "92": {
+   "t": 1683619303518,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "93": {
+   "t": 1683622803457,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "94": {
+   "t": 1683874532167,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "95": {
+   "t": 1684224328377,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "96": {
+   "t": 1684299631912,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "97": {
+   "t": 1684470616021,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "98": {
+   "t": 1684899904672,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "99": {
+   "t": 1685007904026,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "100": {
+   "t": 1685088001922,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "101": {
+   "t": 1685610906427,
+   "catalog": "delisting",
+   "asset": "LUNC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "102": {
+   "t": 1686550803118,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "103": {
+   "t": 1686555013494,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "104": {
+   "t": 1686815412709,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "105": {
+   "t": 1688372704022,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "106": {
+   "t": 1688703003727,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "107": {
+   "t": 1689056113799,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "108": {
+   "t": 1689066007256,
+   "catalog": "delisting",
+   "asset": "XRP",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "109": {
+   "t": 1689072303374,
+   "catalog": "delisting",
+   "asset": "AGIX",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "110": {
+   "t": 1689318001849,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "111": {
+   "t": 1689760808223,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "112": {
+   "t": 1689840007070,
+   "catalog": "delisting",
+   "asset": "LDO",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "113": {
+   "t": 1690188303587,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "114": {
+   "t": 1690252204237,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "115": {
+   "t": 1690451103030,
+   "catalog": "delisting",
+   "asset": "APT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "116": {
+   "t": 1690945524325,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "117": {
+   "t": 1691055003469,
+   "catalog": "delisting",
+   "asset": "TRX",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "118": {
+   "t": 1691464207277,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "119": {
+   "t": 1691556806728,
+   "catalog": "delisting",
+   "asset": "ADA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "120": {
+   "t": 1691658004905,
+   "catalog": "delisting",
+   "asset": "ADA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "121": {
+   "t": 1692065113766,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "122": {
+   "t": 1692082868922,
+   "catalog": "delisting",
+   "asset": "SNM",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "123": {
+   "t": 1692155138357,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "124": {
+   "t": 1692174936844,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "125": {
+   "t": 1692266704608,
+   "catalog": "delisting",
+   "asset": "LTC",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "126": {
+   "t": 1692616803287,
+   "catalog": "delisting",
+   "asset": "SOL",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "127": {
+   "t": 1692777621501,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "128": {
+   "t": 1693375203152,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "129": {
+   "t": 1693383309241,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "130": {
+   "t": 1693552182147,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "131": {
+   "t": 1693976405685,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "132": {
+   "t": 1694575503511,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "133": {
+   "t": 1694595603887,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "134": {
+   "t": 1695198003507,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "135": {
+   "t": 1695276603853,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "136": {
+   "t": 1695787208875,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "137": {
+   "t": 1695956652169,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "138": {
+   "t": 1696392604027,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "139": {
+   "t": 1696403103350,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "140": {
+   "t": 1697005236739,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "141": {
+   "t": 1697012705932,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "142": {
+   "t": 1697609703004,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "143": {
+   "t": 1697619603151,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "144": {
+   "t": 1697623240905,
+   "catalog": "delisting",
+   "asset": "ADA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "145": {
+   "t": 1698199203478,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "146": {
+   "t": 1698216012581,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "147": {
+   "t": 1698811804132,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "148": {
+   "t": 1698826851668,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "149": {
+   "t": 1699422861670,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "150": {
+   "t": 1700032503062,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "151": {
+   "t": 1700038819825,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "152": {
+   "t": 1700200806435,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "153": {
+   "t": 1700536504320,
+   "catalog": "delisting",
+   "asset": "SOL",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "154": {
+   "t": 1700628634679,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "155": {
+   "t": 1700712923504,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "156": {
+   "t": 1700814330006,
+   "catalog": "delisting",
+   "asset": "BUSD",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "157": {
+   "t": 1701064826207,
+   "catalog": "delisting",
+   "asset": "BTS",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "158": {
+   "t": 1703237704546,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "159": {
+   "t": 1703658303224,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "160": {
+   "t": 1704272706024,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "161": {
+   "t": 1704873005010,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "162": {
+   "t": 1705400725138,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "163": {
+   "t": 1706082908910,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "164": {
+   "t": 1706679003694,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "165": {
+   "t": 1707202812575,
+   "catalog": "delisting",
+   "asset": "ANT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "166": {
+   "t": 1707275704155,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "167": {
+   "t": 1707293403373,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "168": {
+   "t": 1709098527711,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "169": {
+   "t": 1709692203976,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "170": {
+   "t": 1709702704796,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "171": {
+   "t": 1710315632769,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "172": {
+   "t": 1710824702006,
+   "catalog": "delisting",
+   "asset": "FOOTBALLUSDT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "173": {
+   "t": 1710914407471,
+   "catalog": "delisting",
+   "asset": "DREP",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "174": {
+   "t": 1711341612437,
+   "catalog": "delisting",
+   "asset": "ANT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "175": {
+   "t": 1711524855486,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "176": {
+   "t": 1712113246400,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "177": {
+   "t": 1712732405683,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "178": {
+   "t": 1713942011075,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "179": {
+   "t": 1714971617942,
+   "catalog": "delisting",
+   "asset": "STPTUSDT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "180": {
+   "t": 1715133309910,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "181": {
+   "t": 1715144426574,
+   "catalog": "delisting",
+   "asset": "IDEXUSDT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "182": {
+   "t": 1715330951658,
+   "catalog": "delisting",
+   "asset": "KNCUSD",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "183": {
+   "t": 1715756405799,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "184": {
+   "t": 1716346801136,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "185": {
+   "t": 1716354002528,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "186": {
+   "t": 1716955213943,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "187": {
+   "t": 1717383620294,
+   "catalog": "delisting",
+   "asset": "OMG",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "188": {
+   "t": 1717565402267,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "189": {
+   "t": 1718168401265,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "190": {
+   "t": 1718690401882,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "191": {
+   "t": 1718776801796,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "192": {
+   "t": 1719384754496,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "193": {
+   "t": 1719982803754,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "194": {
+   "t": 1720152007987,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "195": {
+   "t": 1720163547091,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "196": {
+   "t": 1720422069631,
+   "catalog": "delisting",
+   "asset": "BOND",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "197": {
+   "t": 1720497601416,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "198": {
+   "t": 1720601739503,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "199": {
+   "t": 1720663202463,
+   "catalog": "delisting",
+   "asset": "TUSD",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "200": {
+   "t": 1721192408338,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "201": {
+   "t": 1721800809034,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "202": {
+   "t": 1722409208662,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "203": {
+   "t": 1723446011329,
+   "catalog": "delisting",
+   "asset": "CVP",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "204": {
+   "t": 1723608007883,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "205": {
+   "t": 1723611608432,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "206": {
+   "t": 1724223602529,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "207": {
+   "t": 1724828403826,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "208": {
+   "t": 1726038010024,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "209": {
+   "t": 1726547412323,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "210": {
+   "t": 1726642808272,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "211": {
+   "t": 1727247606169,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "212": {
+   "t": 1727852403528,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "213": {
+   "t": 1728459005581,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "214": {
+   "t": 1729665008538,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "215": {
+   "t": 1729666837062,
+   "catalog": "delisting",
+   "asset": "IDRT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "216": {
+   "t": 1730858404449,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "217": {
+   "t": 1730876416575,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "218": {
+   "t": 1732068016813,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "219": {
+   "t": 1732086001462,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "220": {
+   "t": 1732609814278,
+   "catalog": "delisting",
+   "asset": "GFT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "221": {
+   "t": 1732852801809,
+   "catalog": "delisting",
+   "asset": "XEMUSDT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "222": {
+   "t": 1732889433223,
+   "catalog": "delisting",
+   "asset": "GFT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "223": {
+   "t": 1733194813524,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "224": {
+   "t": 1733295601811,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "225": {
+   "t": 1733454004185,
+   "catalog": "delisting",
+   "asset": "MAVIA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "226": {
+   "t": 1733900401363,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "227": {
+   "t": 1734184414273,
+   "catalog": "delisting",
+   "asset": "OMG",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "228": {
+   "t": 1734494422735,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "229": {
+   "t": 1734508872939,
+   "catalog": "delisting",
+   "asset": "AKRO",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "230": {
+   "t": 1734678000929,
+   "catalog": "delisting",
+   "asset": "OMG",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "231": {
+   "t": 1735020004422,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "232": {
+   "t": 1735880404764,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "233": {
+   "t": 1736301611670,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "234": {
+   "t": 1736319604480,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "235": {
+   "t": 1736841604362,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "236": {
+   "t": 1736924413729,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "237": {
+   "t": 1736928006723,
+   "catalog": "delisting",
+   "asset": "REEF",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "238": {
+   "t": 1738652401494,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "239": {
+   "t": 1739239206765,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "240": {
+   "t": 1739343628506,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "241": {
+   "t": 1739775624287,
+   "catalog": "delisting",
+   "asset": "AMB",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "242": {
+   "t": 1739937608036,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "243": {
+   "t": 1740027606855,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "244": {
+   "t": 1740546019347,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "245": {
+   "t": 1741060808105,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "246": {
+   "t": 1741140001767,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "247": {
+   "t": 1741770011825,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "248": {
+   "t": 1742266815394,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "249": {
+   "t": 1742356810621,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "250": {
+   "t": 1742536220352,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "251": {
+   "t": 1742972401256,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "252": {
+   "t": 1744092007355,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "253": {
+   "t": 1744182005065,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "254": {
+   "t": 1744702204341,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "255": {
+   "t": 1744786803310,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "256": {
+   "t": 1745467205257,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "257": {
+   "t": 1745553607900,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "258": {
+   "t": 1746601202379,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "259": {
+   "t": 1747803609907,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "260": {
+   "t": 1749018602608,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "261": {
+   "t": 1750060801439,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "262": {
+   "t": 1750222804319,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "263": {
+   "t": 1750654801773,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "264": {
+   "t": 1750831206996,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "265": {
+   "t": 1750921209887,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "266": {
+   "t": 1751425204968,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "267": {
+   "t": 1753257631403,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "268": {
+   "t": 1753844410680,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "269": {
+   "t": 1754276413308,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "270": {
+   "t": 1754449211273,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "271": {
+   "t": 1754465406291,
+   "catalog": "delisting",
+   "asset": "DEFIUS",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "272": {
+   "t": 1755057611582,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "273": {
+   "t": 1755658822496,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "274": {
+   "t": 1756281637167,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "275": {
+   "t": 1756465212480,
+   "catalog": "delisting",
+   "asset": "LEVER",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "276": {
+   "t": 1756868394550,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "277": {
+   "t": 1756882801292,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "278": {
+   "t": 1757487604389,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "279": {
+   "t": 1757499283992,
+   "catalog": "delisting",
+   "asset": "BSW",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "280": {
+   "t": 1758090602108,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "281": {
+   "t": 1758098727976,
+   "catalog": "delisting",
+   "asset": "ALPHA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "282": {
+   "t": 1758526202610,
+   "catalog": "delisting",
+   "asset": "NEIROETH",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "283": {
+   "t": 1758679200745,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "284": {
+   "t": 1758715205980,
+   "catalog": "delisting",
+   "asset": "UXLINK",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "285": {
+   "t": 1759146319511,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "286": {
+   "t": 1759221030976,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "287": {
+   "t": 1759302018652,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "288": {
+   "t": 1759906800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "289": {
+   "t": 1760451766406,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "290": {
+   "t": 1760511600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "291": {
+   "t": 1760759930952,
+   "catalog": "delisting",
+   "asset": "SLERF",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "292": {
+   "t": 1761094805512,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "293": {
+   "t": 1761117300000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "294": {
+   "t": 1761219095905,
+   "catalog": "delisting",
+   "asset": "GMT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "295": {
+   "t": 1761706804123,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "296": {
+   "t": 1761719400000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "297": {
+   "t": 1762137028085,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "298": {
+   "t": 1762254001220,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "299": {
+   "t": 1762314300000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "300": {
+   "t": 1762507832708,
+   "catalog": "delisting",
+   "asset": "MANA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "301": {
+   "t": 1762782300002,
+   "catalog": "delisting",
+   "asset": "MYRO",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "302": {
+   "t": 1762932600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "303": {
+   "t": 1763105419907,
+   "catalog": "delisting",
+   "asset": "RUNE",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "304": {
+   "t": 1763438473736,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "305": {
+   "t": 1763535600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "306": {
+   "t": 1763877454108,
+   "catalog": "delisting",
+   "asset": "PORT3",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "307": {
+   "t": 1763991911669,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "308": {
+   "t": 1764140400000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "309": {
+   "t": 1764295201173,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "310": {
+   "t": 1764576863757,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "311": {
+   "t": 1764732600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "312": {
+   "t": 1764738006158,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "313": {
+   "t": 1764743396380,
+   "catalog": "delisting",
+   "asset": "FIS",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "314": {
+   "t": 1764824404295,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "315": {
+   "t": 1764930770574,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "316": {
+   "t": 1765335600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "317": {
+   "t": 1765453426582,
+   "catalog": "delisting",
+   "asset": "AIA",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "318": {
+   "t": 1765861201650,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "319": {
+   "t": 1765956600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "320": {
+   "t": 1766127601801,
+   "catalog": "delisting",
+   "asset": "BUZZ",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "321": {
+   "t": 1766462417232,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "322": {
+   "t": 1766559600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "323": {
+   "t": 1767070801410,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "324": {
+   "t": 1767150000000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "325": {
+   "t": 1767261601307,
+   "catalog": "delisting",
+   "asset": "RON",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "326": {
+   "t": 1767348211827,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "other"
+  },
+  "327": {
+   "t": 1767357000000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "328": {
+   "t": 1767358801334,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "329": {
+   "t": 1767850200000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "330": {
+   "t": 1768212000000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "331": {
+   "t": 1768276801133,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "332": {
+   "t": 1768442400000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "333": {
+   "t": 1768636591216,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "334": {
+   "t": 1768807800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "335": {
+   "t": 1768874401997,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "336": {
+   "t": 1769050800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "337": {
+   "t": 1769412600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "338": {
+   "t": 1769488213713,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "339": {
+   "t": 1769595249706,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "340": {
+   "t": 1769666419390,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "341": {
+   "t": 1769673600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "342": {
+   "t": 1770022792762,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "343": {
+   "t": 1770024600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "344": {
+   "t": 1770091201874,
+   "catalog": "delisting",
+   "asset": "CZK",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "345": {
+   "t": 1770096608931,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "346": {
+   "t": 1770275659503,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "347": {
+   "t": 1770278400000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "348": {
+   "t": 1770622200000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "349": {
+   "t": 1770692412774,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "350": {
+   "t": 1770882300000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "351": {
+   "t": 1771894800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "352": {
+   "t": 1771999200000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "353": {
+   "t": 1772514015211,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "354": {
+   "t": 1772530200000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "355": {
+   "t": 1773118801491,
+   "catalog": "delisting",
+   "asset": "ARDR",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "356": {
+   "t": 1773129600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "357": {
+   "t": 1773316809568,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "358": {
+   "t": 1773367204369,
+   "catalog": "delisting",
+   "asset": "TUSD",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "359": {
+   "t": 1773411259653,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "360": {
+   "t": 1773819900000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "361": {
+   "t": 1773824408667,
+   "catalog": "delisting",
+   "asset": "A2Z",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "362": {
+   "t": 1774016064610,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "363": {
+   "t": 1774321214174,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "364": {
+   "t": 1774421100000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "365": {
+   "t": 1774494003206,
+   "catalog": "delisting",
+   "asset": "UTK",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "366": {
+   "t": 1774942200000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "367": {
+   "t": 1775224771078,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "368": {
+   "t": 1775548800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "369": {
+   "t": 1775552407906,
+   "catalog": "delisting",
+   "asset": "WAN",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "370": {
+   "t": 1775714405744,
+   "catalog": "delisting",
+   "asset": "BIFI",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "371": {
+   "t": 1776132001137,
+   "catalog": "delisting",
+   "asset": "UTK",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "372": {
+   "t": 1776137401903,
+   "catalog": "delisting",
+   "asset": "BAR",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "373": {
+   "t": 1776247200000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "374": {
+   "t": 1776416406263,
+   "catalog": "delisting",
+   "asset": "DEGO",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "375": {
+   "t": 1776747605017,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "376": {
+   "t": 1776756600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "377": {
+   "t": 1776956437768,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "378": {
+   "t": 1777029313345,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "379": {
+   "t": 1777352406771,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "380": {
+   "t": 1777368600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "381": {
+   "t": 1777541595547,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "382": {
+   "t": 1777969800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "383": {
+   "t": 1778482803295,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "384": {
+   "t": 1778561100000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "385": {
+   "t": 1778659204681,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "386": {
+   "t": 1778738402917,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "387": {
+   "t": 1779159608915,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "388": {
+   "t": 1779177600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "389": {
+   "t": 1779706802381,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "390": {
+   "t": 1779782400000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "391": {
+   "t": 1780034402285,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "392": {
+   "t": 1780306205389,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "393": {
+   "t": 1780377300000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "394": {
+   "t": 1780628401333,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "395": {
+   "t": 1780642807472,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "396": {
+   "t": 1780912804311,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "397": {
+   "t": 1780993800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "398": {
+   "t": 1781521202097,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "399": {
+   "t": 1781601300000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "400": {
+   "t": 1781766018693,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "other"
+  },
+  "401": {
+   "t": 1782118811009,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "402": {
+   "t": 1782203400000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "403": {
+   "t": 1782406806669,
+   "catalog": "delisting",
+   "asset": "IPUSDT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "404": {
+   "t": 1782464415053,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "405": {
+   "t": 1782716408506,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "406": {
+   "t": 1782804600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "407": {
+   "t": 1782815410266,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "408": {
+   "t": 1782894611190,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "409": {
+   "t": 1783332001595,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "410": {
+   "t": 1783415700000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "411": {
+   "t": 1783936810276,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "412": {
+   "t": 1784012400000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "413": {
+   "t": 1784538005340,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "414": {
+   "t": 1784619000000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "415": {
+   "t": 1784643314244,
+   "catalog": "delisting",
+   "asset": "AERGOUSDT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "416": {
+   "t": 1785146414098,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "417": {
+   "t": 1785223800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "418": {
+   "t": 1785376806252,
+   "catalog": "delisting",
+   "asset": "AEUR",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "419": {
+   "t": 1785727810683,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "420": {
+   "t": 1785835800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "421": {
+   "t": 1786356004147,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "422": {
+   "t": 1786434300000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "423": {
+   "t": 1786960813377,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "424": {
+   "t": 1787041800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -1,
+   "kind": "delisting"
+  },
+  "425": {
+   "t": 1787205606608,
+   "catalog": "delisting",
+   "asset": "ICX",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "426": {
+   "t": 1788170403200,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": 0,
+   "kind": "maintenance"
+  },
+  "427": {
+   "t": 1788510602234,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "428": {
+   "t": 1788862500000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "429": {
+   "t": 1788863408750,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "430": {
+   "t": 1789020012727,
+   "catalog": "delisting",
+   "asset": "USDP",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "431": {
+   "t": 1789466415716,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "432": {
+   "t": 1789536600000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "433": {
+   "t": 1790056800000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "434": {
+   "t": 1790064001264,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "435": {
+   "t": 1790146800000,
+   "catalog": "delisting",
+   "asset": "USDT",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "436": {
+   "t": 1790668801341,
+   "catalog": "delisting",
+   "asset": "MARGIN",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "437": {
+   "t": 1790673300000,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  },
+  "438": {
+   "t": 1790822713435,
+   "catalog": "delisting",
+   "asset": "",
+   "impact": -2,
+   "kind": "delisting"
+  }
+ },
+ "failures": []
+}

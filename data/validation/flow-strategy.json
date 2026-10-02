@@ -1,0 +1,93 @@
+{
+  "folds": [
+    {
+      "beat_risk_matched": false,
+      "chosen": "volumen_z30 > +0.00",
+      "fold": 1,
+      "hold_return_pct": 22.15,
+      "oos_drawdown_pct": 52.1,
+      "oos_return_pct": -12.06,
+      "risk_matched_pct": 21.07,
+      "test_end": "2020-09-01",
+      "train_end": "2019-08-28"
+    },
+    {
+      "beat_risk_matched": false,
+      "chosen": "num_operaciones_z30 > +0.50",
+      "fold": 2,
+      "hold_return_pct": 332.4,
+      "oos_drawdown_pct": 20.91,
+      "oos_return_pct": 55.29,
+      "risk_matched_pct": 130.8,
+      "test_end": "2021-09-05",
+      "train_end": "2020-09-01"
+    },
+    {
+      "beat_risk_matched": false,
+      "chosen": "volumen_z30 > -0.50",
+      "fold": 3,
+      "hold_return_pct": -63.84,
+      "oos_drawdown_pct": 73.7,
+      "oos_return_pct": -65.95,
+      "risk_matched_pct": -63.84,
+      "test_end": "2022-09-06",
+      "train_end": "2021-09-05"
+    },
+    {
+      "beat_risk_matched": false,
+      "chosen": "volumen_z30 > -0.50",
+      "fold": 4,
+      "hold_return_pct": 36.54,
+      "oos_drawdown_pct": 31.64,
+      "oos_return_pct": 22.34,
+      "risk_matched_pct": 36.54,
+      "test_end": "2023-09-06",
+      "train_end": "2022-09-06"
+    },
+    {
+      "beat_risk_matched": false,
+      "chosen": "volumen_z30 > -0.50",
+      "fold": 5,
+      "hold_return_pct": 117.22,
+      "oos_drawdown_pct": 35.29,
+      "oos_return_pct": 37.73,
+      "risk_matched_pct": 117.22,
+      "test_end": "2024-09-05",
+      "train_end": "2023-09-06"
+    },
+    {
+      "beat_risk_matched": false,
+      "chosen": "volumen_z30 > -0.50",
+      "fold": 6,
+      "hold_return_pct": 96.19,
+      "oos_drawdown_pct": 17.92,
+      "oos_return_pct": 51.5,
+      "risk_matched_pct": 61.36,
+      "test_end": "2025-09-05",
+      "train_end": "2024-09-05"
+    },
+    {
+      "beat_risk_matched": false,
+      "chosen": "volumen_z30 > -0.50",
+      "fold": 7,
+      "hold_return_pct": -28.15,
+      "oos_drawdown_pct": 62.93,
+      "oos_return_pct": -50.09,
+      "risk_matched_pct": -28.15,
+      "test_end": "2026-09-05",
+      "train_end": "2025-09-05"
+    }
+  ],
+  "hold": {
+    "fees_paid_pct": 0.4,
+    "label": "comprar y mantener",
+    "long_share": 1.0,
+    "max_drawdown_pct": 76.62925431645937,
+    "net_return_pct": 675.0458250994744,
+    "switches": 1
+  },
+  "hold_risk_matched_pct": 580.93,
+  "pooled_drawdown_pct": 65.95,
+  "pooled_return_pct": -40.75,
+  "verdict": "LA SE\u00d1AL DE FLUJO NO SE CONVIERTE EN DINERO"
+}

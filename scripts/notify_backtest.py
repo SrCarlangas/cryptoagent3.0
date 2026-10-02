@@ -25,14 +25,52 @@ from typing import Any
 DEFAULT_REPORT = "data/validation/llm-agent-backtest.json"
 
 
+class NotTheRunWeWatched(Exception):
+    """The report on disk cannot belong to the run that just finished."""
+
+
 def wait_for(pid: int, poll_seconds: int = 60) -> None:
-    """Block until a process is gone. Used to fire exactly when a run finishes."""
+    """Block until a process is gone. Used to fire exactly when a run finishes.
+
+    A PID that is *already* gone is an error, not an instant completion. Returning
+    silently here is how this notifier once fired against a mistyped PID, read the
+    previous run's report off the default path and announced a stale APROBADO to
+    Slack as if a fresh run had just passed.
+    """
+    try:
+        os.kill(pid, 0)
+    except PermissionError:
+        pass  # Alive, owned by somebody else. Fine: we only need liveness.
+    except ProcessLookupError as exc:
+        raise NotTheRunWeWatched(
+            f"el PID {pid} no existe al empezar a esperar, asi que no hay corrida que "
+            "vigilar. Comprobar el PID con: ps -eo pid,args | grep '[b]acktest_llm_agent'"
+        ) from exc
+
     while True:
         try:
             os.kill(pid, 0)
         except (ProcessLookupError, PermissionError):
             return
         time.sleep(poll_seconds)
+
+
+def fresher_than(report: Path, watch_started: float) -> None:
+    """Refuse to report a trace that predates the vigil.
+
+    The notifier's whole claim is "the run that just finished produced this". A report
+    whose mtime is older than the moment we started watching cannot be that run, so
+    reporting it would be a real-looking number about a run that never happened. This
+    project has been bitten three times by a silent default filling in for a missing
+    value; the rule it adopted is that such a case fails loudly.
+    """
+    written = report.stat().st_mtime
+    if written < watch_started:
+        age_hours = (watch_started - written) / 3600
+        raise NotTheRunWeWatched(
+            f"{report} se escribio {age_hours:.1f} h ANTES de empezar a vigilar, asi que "
+            "es la traza de una corrida anterior, no de esta. No se informa."
+        )
 
 
 def gate_verdict(report: Path) -> tuple[bool, list[str]]:
@@ -119,9 +157,16 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.wait_for_pid:
-        wait_for(args.wait_for_pid)
+        watch_started = time.time()
+        try:
+            wait_for(args.wait_for_pid)
+        except NotTheRunWeWatched as exc:
+            print(f"notify_backtest: {exc}", file=sys.stderr)
+            return 2
         # The report is written at the very end of the run; give the filesystem a moment.
         time.sleep(20)
+    else:
+        watch_started = 0.0
 
     report = Path(args.report)
     if not report.is_file():
@@ -130,6 +175,12 @@ def main() -> int:
             "Probablemente murio antes de escribirlo; revisar /tmp/backtest.log."
         )
     else:
+        if watch_started:
+            try:
+                fresher_than(report, watch_started)
+            except NotTheRunWeWatched as exc:
+                print(f"notify_backtest: {exc}", file=sys.stderr)
+                return 2
         message = compose(report, args.model)
 
     print(message)

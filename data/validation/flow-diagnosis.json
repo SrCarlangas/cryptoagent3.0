@@ -1,0 +1,251 @@
+{
+  "dataset": "data/history/btcusdt-1h-2017",
+  "days": 3296,
+  "measurements": [
+    {
+      "feature": "ticket_medio_z30",
+      "horizon_hours": 168,
+      "independent_n": 466,
+      "max_rho": 0.10627628695689535,
+      "mean_rho": 0.054614307292016696,
+      "min_rho": 0.01463715048193749,
+      "rho_over_se": 1.1776952028682441,
+      "sign_stable": true
+    },
+    {
+      "feature": "num_operaciones_z30",
+      "horizon_hours": 48,
+      "independent_n": 1632,
+      "max_rho": 0.031253443296796024,
+      "mean_rho": 0.028694663121589817,
+      "min_rho": 0.026135882946383613,
+      "rho_over_se": 1.158852363806516,
+      "sign_stable": true
+    },
+    {
+      "feature": "ticket_medio_z30",
+      "horizon_hours": 48,
+      "independent_n": 1632,
+      "max_rho": 0.03703202000715974,
+      "mean_rho": 0.02677447405087363,
+      "min_rho": 0.016516928094587525,
+      "rho_over_se": 1.081304297320221,
+      "sign_stable": true
+    },
+    {
+      "feature": "ticket_medio_z30",
+      "horizon_hours": 96,
+      "independent_n": 816,
+      "max_rho": 0.050029171916577186,
+      "mean_rho": 0.03777931390709047,
+      "min_rho": 0.01338509944608826,
+      "rho_over_se": 1.0785315924078167,
+      "sign_stable": true
+    },
+    {
+      "feature": "volumen_z30",
+      "horizon_hours": 48,
+      "independent_n": 1632,
+      "max_rho": 0.028190671862310047,
+      "mean_rho": 0.02513141343257287,
+      "min_rho": 0.022072155002835693,
+      "rho_over_se": 1.0149482410275572,
+      "sign_stable": true
+    },
+    {
+      "feature": "rango_intradia_z30",
+      "horizon_hours": 48,
+      "independent_n": 1632,
+      "max_rho": 0.03132654416339204,
+      "mean_rho": 0.020531816299816395,
+      "min_rho": 0.00973708843624075,
+      "rho_over_se": 0.8291905624213902,
+      "sign_stable": true
+    },
+    {
+      "feature": "num_operaciones_z30",
+      "horizon_hours": 96,
+      "independent_n": 816,
+      "max_rho": 0.037343732959034294,
+      "mean_rho": 0.02677737055591082,
+      "min_rho": 0.02110519557561331,
+      "rho_over_se": 0.7644458599006055,
+      "sign_stable": true
+    },
+    {
+      "feature": "volumen_z30",
+      "horizon_hours": 168,
+      "independent_n": 466,
+      "max_rho": 0.059147067970179726,
+      "mean_rho": 0.033220450514802304,
+      "min_rho": 0.008699461012951921,
+      "rho_over_se": 0.7163610992851225,
+      "sign_stable": true
+    },
+    {
+      "feature": "rango_intradia_z30",
+      "horizon_hours": 168,
+      "independent_n": 466,
+      "max_rho": 0.06857536031928657,
+      "mean_rho": 0.03177023390704052,
+      "min_rho": -0.005243362195650879,
+      "rho_over_se": 0.685088833339335,
+      "sign_stable": false
+    },
+    {
+      "feature": "volumen_z30",
+      "horizon_hours": 96,
+      "independent_n": 816,
+      "max_rho": 0.027942462162960178,
+      "mean_rho": 0.02345823615271466,
+      "min_rho": 0.015980382586387162,
+      "rho_over_se": 0.6696905310426386,
+      "sign_stable": true
+    },
+    {
+      "feature": "rango_intradia_z30",
+      "horizon_hours": 96,
+      "independent_n": 816,
+      "max_rho": 0.0357655813600117,
+      "mean_rho": 0.021429488556403996,
+      "min_rho": 0.005115779932656244,
+      "rho_over_se": 0.6117734290798151,
+      "sign_stable": true
+    },
+    {
+      "feature": "num_operaciones_z30",
+      "horizon_hours": 168,
+      "independent_n": 466,
+      "max_rho": 0.08404493022971764,
+      "mean_rho": 0.026733586740760398,
+      "min_rho": -0.01704600247294323,
+      "rho_over_se": 0.576479285761404,
+      "sign_stable": false
+    },
+    {
+      "feature": "desequilibrio_volumen_5d",
+      "horizon_hours": 336,
+      "independent_n": 235,
+      "max_rho": 0.093542352096154,
+      "mean_rho": 0.025042267545344138,
+      "min_rho": -0.033126662420950206,
+      "rho_over_se": 0.3830730326349632,
+      "sign_stable": false
+    },
+    {
+      "feature": "desequilibrio_volumen_5d",
+      "horizon_hours": 48,
+      "independent_n": 1645,
+      "max_rho": 0.01649192981852517,
+      "mean_rho": 0.008510953838316538,
+      "min_rho": 0.0005299778581079043,
+      "rho_over_se": 0.3450874311405706,
+      "sign_stable": true
+    },
+    {
+      "feature": "ticket_medio_z30",
+      "horizon_hours": 336,
+      "independent_n": 233,
+      "max_rho": 0.12659983201643701,
+      "mean_rho": 0.02142861173443215,
+      "min_rho": -0.0552712050418133,
+      "rho_over_se": 0.3263908898861763,
+      "sign_stable": false
+    },
+    {
+      "feature": "iliquidez_amihud_z30",
+      "horizon_hours": 168,
+      "independent_n": 466,
+      "max_rho": 0.03603080926649672,
+      "mean_rho": 0.013746091346417131,
+      "min_rho": -0.014692529133467325,
+      "rho_over_se": 0.2964187708232736,
+      "sign_stable": false
+    },
+    {
+      "feature": "num_operaciones_z30",
+      "horizon_hours": 336,
+      "independent_n": 233,
+      "max_rho": 0.0932894987209032,
+      "mean_rho": 0.011175432635188654,
+      "min_rho": -0.04618010375003123,
+      "rho_over_se": 0.17021911861892716,
+      "sign_stable": false
+    },
+    {
+      "feature": "iliquidez_amihud_z30",
+      "horizon_hours": 96,
+      "independent_n": 816,
+      "max_rho": 0.028245705322700976,
+      "mean_rho": 0.003174426451862318,
+      "min_rho": -0.018185442246523378,
+      "rho_over_se": 0.09062417662026397,
+      "sign_stable": false
+    },
+    {
+      "feature": "iliquidez_amihud_z30",
+      "horizon_hours": 336,
+      "independent_n": 233,
+      "max_rho": 0.0740319322530363,
+      "mean_rho": -0.0049509712821833585,
+      "min_rho": -0.07888021159443388,
+      "rho_over_se": -0.07541094787751315,
+      "sign_stable": false
+    },
+    {
+      "feature": "desequilibrio_volumen_5d",
+      "horizon_hours": 96,
+      "independent_n": 822,
+      "max_rho": 0.012823934183762348,
+      "mean_rho": 0.002456663020739632,
+      "min_rho": -0.010834801793936453,
+      "rho_over_se": 0.0703910052146048,
+      "sign_stable": false
+    },
+    {
+      "feature": "iliquidez_amihud_z30",
+      "horizon_hours": 48,
+      "independent_n": 1632,
+      "max_rho": 0.019895980384905396,
+      "mean_rho": 0.001123979312689415,
+      "min_rho": -0.017648021759526566,
+      "rho_over_se": 0.045392625027883084,
+      "sign_stable": false
+    },
+    {
+      "feature": "desequilibrio_volumen_5d",
+      "horizon_hours": 168,
+      "independent_n": 470,
+      "max_rho": 0.021101655722776943,
+      "mean_rho": -0.0015306272506579925,
+      "min_rho": -0.029886540931285895,
+      "rho_over_se": -0.03314788797245248,
+      "sign_stable": false
+    },
+    {
+      "feature": "volumen_z30",
+      "horizon_hours": 336,
+      "independent_n": 233,
+      "max_rho": 0.08215241913628772,
+      "mean_rho": 0.0010568997519038751,
+      "min_rho": -0.05957842660521364,
+      "rho_over_se": 0.01609821741228754,
+      "sign_stable": false
+    },
+    {
+      "feature": "rango_intradia_z30",
+      "horizon_hours": 336,
+      "independent_n": 233,
+      "max_rho": 0.11044438763840865,
+      "mean_rho": 0.0003176568246654292,
+      "min_rho": -0.08288650326536963,
+      "rho_over_se": 0.004838404604362205,
+      "sign_stable": false
+    }
+  ],
+  "method": "non-overlapping Spearman, all stride offsets, as diagnosis D2",
+  "span": [
+    "2017-08-18",
+    "2026-09-15"
+  ]
+}

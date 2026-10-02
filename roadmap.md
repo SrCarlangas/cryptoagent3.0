@@ -6,11 +6,11 @@ puede pasar a la siguiente. Las tareas concretas viven en `tasks.md`.
 ## Dónde estamos
 
 ```
-VENTANA ALCISTA  (dias 1260-1560, desarrollo)
-  agente  +53.08%  dd 17.7%  captura 29%   <- ANTERIOR al defecto 8, hay que repetirla
+VENTANA ALCISTA  (dias 1260-1560, desarrollo)   <- MEDIDA 2026-10-01 con las 8 correcciones
+  agente  +68.94%  dd 17.0%  captura 37%  timing +0.03 (ee 0.15, = cero)
   cuant  +132.06%
   b&h    +184.44%  dd 20.0%
-  GATE: RECHAZADO
+  GATE: RECHAZADO 6/8 -- fallan los dos criterios de CAPTURA
 
 VENTANA BAJISTA  (dias 2150-2450, control)
   agente   -2.39%  dd  6.1%  expuesto 9% del tiempo
@@ -19,9 +19,21 @@ VENTANA BAJISTA  (dias 2150-2450, control)
   GATE: APROBADO 8/8
 ```
 
+**Fase A cerrada.** El hueco de medición ya no existe: la alcista con las ocho correcciones
+da **+68.94%**, que está **+5.34pp por encima de la mejor anterior (+63.60%) y por tanto
+DENTRO de la banda de ruido de 10.5pp** de las tres corridas de ejecución comparable. No es
+una mejora demostrada. Lo único que el defecto 8 movió de estado en el gate fue la
+preservación de capital, de fallar a pasar con +3.0pp justo en el umbral.
+
 El agente preserva capital y no captura tendencia. La causa está medida: **no tiene ventaja
 de momento**. Correlación entre su exposición real y el movimiento del precio: +0.01, +0.02,
-−0.11 en tres corridas, con error estándar 0.15.
+−0.11 y ahora **+0.03**, con error estándar 0.15. **Cuatro mediciones independientes de
+cero.** Ninguna corrección de defecto puede fabricar criterio de momento, y capturar la
+mitad de una referencia al alza lo exige.
+
+Dato adicional de la atribución: el régimen que gana es **r2 consolidación** (+46.15%,
+efecto 1.9), mientras **r3 "alcista fuerte" se lleva el 75% de la exposición y aporta
++20.44% con efecto 1.1**. El reparto de capital no coincide con dónde está el beneficio.
 
 ## El objetivo, y su alternativa legítima
 
@@ -69,6 +81,13 @@ Estas reglas son el resumen operativo de una semana de errores. Romperlas es rep
    Mirarlo para iterar lo destruye y no hay otro.
 6. **No se debilita el gate.** Si un criterio parece mal construido, se publica el argumento
    y se espera decisión humana. Un criterio que no se puede evaluar **falla**, no pasa.
+   El gate se reescribió el 2026-10-01 alrededor del pivote (`tasks.md` E.2) **añadiendo** dos
+   criterios y retirando uno por estar mal construido; el sustituto es más duro por 63 puntos.
+   Bajo el gate nuevo **ninguna de las dos ventanas aprueba**, incluida la bajista que antes
+   pasaba 8/8. El criterio de discriminación se reparó el mismo día (`tasks.md` R.15): se mide
+   **entre regímenes** y no como minoría dentro de la ventana, porque esa minoría contaba
+   decisiones y no condicionamiento — en la bajista la producían 4 decisiones en regímenes
+   apenas vistos. Veredicto final: alcista 6/9, bajista 7/9, ambas RECHAZADAS.
 7. **Todo cambio de prompt se sigue de `research/agent_calibration.py`.** Un cambio de
    prompt colapsó la convicción de 9 valores a 3 y la postura a 77% AGRESIVA, y como la
    postura y la convicción son lo único que dimensiona, el tamaño se volvió constante.
@@ -79,19 +98,33 @@ Estas reglas son el resumen operativo de una semana de errores. Romperlas es rep
 
 ---
 
-## Fase A — Cerrar el hueco de medición
+## Fase A — Cerrar el hueco de medición  ✅ CERRADA 2026-10-01
 
-**Por qué primero:** la mejor ventana alcista (+53.08%) es anterior al octavo defecto, y ese
-defecto valía 11.5 puntos en la bajista. Ahora mismo **no sabemos dónde estamos**. Cuesta
-2.8 horas y cero líneas de código.
+**Gate de salida CUMPLIDO:** existe la corrida alcista con el código actual, archivada e
+inmutable en
+`data/validation/runs/2026-10-01-alcista-1260-1560-60d-paso5-ocho-defectos.json`,
+con su veredicto del gate (RECHAZADO 6/8) y su correlación de timing (+0.03, = cero)
+registrados en `tasks.md`.
 
-- Correr la ventana alcista (días 1260-1560, 60 decisiones, paso 5) con las 8 correcciones.
-- Archivar, pasar el gate, la atribución por régimen y la descomposición de captura.
+**Resultado:** +68.94%, dd 17.0%, captura 37%. Dentro de la banda de ruido de las anteriores.
+La captura sigue siendo el muro, y el muro es la ausencia de ventaja de momento.
 
-**Gate de salida:** existe una corrida alcista con el código actual, archivada e inmutable,
-con su veredicto del gate y su correlación de timing registrados en `tasks.md`.
+## Fase B — ¿Es el modelo, o es el problema?  ✅ RESPONDIDA 2026-10-01, SIN GASTAR NADA
 
-## Fase B — ¿Es el modelo, o es el problema?
+**Gate de salida CUMPLIDO por otra vía.** El modelo frontera por API quedó descartado (el dueño
+no autoriza tokens de terceros y la credencial del repo era un placeholder). La pregunta se
+respondió midiendo el **techo** en vez de comprando un cerebro: con previsión perfecta la
+arquitectura da **+207,80 %** con caída 13,92 %, el azar da **+81,77 a +89,61 %** (8 semillas) y
+el LLM medido da **+68,94 %**.
+
+**Respuesta: es el modelo, no la arquitectura** — hay margen de sobra (+139 pp hasta el techo),
+pero el modelo actual queda **por debajo de las 8 semillas de azar**. Detalle en `tasks.md` B.2.
+Y un hallazgo sobre el propio gate: el oráculo lo falla 7/9, lo que expone dos criterios mal
+calibrados (`tasks.md` B.3, argumento publicado sin tocar umbrales).
+
+---
+
+## Fase B (enunciado original, conservado)
 
 **Por qué es la prueba más decisiva que queda:** `qwen3:30b-a3b` es lo que cabe en 23 GB. No
 se ha probado si un modelo mejor tiene ventaja de momento donde este no la tiene. Si la

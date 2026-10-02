@@ -1,0 +1,3281 @@
+{
+  "chosen": {
+    "label": "win=30 er=0.45 k=8",
+    "params": {
+      "efficiency_threshold": 0.45,
+      "efficiency_window": 30,
+      "persistence_days": 8,
+      "volatility_percentile": 0.7,
+      "volatility_reference_days": 365,
+      "volatility_window": 30
+    }
+  },
+  "chosen_on_validation": {
+    "detector_shares": {
+      "ALCISTA": 0.08852459016393442,
+      "ALTA_VOL_SIN_DIRECCION": 0.4081967213114754,
+      "BAJISTA": 0.0,
+      "LATERAL": 0.5032786885245901
+    },
+    "labelled_days": 610,
+    "oracle_shares": {
+      "ALCISTA": 0.08852459016393442,
+      "ALTA_VOL_SIN_DIRECCION": 0.2278688524590164,
+      "BAJISTA": 0.0,
+      "LATERAL": 0.6836065573770492
+    },
+    "quality": {
+      "coverage": 0.875,
+      "detector_transitions": 11,
+      "false_alarm_rate": 0.36363636363636365,
+      "false_alarms": 4,
+      "matched": 7,
+      "mean_lag_days": 21.0,
+      "median_lag_days": 21.0,
+      "missed": 1,
+      "oracle_transitions": 8,
+      "worst_lag_days": 21
+    },
+    "summary": "retardo mediano 21.0d \u00b7 falsas alarmas 36% (4/11) \u00b7 cobertura 88%"
+  },
+  "coverage_floor": 0.7,
+  "dataset_id": "sha256:53938d3dccb146703a6491ba28a2f601ae74bdd3305305904d0b808c2ff3ee73",
+  "default_on_train": {
+    "detector_shares": {
+      "ALCISTA": 0.12267958030669895,
+      "ALTA_VOL_SIN_DIRECCION": 0.20419693301049233,
+      "BAJISTA": 0.02744148506860371,
+      "LATERAL": 0.645682001614205
+    },
+    "labelled_days": 1239,
+    "oracle_shares": {
+      "ALCISTA": 0.12682926829268293,
+      "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+      "BAJISTA": 0.0,
+      "LATERAL": 0.6370731707317073
+    },
+    "quality": {
+      "coverage": 0.8571428571428571,
+      "detector_transitions": 37,
+      "false_alarm_rate": 0.6756756756756757,
+      "false_alarms": 25,
+      "matched": 12,
+      "mean_lag_days": 13.75,
+      "median_lag_days": 18.0,
+      "missed": 2,
+      "oracle_transitions": 14,
+      "worst_lag_days": 20
+    },
+    "summary": "retardo mediano 18.0d \u00b7 falsas alarmas 68% (25/37) \u00b7 cobertura 86%"
+  },
+  "false_alarm_ceiling": 0.35,
+  "segments": {
+    "test_untouched": [
+      "2025-04-01",
+      "2026-09-15"
+    ],
+    "train": [
+      "2020-01-01",
+      "2023-06-30"
+    ],
+    "validation": [
+      "2023-07-01",
+      "2025-03-31"
+    ]
+  },
+  "sweep": [
+    {
+      "detector_shares": {
+        "ALCISTA": 0.3548387096774194,
+        "ALTA_VOL_SIN_DIRECCION": 0.0934656741108354,
+        "BAJISTA": 0.2729528535980149,
+        "LATERAL": 0.2787427626137304
+      },
+      "label": "win= 7 er=0.25 k=1",
+      "labelled_days": 1209,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 7,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 366,
+        "false_alarm_rate": 0.9617486338797814,
+        "false_alarms": 352,
+        "matched": 14,
+        "mean_lag_days": -18.642857142857142,
+        "median_lag_days": -26.5,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 19
+      },
+      "summary": "retardo mediano -26.5d \u00b7 falsas alarmas 96% (352/366) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.3676703645007924,
+        "ALTA_VOL_SIN_DIRECCION": 0.08161648177496038,
+        "BAJISTA": 0.277337559429477,
+        "LATERAL": 0.2733755942947702
+      },
+      "label": "win= 7 er=0.25 k=3",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 7,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 202,
+        "false_alarm_rate": 0.9306930693069307,
+        "false_alarms": 188,
+        "matched": 14,
+        "mean_lag_days": -9.928571428571429,
+        "median_lag_days": -6.5,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 20
+      },
+      "summary": "retardo mediano -6.5d \u00b7 falsas alarmas 93% (188/202) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.4009508716323296,
+        "ALTA_VOL_SIN_DIRECCION": 0.11172741679873217,
+        "BAJISTA": 0.28922345483359746,
+        "LATERAL": 0.19809825673534073
+      },
+      "label": "win= 7 er=0.25 k=5",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 7,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 85,
+        "false_alarm_rate": 0.8470588235294118,
+        "false_alarms": 72,
+        "matched": 13,
+        "mean_lag_days": -2.230769230769231,
+        "median_lag_days": -2.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 29
+      },
+      "summary": "retardo mediano -2.0d \u00b7 falsas alarmas 85% (72/85) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.4968304278922345,
+        "ALTA_VOL_SIN_DIRECCION": 0.089540412044374,
+        "BAJISTA": 0.3676703645007924,
+        "LATERAL": 0.04595879556259905
+      },
+      "label": "win= 7 er=0.25 k=8",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 7,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 0.42857142857142855,
+        "detector_transitions": 35,
+        "false_alarm_rate": 0.8285714285714286,
+        "false_alarms": 29,
+        "matched": 6,
+        "mean_lag_days": 3.8333333333333335,
+        "median_lag_days": 7.0,
+        "missed": 8,
+        "oracle_transitions": 14,
+        "worst_lag_days": 13
+      },
+      "summary": "retardo mediano 7.0d \u00b7 falsas alarmas 83% (29/35) \u00b7 cobertura 43%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2853598014888337,
+        "ALTA_VOL_SIN_DIRECCION": 0.12241521918941274,
+        "BAJISTA": 0.20843672456575682,
+        "LATERAL": 0.3837882547559967
+      },
+      "label": "win= 7 er=0.35 k=1",
+      "labelled_days": 1209,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 7,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 345,
+        "false_alarm_rate": 0.9594202898550724,
+        "false_alarms": 331,
+        "matched": 14,
+        "mean_lag_days": -14.785714285714286,
+        "median_lag_days": -24.5,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 19
+      },
+      "summary": "retardo mediano -24.5d \u00b7 falsas alarmas 96% (331/345) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.28288431061806657,
+        "ALTA_VOL_SIN_DIRECCION": 0.11489698890649762,
+        "BAJISTA": 0.18700475435816163,
+        "LATERAL": 0.4152139461172742
+      },
+      "label": "win= 7 er=0.35 k=3",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 7,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 190,
+        "false_alarm_rate": 0.9263157894736842,
+        "false_alarms": 176,
+        "matched": 14,
+        "mean_lag_days": -10.357142857142858,
+        "median_lag_days": -19.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 22
+      },
+      "summary": "retardo mediano -19.0d \u00b7 falsas alarmas 93% (176/190) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.3232963549920761,
+        "ALTA_VOL_SIN_DIRECCION": 0.12836767036450078,
+        "BAJISTA": 0.20443740095087162,
+        "LATERAL": 0.3438985736925515
+      },
+      "label": "win= 7 er=0.35 k=5",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 7,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 100,
+        "false_alarm_rate": 0.86,
+        "false_alarms": 86,
+        "matched": 14,
+        "mean_lag_days": 2.7857142857142856,
+        "median_lag_days": 8.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 27
+      },
+      "summary": "retardo mediano 8.0d \u00b7 falsas alarmas 86% (86/100) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.41283676703645006,
+        "ALTA_VOL_SIN_DIRECCION": 0.10221870047543581,
+        "BAJISTA": 0.2630744849445325,
+        "LATERAL": 0.2218700475435816
+      },
+      "label": "win= 7 er=0.35 k=8",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 7,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 0.7142857142857143,
+        "detector_transitions": 41,
+        "false_alarm_rate": 0.7560975609756098,
+        "false_alarms": 31,
+        "matched": 10,
+        "mean_lag_days": 11.9,
+        "median_lag_days": 11.0,
+        "missed": 4,
+        "oracle_transitions": 14,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 11.0d \u00b7 falsas alarmas 76% (31/41) \u00b7 cobertura 71%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.22580645161290322,
+        "ALTA_VOL_SIN_DIRECCION": 0.15301902398676592,
+        "BAJISTA": 0.15053763440860216,
+        "LATERAL": 0.4706368899917287
+      },
+      "label": "win= 7 er=0.45 k=1",
+      "labelled_days": 1209,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 7,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 308,
+        "false_alarm_rate": 0.948051948051948,
+        "false_alarms": 292,
+        "matched": 16,
+        "mean_lag_days": -11.0625,
+        "median_lag_days": -17.0,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano -17.0d \u00b7 falsas alarmas 95% (292/308) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.22820919175911253,
+        "ALTA_VOL_SIN_DIRECCION": 0.14421553090332806,
+        "BAJISTA": 0.13391442155309033,
+        "LATERAL": 0.4936608557844691
+      },
+      "label": "win= 7 er=0.45 k=3",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 7,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 171,
+        "false_alarm_rate": 0.9064327485380117,
+        "false_alarms": 155,
+        "matched": 16,
+        "mean_lag_days": -3.0625,
+        "median_lag_days": -1.0,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 22
+      },
+      "summary": "retardo mediano -1.0d \u00b7 falsas alarmas 91% (155/171) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.21315372424722662,
+        "ALTA_VOL_SIN_DIRECCION": 0.15451664025356576,
+        "BAJISTA": 0.11568938193343899,
+        "LATERAL": 0.5166402535657686
+      },
+      "label": "win= 7 er=0.45 k=5",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 7,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 0.9375,
+        "detector_transitions": 99,
+        "false_alarm_rate": 0.8484848484848485,
+        "false_alarms": 84,
+        "matched": 15,
+        "mean_lag_days": -0.6666666666666666,
+        "median_lag_days": 7.0,
+        "missed": 1,
+        "oracle_transitions": 16,
+        "worst_lag_days": 23
+      },
+      "summary": "retardo mediano 7.0d \u00b7 falsas alarmas 85% (84/99) \u00b7 cobertura 94%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2876386687797147,
+        "ALTA_VOL_SIN_DIRECCION": 0.1109350237717908,
+        "BAJISTA": 0.10618066561014262,
+        "LATERAL": 0.49524564183835185
+      },
+      "label": "win= 7 er=0.45 k=8",
+      "labelled_days": 1262,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 7,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 7
+      },
+      "quality": {
+        "coverage": 0.8125,
+        "detector_transitions": 37,
+        "false_alarm_rate": 0.6486486486486487,
+        "false_alarms": 24,
+        "matched": 13,
+        "mean_lag_days": 11.076923076923077,
+        "median_lag_days": 11.0,
+        "missed": 3,
+        "oracle_transitions": 16,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 11.0d \u00b7 falsas alarmas 65% (24/37) \u00b7 cobertura 81%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.32573839662447257,
+        "ALTA_VOL_SIN_DIRECCION": 0.09957805907172995,
+        "BAJISTA": 0.2489451476793249,
+        "LATERAL": 0.32573839662447257
+      },
+      "label": "win=10 er=0.25 k=1",
+      "labelled_days": 1185,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 10,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 296,
+        "false_alarm_rate": 0.9527027027027027,
+        "false_alarms": 282,
+        "matched": 14,
+        "mean_lag_days": -9.642857142857142,
+        "median_lag_days": -5.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 15
+      },
+      "summary": "retardo mediano -5.0d \u00b7 falsas alarmas 95% (282/296) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.329626687847498,
+        "ALTA_VOL_SIN_DIRECCION": 0.0976965845909452,
+        "BAJISTA": 0.24225575853852263,
+        "LATERAL": 0.33042096902303414
+      },
+      "label": "win=10 er=0.25 k=3",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 10,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 157,
+        "false_alarm_rate": 0.910828025477707,
+        "false_alarms": 143,
+        "matched": 14,
+        "mean_lag_days": -6.714285714285714,
+        "median_lag_days": -4.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 20
+      },
+      "summary": "retardo mediano -4.0d \u00b7 falsas alarmas 91% (143/157) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.3375694996028594,
+        "ALTA_VOL_SIN_DIRECCION": 0.07863383637807785,
+        "BAJISTA": 0.24463860206513105,
+        "LATERAL": 0.33915806195393167
+      },
+      "label": "win=10 er=0.25 k=5",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 10,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 82,
+        "false_alarm_rate": 0.8414634146341463,
+        "false_alarms": 69,
+        "matched": 13,
+        "mean_lag_days": 1.9230769230769231,
+        "median_lag_days": 2.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 25
+      },
+      "summary": "retardo mediano 2.0d \u00b7 falsas alarmas 84% (69/82) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.35186656076250994,
+        "ALTA_VOL_SIN_DIRECCION": 0.07704527402700556,
+        "BAJISTA": 0.2907069102462272,
+        "LATERAL": 0.28038125496425736
+      },
+      "label": "win=10 er=0.25 k=8",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 10,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 0.7857142857142857,
+        "detector_transitions": 38,
+        "false_alarm_rate": 0.7105263157894737,
+        "false_alarms": 27,
+        "matched": 11,
+        "mean_lag_days": 3.5454545454545454,
+        "median_lag_days": 5.0,
+        "missed": 3,
+        "oracle_transitions": 14,
+        "worst_lag_days": 14
+      },
+      "summary": "retardo mediano 5.0d \u00b7 falsas alarmas 71% (27/38) \u00b7 cobertura 79%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2489451476793249,
+        "ALTA_VOL_SIN_DIRECCION": 0.14936708860759493,
+        "BAJISTA": 0.1670886075949367,
+        "LATERAL": 0.4345991561181435
+      },
+      "label": "win=10 er=0.35 k=1",
+      "labelled_days": 1185,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 10,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 267,
+        "false_alarm_rate": 0.947565543071161,
+        "false_alarms": 253,
+        "matched": 14,
+        "mean_lag_days": -15.5,
+        "median_lag_days": -19.5,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 9
+      },
+      "summary": "retardo mediano -19.5d \u00b7 falsas alarmas 95% (253/267) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.25178713264495634,
+        "ALTA_VOL_SIN_DIRECCION": 0.14297061159650518,
+        "BAJISTA": 0.15091342335186655,
+        "LATERAL": 0.45432883240667193
+      },
+      "label": "win=10 er=0.35 k=3",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 10,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 154,
+        "false_alarm_rate": 0.9090909090909091,
+        "false_alarms": 140,
+        "matched": 14,
+        "mean_lag_days": -7.5,
+        "median_lag_days": -4.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano -4.0d \u00b7 falsas alarmas 91% (140/154) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2565528196981732,
+        "ALTA_VOL_SIN_DIRECCION": 0.13105639396346305,
+        "BAJISTA": 0.14138204924543288,
+        "LATERAL": 0.4710087370929309
+      },
+      "label": "win=10 er=0.35 k=5",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 10,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 84,
+        "false_alarm_rate": 0.8452380952380952,
+        "false_alarms": 71,
+        "matched": 13,
+        "mean_lag_days": 5.076923076923077,
+        "median_lag_days": 8.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 22
+      },
+      "summary": "retardo mediano 8.0d \u00b7 falsas alarmas 85% (71/84) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2533756949960286,
+        "ALTA_VOL_SIN_DIRECCION": 0.11517077045274027,
+        "BAJISTA": 0.15011914217633043,
+        "LATERAL": 0.4813343923749007
+      },
+      "label": "win=10 er=0.35 k=8",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 10,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 0.8571428571428571,
+        "detector_transitions": 49,
+        "false_alarm_rate": 0.7551020408163265,
+        "false_alarms": 37,
+        "matched": 12,
+        "mean_lag_days": 10.75,
+        "median_lag_days": 11.0,
+        "missed": 2,
+        "oracle_transitions": 14,
+        "worst_lag_days": 25
+      },
+      "summary": "retardo mediano 11.0d \u00b7 falsas alarmas 76% (37/49) \u00b7 cobertura 86%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.1839662447257384,
+        "ALTA_VOL_SIN_DIRECCION": 0.1881856540084388,
+        "BAJISTA": 0.10970464135021098,
+        "LATERAL": 0.5181434599156118
+      },
+      "label": "win=10 er=0.45 k=1",
+      "labelled_days": 1185,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 10,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 237,
+        "false_alarm_rate": 0.9324894514767933,
+        "false_alarms": 221,
+        "matched": 16,
+        "mean_lag_days": -12.125,
+        "median_lag_days": -15.5,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano -15.5d \u00b7 falsas alarmas 93% (221/237) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.18109610802223988,
+        "ALTA_VOL_SIN_DIRECCION": 0.18427323272438442,
+        "BAJISTA": 0.09531374106433678,
+        "LATERAL": 0.5393169181890389
+      },
+      "label": "win=10 er=0.45 k=3",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 10,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 125,
+        "false_alarm_rate": 0.872,
+        "false_alarms": 109,
+        "matched": 16,
+        "mean_lag_days": 0.1875,
+        "median_lag_days": 2.0,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 2.0d \u00b7 falsas alarmas 87% (109/125) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.16838760921366164,
+        "ALTA_VOL_SIN_DIRECCION": 0.18586179507545672,
+        "BAJISTA": 0.07942811755361398,
+        "LATERAL": 0.5663224781572677
+      },
+      "label": "win=10 er=0.45 k=5",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 10,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 71,
+        "false_alarm_rate": 0.7746478873239436,
+        "false_alarms": 55,
+        "matched": 16,
+        "mean_lag_days": 6.125,
+        "median_lag_days": 7.0,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 20
+      },
+      "summary": "retardo mediano 7.0d \u00b7 falsas alarmas 77% (55/71) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.1453534551231136,
+        "ALTA_VOL_SIN_DIRECCION": 0.1596505162827641,
+        "BAJISTA": 0.07625099285146943,
+        "LATERAL": 0.6187450357426529
+      },
+      "label": "win=10 er=0.45 k=8",
+      "labelled_days": 1259,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 10,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 10
+      },
+      "quality": {
+        "coverage": 0.75,
+        "detector_transitions": 41,
+        "false_alarm_rate": 0.7073170731707317,
+        "false_alarms": 29,
+        "matched": 12,
+        "mean_lag_days": 12.083333333333334,
+        "median_lag_days": 11.0,
+        "missed": 4,
+        "oracle_transitions": 16,
+        "worst_lag_days": 27
+      },
+      "summary": "retardo mediano 11.0d \u00b7 falsas alarmas 71% (29/41) \u00b7 cobertura 75%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2766695576756288,
+        "ALTA_VOL_SIN_DIRECCION": 0.10407632263660017,
+        "BAJISTA": 0.21509106678230702,
+        "LATERAL": 0.404163052905464
+      },
+      "label": "win=14 er=0.25 k=1",
+      "labelled_days": 1153,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 14,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 223,
+        "false_alarm_rate": 0.9372197309417041,
+        "false_alarms": 209,
+        "matched": 14,
+        "mean_lag_days": -8.357142857142858,
+        "median_lag_days": -1.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 10
+      },
+      "summary": "retardo mediano -1.0d \u00b7 falsas alarmas 94% (209/223) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.27171314741035857,
+        "ALTA_VOL_SIN_DIRECCION": 0.09880478087649402,
+        "BAJISTA": 0.1904382470119522,
+        "LATERAL": 0.43904382470119524
+      },
+      "label": "win=14 er=0.25 k=3",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 14,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 117,
+        "false_alarm_rate": 0.8803418803418803,
+        "false_alarms": 103,
+        "matched": 14,
+        "mean_lag_days": -1.6428571428571428,
+        "median_lag_days": 0.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano 0.0d \u00b7 falsas alarmas 88% (103/117) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.25737051792828686,
+        "ALTA_VOL_SIN_DIRECCION": 0.08366533864541832,
+        "BAJISTA": 0.2047808764940239,
+        "LATERAL": 0.4541832669322709
+      },
+      "label": "win=14 er=0.25 k=5",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 14,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 69,
+        "false_alarm_rate": 0.8115942028985508,
+        "false_alarms": 56,
+        "matched": 13,
+        "mean_lag_days": 2.3076923076923075,
+        "median_lag_days": 3.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 3.0d \u00b7 falsas alarmas 81% (56/69) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2701195219123506,
+        "ALTA_VOL_SIN_DIRECCION": 0.10677290836653386,
+        "BAJISTA": 0.19362549800796813,
+        "LATERAL": 0.4294820717131474
+      },
+      "label": "win=14 er=0.25 k=8",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 14,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 46,
+        "false_alarm_rate": 0.717391304347826,
+        "false_alarms": 33,
+        "matched": 13,
+        "mean_lag_days": 8.615384615384615,
+        "median_lag_days": 7.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 7.0d \u00b7 falsas alarmas 72% (33/46) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.20121422376409367,
+        "ALTA_VOL_SIN_DIRECCION": 0.1448395490026019,
+        "BAJISTA": 0.14050303555941024,
+        "LATERAL": 0.5134431916738942
+      },
+      "label": "win=14 er=0.35 k=1",
+      "labelled_days": 1153,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 14,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 199,
+        "false_alarm_rate": 0.9296482412060302,
+        "false_alarms": 185,
+        "matched": 14,
+        "mean_lag_days": -9.714285714285714,
+        "median_lag_days": -8.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 9
+      },
+      "summary": "retardo mediano -8.0d \u00b7 falsas alarmas 93% (185/199) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.18964143426294822,
+        "ALTA_VOL_SIN_DIRECCION": 0.1306772908366534,
+        "BAJISTA": 0.1250996015936255,
+        "LATERAL": 0.5545816733067729
+      },
+      "label": "win=14 er=0.35 k=3",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 14,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 94,
+        "false_alarm_rate": 0.851063829787234,
+        "false_alarms": 80,
+        "matched": 14,
+        "mean_lag_days": -4.0,
+        "median_lag_days": 0.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano 0.0d \u00b7 falsas alarmas 85% (80/94) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.20318725099601595,
+        "ALTA_VOL_SIN_DIRECCION": 0.12191235059760956,
+        "BAJISTA": 0.1147410358565737,
+        "LATERAL": 0.5601593625498008
+      },
+      "label": "win=14 er=0.35 k=5",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 14,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 59,
+        "false_alarm_rate": 0.7627118644067796,
+        "false_alarms": 45,
+        "matched": 14,
+        "mean_lag_days": 8.285714285714286,
+        "median_lag_days": 11.5,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 19
+      },
+      "summary": "retardo mediano 11.5d \u00b7 falsas alarmas 76% (45/59) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.22071713147410357,
+        "ALTA_VOL_SIN_DIRECCION": 0.10916334661354582,
+        "BAJISTA": 0.100398406374502,
+        "LATERAL": 0.5697211155378487
+      },
+      "label": "win=14 er=0.35 k=8",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 14,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 0.8571428571428571,
+        "detector_transitions": 42,
+        "false_alarm_rate": 0.7142857142857143,
+        "false_alarms": 30,
+        "matched": 12,
+        "mean_lag_days": 10.916666666666666,
+        "median_lag_days": 14.5,
+        "missed": 2,
+        "oracle_transitions": 14,
+        "worst_lag_days": 25
+      },
+      "summary": "retardo mediano 14.5d \u00b7 falsas alarmas 71% (30/42) \u00b7 cobertura 86%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.1448395490026019,
+        "ALTA_VOL_SIN_DIRECCION": 0.1795316565481353,
+        "BAJISTA": 0.06851691240242845,
+        "LATERAL": 0.6071118820468343
+      },
+      "label": "win=14 er=0.45 k=1",
+      "labelled_days": 1153,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 14,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 156,
+        "false_alarm_rate": 0.8974358974358975,
+        "false_alarms": 140,
+        "matched": 16,
+        "mean_lag_days": -3.1875,
+        "median_lag_days": -1.0,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano -1.0d \u00b7 falsas alarmas 90% (140/156) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.1394422310756972,
+        "ALTA_VOL_SIN_DIRECCION": 0.16334661354581673,
+        "BAJISTA": 0.05338645418326693,
+        "LATERAL": 0.6438247011952192
+      },
+      "label": "win=14 er=0.45 k=3",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 14,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 78,
+        "false_alarm_rate": 0.7948717948717948,
+        "false_alarms": 62,
+        "matched": 16,
+        "mean_lag_days": 6.8125,
+        "median_lag_days": 6.0,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 17
+      },
+      "summary": "retardo mediano 6.0d \u00b7 falsas alarmas 79% (62/78) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.14581673306772908,
+        "ALTA_VOL_SIN_DIRECCION": 0.15856573705179283,
+        "BAJISTA": 0.04063745019920319,
+        "LATERAL": 0.6549800796812749
+      },
+      "label": "win=14 er=0.45 k=5",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 14,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 56,
+        "false_alarm_rate": 0.7142857142857143,
+        "false_alarms": 40,
+        "matched": 16,
+        "mean_lag_days": 8.3125,
+        "median_lag_days": 10.0,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 22
+      },
+      "summary": "retardo mediano 10.0d \u00b7 falsas alarmas 71% (40/56) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.11952191235059761,
+        "ALTA_VOL_SIN_DIRECCION": 0.14661354581673305,
+        "BAJISTA": 0.026294820717131476,
+        "LATERAL": 0.7075697211155378
+      },
+      "label": "win=14 er=0.45 k=8",
+      "labelled_days": 1255,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 14,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 14
+      },
+      "quality": {
+        "coverage": 0.9375,
+        "detector_transitions": 35,
+        "false_alarm_rate": 0.5714285714285714,
+        "false_alarms": 20,
+        "matched": 15,
+        "mean_lag_days": 12.733333333333333,
+        "median_lag_days": 12.0,
+        "missed": 1,
+        "oracle_transitions": 16,
+        "worst_lag_days": 22
+      },
+      "summary": "retardo mediano 12.0d \u00b7 falsas alarmas 57% (20/35) \u00b7 cobertura 94%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.25706472196900637,
+        "ALTA_VOL_SIN_DIRECCION": 0.11759343664539654,
+        "BAJISTA": 0.18322698268003645,
+        "LATERAL": 0.4421148587055606
+      },
+      "label": "win=21 er=0.25 k=1",
+      "labelled_days": 1097,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 21,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 146,
+        "false_alarm_rate": 0.910958904109589,
+        "false_alarms": 133,
+        "matched": 13,
+        "mean_lag_days": -5.461538461538462,
+        "median_lag_days": 6.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 15
+      },
+      "summary": "retardo mediano 6.0d \u00b7 falsas alarmas 91% (133/146) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2564102564102564,
+        "ALTA_VOL_SIN_DIRECCION": 0.10496794871794872,
+        "BAJISTA": 0.1778846153846154,
+        "LATERAL": 0.46073717948717946
+      },
+      "label": "win=21 er=0.25 k=3",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 21,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 94,
+        "false_alarm_rate": 0.8617021276595744,
+        "false_alarms": 81,
+        "matched": 13,
+        "mean_lag_days": -2.3076923076923075,
+        "median_lag_days": 7.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano 7.0d \u00b7 falsas alarmas 86% (81/94) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2900641025641026,
+        "ALTA_VOL_SIN_DIRECCION": 0.0953525641025641,
+        "BAJISTA": 0.16185897435897437,
+        "LATERAL": 0.452724358974359
+      },
+      "label": "win=21 er=0.25 k=5",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 21,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 57,
+        "false_alarm_rate": 0.7719298245614035,
+        "false_alarms": 44,
+        "matched": 13,
+        "mean_lag_days": 7.538461538461538,
+        "median_lag_days": 9.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 9.0d \u00b7 falsas alarmas 77% (44/57) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.22435897435897437,
+        "ALTA_VOL_SIN_DIRECCION": 0.11378205128205128,
+        "BAJISTA": 0.16346153846153846,
+        "LATERAL": 0.4983974358974359
+      },
+      "label": "win=21 er=0.25 k=8",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 21,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 0.7142857142857143,
+        "detector_transitions": 37,
+        "false_alarm_rate": 0.7297297297297297,
+        "false_alarms": 27,
+        "matched": 10,
+        "mean_lag_days": 10.6,
+        "median_lag_days": 13.0,
+        "missed": 4,
+        "oracle_transitions": 14,
+        "worst_lag_days": 21
+      },
+      "summary": "retardo mediano 13.0d \u00b7 falsas alarmas 73% (27/37) \u00b7 cobertura 71%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.15679124886052873,
+        "ALTA_VOL_SIN_DIRECCION": 0.17137648131267091,
+        "BAJISTA": 0.09571558796718323,
+        "LATERAL": 0.5761166818596172
+      },
+      "label": "win=21 er=0.35 k=1",
+      "labelled_days": 1097,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 21,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 132,
+        "false_alarm_rate": 0.8939393939393939,
+        "false_alarms": 118,
+        "matched": 14,
+        "mean_lag_days": -0.21428571428571427,
+        "median_lag_days": 6.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 15
+      },
+      "summary": "retardo mediano 6.0d \u00b7 falsas alarmas 89% (118/132) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.16346153846153846,
+        "ALTA_VOL_SIN_DIRECCION": 0.15064102564102563,
+        "BAJISTA": 0.07932692307692307,
+        "LATERAL": 0.6065705128205128
+      },
+      "label": "win=21 er=0.35 k=3",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 21,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 74,
+        "false_alarm_rate": 0.8108108108108109,
+        "false_alarms": 60,
+        "matched": 14,
+        "mean_lag_days": 3.5,
+        "median_lag_days": 11.0,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano 11.0d \u00b7 falsas alarmas 81% (60/74) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.17307692307692307,
+        "ALTA_VOL_SIN_DIRECCION": 0.14022435897435898,
+        "BAJISTA": 0.07852564102564102,
+        "LATERAL": 0.6081730769230769
+      },
+      "label": "win=21 er=0.35 k=5",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 21,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 47,
+        "false_alarm_rate": 0.7021276595744681,
+        "false_alarms": 33,
+        "matched": 14,
+        "mean_lag_days": 11.357142857142858,
+        "median_lag_days": 13.5,
+        "missed": 0,
+        "oracle_transitions": 14,
+        "worst_lag_days": 25
+      },
+      "summary": "retardo mediano 13.5d \u00b7 falsas alarmas 70% (33/47) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.12419871794871795,
+        "ALTA_VOL_SIN_DIRECCION": 0.18509615384615385,
+        "BAJISTA": 0.06009615384615385,
+        "LATERAL": 0.6306089743589743
+      },
+      "label": "win=21 er=0.35 k=8",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 21,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 0.8571428571428571,
+        "detector_transitions": 33,
+        "false_alarm_rate": 0.6363636363636364,
+        "false_alarms": 21,
+        "matched": 12,
+        "mean_lag_days": 15.25,
+        "median_lag_days": 18.0,
+        "missed": 2,
+        "oracle_transitions": 14,
+        "worst_lag_days": 28
+      },
+      "summary": "retardo mediano 18.0d \u00b7 falsas alarmas 64% (21/33) \u00b7 cobertura 86%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.09480401093892434,
+        "ALTA_VOL_SIN_DIRECCION": 0.20601640838650867,
+        "BAJISTA": 0.03919781221513218,
+        "LATERAL": 0.6599817684594348
+      },
+      "label": "win=21 er=0.45 k=1",
+      "labelled_days": 1097,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 21,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 77,
+        "false_alarm_rate": 0.7922077922077922,
+        "false_alarms": 61,
+        "matched": 16,
+        "mean_lag_days": 6.625,
+        "median_lag_days": 7.5,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 15
+      },
+      "summary": "retardo mediano 7.5d \u00b7 falsas alarmas 79% (61/77) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.11618589743589744,
+        "ALTA_VOL_SIN_DIRECCION": 0.18108974358974358,
+        "BAJISTA": 0.03205128205128205,
+        "LATERAL": 0.6706730769230769
+      },
+      "label": "win=21 er=0.45 k=3",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 21,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 57,
+        "false_alarm_rate": 0.7192982456140351,
+        "false_alarms": 41,
+        "matched": 16,
+        "mean_lag_days": 9.6875,
+        "median_lag_days": 9.5,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano 9.5d \u00b7 falsas alarmas 72% (41/57) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.09455128205128205,
+        "ALTA_VOL_SIN_DIRECCION": 0.2091346153846154,
+        "BAJISTA": 0.026442307692307692,
+        "LATERAL": 0.6698717948717948
+      },
+      "label": "win=21 er=0.45 k=5",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 21,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 0.9375,
+        "detector_transitions": 34,
+        "false_alarm_rate": 0.5588235294117647,
+        "false_alarms": 19,
+        "matched": 15,
+        "mean_lag_days": 9.6,
+        "median_lag_days": 12.0,
+        "missed": 1,
+        "oracle_transitions": 16,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 12.0d \u00b7 falsas alarmas 56% (19/34) \u00b7 cobertura 94%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.0889423076923077,
+        "ALTA_VOL_SIN_DIRECCION": 0.1875,
+        "BAJISTA": 0.008814102564102564,
+        "LATERAL": 0.7147435897435898
+      },
+      "label": "win=21 er=0.45 k=8",
+      "labelled_days": 1248,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 21,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 21
+      },
+      "quality": {
+        "coverage": 1.0,
+        "detector_transitions": 28,
+        "false_alarm_rate": 0.42857142857142855,
+        "false_alarms": 12,
+        "matched": 16,
+        "mean_lag_days": 8.25,
+        "median_lag_days": 14.5,
+        "missed": 0,
+        "oracle_transitions": 16,
+        "worst_lag_days": 28
+      },
+      "summary": "retardo mediano 14.5d \u00b7 falsas alarmas 43% (12/28) \u00b7 cobertura 100%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.19121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.15024390243902438,
+        "BAJISTA": 0.1473170731707317,
+        "LATERAL": 0.511219512195122
+      },
+      "label": "win=30 er=0.25 k=1",
+      "labelled_days": 1025,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 30,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 122,
+        "false_alarm_rate": 0.8934426229508197,
+        "false_alarms": 109,
+        "matched": 13,
+        "mean_lag_days": 4.769230769230769,
+        "median_lag_days": 15.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 15
+      },
+      "summary": "retardo mediano 15.0d \u00b7 falsas alarmas 89% (109/122) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.20016142050040356,
+        "ALTA_VOL_SIN_DIRECCION": 0.12832929782082325,
+        "BAJISTA": 0.11460855528652139,
+        "LATERAL": 0.5569007263922519
+      },
+      "label": "win=30 er=0.25 k=3",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 30,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 65,
+        "false_alarm_rate": 0.8,
+        "false_alarms": 52,
+        "matched": 13,
+        "mean_lag_days": 5.769230769230769,
+        "median_lag_days": 16.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 16
+      },
+      "summary": "retardo mediano 16.0d \u00b7 falsas alarmas 80% (52/65) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.21872477804681195,
+        "ALTA_VOL_SIN_DIRECCION": 0.11702986279257466,
+        "BAJISTA": 0.12429378531073447,
+        "LATERAL": 0.5399515738498789
+      },
+      "label": "win=30 er=0.25 k=5",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 30,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 44,
+        "false_alarm_rate": 0.7045454545454546,
+        "false_alarms": 31,
+        "matched": 13,
+        "mean_lag_days": 11.0,
+        "median_lag_days": 18.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 18.0d \u00b7 falsas alarmas 70% (31/44) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2066182405165456,
+        "ALTA_VOL_SIN_DIRECCION": 0.14608555286521388,
+        "BAJISTA": 0.10008071025020178,
+        "LATERAL": 0.5472154963680388
+      },
+      "label": "win=30 er=0.25 k=8",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 30,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.6428571428571429,
+        "detector_transitions": 28,
+        "false_alarm_rate": 0.6785714285714286,
+        "false_alarms": 19,
+        "matched": 9,
+        "mean_lag_days": 16.22222222222222,
+        "median_lag_days": 21.0,
+        "missed": 5,
+        "oracle_transitions": 14,
+        "worst_lag_days": 21
+      },
+      "summary": "retardo mediano 21.0d \u00b7 falsas alarmas 68% (19/28) \u00b7 cobertura 64%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.1151219512195122,
+        "ALTA_VOL_SIN_DIRECCION": 0.22439024390243903,
+        "BAJISTA": 0.050731707317073174,
+        "LATERAL": 0.6097560975609756
+      },
+      "label": "win=30 er=0.35 k=1",
+      "labelled_days": 1025,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 30,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 78,
+        "false_alarm_rate": 0.8333333333333334,
+        "false_alarms": 65,
+        "matched": 13,
+        "mean_lag_days": 11.153846153846153,
+        "median_lag_days": 15.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 15
+      },
+      "summary": "retardo mediano 15.0d \u00b7 falsas alarmas 83% (65/78) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.11945117029862792,
+        "ALTA_VOL_SIN_DIRECCION": 0.2106537530266344,
+        "BAJISTA": 0.033091202582728005,
+        "LATERAL": 0.6368038740920097
+      },
+      "label": "win=30 er=0.35 k=3",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 30,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.7857142857142857,
+        "detector_transitions": 47,
+        "false_alarm_rate": 0.7659574468085106,
+        "false_alarms": 36,
+        "matched": 11,
+        "mean_lag_days": 14.818181818181818,
+        "median_lag_days": 16.0,
+        "missed": 3,
+        "oracle_transitions": 14,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 16.0d \u00b7 falsas alarmas 77% (36/47) \u00b7 cobertura 79%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.12267958030669895,
+        "ALTA_VOL_SIN_DIRECCION": 0.20419693301049233,
+        "BAJISTA": 0.02744148506860371,
+        "LATERAL": 0.645682001614205
+      },
+      "label": "win=30 er=0.35 k=5",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 30,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.8571428571428571,
+        "detector_transitions": 37,
+        "false_alarm_rate": 0.6756756756756757,
+        "false_alarms": 25,
+        "matched": 12,
+        "mean_lag_days": 13.75,
+        "median_lag_days": 18.0,
+        "missed": 2,
+        "oracle_transitions": 14,
+        "worst_lag_days": 20
+      },
+      "summary": "retardo mediano 18.0d \u00b7 falsas alarmas 68% (25/37) \u00b7 cobertura 86%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.12671509281678772,
+        "ALTA_VOL_SIN_DIRECCION": 0.21468926553672316,
+        "BAJISTA": 0.023405972558514933,
+        "LATERAL": 0.6351896690879741
+      },
+      "label": "win=30 er=0.35 k=8",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 30,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.7142857142857143,
+        "detector_transitions": 23,
+        "false_alarm_rate": 0.5652173913043478,
+        "false_alarms": 13,
+        "matched": 10,
+        "mean_lag_days": 15.9,
+        "median_lag_days": 21.0,
+        "missed": 4,
+        "oracle_transitions": 14,
+        "worst_lag_days": 23
+      },
+      "summary": "retardo mediano 21.0d \u00b7 falsas alarmas 57% (13/23) \u00b7 cobertura 71%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.07414634146341463,
+        "ALTA_VOL_SIN_DIRECCION": 0.255609756097561,
+        "BAJISTA": 0.010731707317073172,
+        "LATERAL": 0.6595121951219513
+      },
+      "label": "win=30 er=0.45 k=1",
+      "labelled_days": 1025,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 30,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.9375,
+        "detector_transitions": 44,
+        "false_alarm_rate": 0.6590909090909091,
+        "false_alarms": 29,
+        "matched": 15,
+        "mean_lag_days": 9.6,
+        "median_lag_days": 15.0,
+        "missed": 1,
+        "oracle_transitions": 16,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 15.0d \u00b7 falsas alarmas 66% (29/44) \u00b7 cobertura 94%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.05811138014527845,
+        "ALTA_VOL_SIN_DIRECCION": 0.23728813559322035,
+        "BAJISTA": 0.008071025020177562,
+        "LATERAL": 0.6965294592413237
+      },
+      "label": "win=30 er=0.45 k=3",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 30,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.9375,
+        "detector_transitions": 34,
+        "false_alarm_rate": 0.5588235294117647,
+        "false_alarms": 19,
+        "matched": 15,
+        "mean_lag_days": 10.6,
+        "median_lag_days": 16.0,
+        "missed": 1,
+        "oracle_transitions": 16,
+        "worst_lag_days": 19
+      },
+      "summary": "retardo mediano 16.0d \u00b7 falsas alarmas 56% (19/34) \u00b7 cobertura 94%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.053268765133171914,
+        "ALTA_VOL_SIN_DIRECCION": 0.24051654560129138,
+        "BAJISTA": 0.010492332526230832,
+        "LATERAL": 0.6957223567393059
+      },
+      "label": "win=30 er=0.45 k=5",
+      "labelled_days": 1239,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 30,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.9375,
+        "detector_transitions": 28,
+        "false_alarm_rate": 0.4642857142857143,
+        "false_alarms": 13,
+        "matched": 15,
+        "mean_lag_days": 13.2,
+        "median_lag_days": 18.0,
+        "missed": 1,
+        "oracle_transitions": 16,
+        "worst_lag_days": 21
+      },
+      "summary": "retardo mediano 18.0d \u00b7 falsas alarmas 46% (13/28) \u00b7 cobertura 94%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.05004035512510089,
+        "ALTA_VOL_SIN_DIRECCION": 0.24939467312348668,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.7005649717514124
+      },
+      "label": "win=30 er=0.45 k=8",
+      "labelled_days": 1239,
+      "objective": 21.0,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 30,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 30
+      },
+      "quality": {
+        "coverage": 0.8125,
+        "detector_transitions": 18,
+        "false_alarm_rate": 0.2777777777777778,
+        "false_alarms": 5,
+        "matched": 13,
+        "mean_lag_days": 19.384615384615383,
+        "median_lag_days": 21.0,
+        "missed": 3,
+        "oracle_transitions": 16,
+        "worst_lag_days": 24
+      },
+      "summary": "retardo mediano 21.0d \u00b7 falsas alarmas 28% (5/18) \u00b7 cobertura 81%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.19337016574585636,
+        "ALTA_VOL_SIN_DIRECCION": 0.09171270718232044,
+        "BAJISTA": 0.1005524861878453,
+        "LATERAL": 0.6143646408839779
+      },
+      "label": "win=45 er=0.25 k=1",
+      "labelled_days": 905,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 45,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.9285714285714286,
+        "detector_transitions": 84,
+        "false_alarm_rate": 0.8452380952380952,
+        "false_alarms": 71,
+        "matched": 13,
+        "mean_lag_days": 11.307692307692308,
+        "median_lag_days": 20.0,
+        "missed": 1,
+        "oracle_transitions": 14,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 20.0d \u00b7 falsas alarmas 85% (71/84) \u00b7 cobertura 93%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.2181372549019608,
+        "ALTA_VOL_SIN_DIRECCION": 0.06699346405228758,
+        "BAJISTA": 0.07516339869281045,
+        "LATERAL": 0.6397058823529411
+      },
+      "label": "win=45 er=0.25 k=3",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 45,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.5714285714285714,
+        "detector_transitions": 58,
+        "false_alarm_rate": 0.8620689655172413,
+        "false_alarms": 50,
+        "matched": 8,
+        "mean_lag_days": 10.875,
+        "median_lag_days": 15.5,
+        "missed": 6,
+        "oracle_transitions": 14,
+        "worst_lag_days": 29
+      },
+      "summary": "retardo mediano 15.5d \u00b7 falsas alarmas 86% (50/58) \u00b7 cobertura 57%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.21895424836601307,
+        "ALTA_VOL_SIN_DIRECCION": 0.09722222222222222,
+        "BAJISTA": 0.06045751633986928,
+        "LATERAL": 0.6233660130718954
+      },
+      "label": "win=45 er=0.25 k=5",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 45,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.35714285714285715,
+        "detector_transitions": 31,
+        "false_alarm_rate": 0.8387096774193549,
+        "false_alarms": 26,
+        "matched": 5,
+        "mean_lag_days": 12.6,
+        "median_lag_days": 17.0,
+        "missed": 9,
+        "oracle_transitions": 14,
+        "worst_lag_days": 26
+      },
+      "summary": "retardo mediano 17.0d \u00b7 falsas alarmas 84% (26/31) \u00b7 cobertura 36%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.23529411764705882,
+        "ALTA_VOL_SIN_DIRECCION": 0.08415032679738563,
+        "BAJISTA": 0.07107843137254902,
+        "LATERAL": 0.6094771241830066
+      },
+      "label": "win=45 er=0.25 k=8",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 45,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.35714285714285715,
+        "detector_transitions": 22,
+        "false_alarm_rate": 0.7727272727272727,
+        "false_alarms": 17,
+        "matched": 5,
+        "mean_lag_days": 15.6,
+        "median_lag_days": 20.0,
+        "missed": 9,
+        "oracle_transitions": 14,
+        "worst_lag_days": 29
+      },
+      "summary": "retardo mediano 20.0d \u00b7 falsas alarmas 77% (17/22) \u00b7 cobertura 36%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.1005524861878453,
+        "ALTA_VOL_SIN_DIRECCION": 0.17790055248618786,
+        "BAJISTA": 0.013259668508287293,
+        "LATERAL": 0.7082872928176795
+      },
+      "label": "win=45 er=0.35 k=1",
+      "labelled_days": 905,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 45,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.7142857142857143,
+        "detector_transitions": 49,
+        "false_alarm_rate": 0.7959183673469388,
+        "false_alarms": 39,
+        "matched": 10,
+        "mean_lag_days": 12.2,
+        "median_lag_days": 14.5,
+        "missed": 4,
+        "oracle_transitions": 14,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 14.5d \u00b7 falsas alarmas 80% (39/49) \u00b7 cobertura 71%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.11029411764705882,
+        "ALTA_VOL_SIN_DIRECCION": 0.17320261437908496,
+        "BAJISTA": 0.011437908496732025,
+        "LATERAL": 0.7050653594771242
+      },
+      "label": "win=45 er=0.35 k=3",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 45,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.5714285714285714,
+        "detector_transitions": 30,
+        "false_alarm_rate": 0.7333333333333333,
+        "false_alarms": 22,
+        "matched": 8,
+        "mean_lag_days": 10.0,
+        "median_lag_days": 14.5,
+        "missed": 6,
+        "oracle_transitions": 14,
+        "worst_lag_days": 29
+      },
+      "summary": "retardo mediano 14.5d \u00b7 falsas alarmas 73% (22/30) \u00b7 cobertura 57%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.11029411764705882,
+        "ALTA_VOL_SIN_DIRECCION": 0.21486928104575165,
+        "BAJISTA": 0.00980392156862745,
+        "LATERAL": 0.6650326797385621
+      },
+      "label": "win=45 er=0.35 k=5",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 45,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.35714285714285715,
+        "detector_transitions": 22,
+        "false_alarm_rate": 0.7727272727272727,
+        "false_alarms": 17,
+        "matched": 5,
+        "mean_lag_days": 6.4,
+        "median_lag_days": 16.0,
+        "missed": 9,
+        "oracle_transitions": 14,
+        "worst_lag_days": 18
+      },
+      "summary": "retardo mediano 16.0d \u00b7 falsas alarmas 77% (17/22) \u00b7 cobertura 36%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.07026143790849673,
+        "ALTA_VOL_SIN_DIRECCION": 0.25245098039215685,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6772875816993464
+      },
+      "label": "win=45 er=0.35 k=8",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 45,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.35714285714285715,
+        "detector_transitions": 14,
+        "false_alarm_rate": 0.6428571428571429,
+        "false_alarms": 9,
+        "matched": 5,
+        "mean_lag_days": 9.4,
+        "median_lag_days": 19.0,
+        "missed": 9,
+        "oracle_transitions": 14,
+        "worst_lag_days": 21
+      },
+      "summary": "retardo mediano 19.0d \u00b7 falsas alarmas 64% (9/14) \u00b7 cobertura 36%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.04751381215469613,
+        "ALTA_VOL_SIN_DIRECCION": 0.19889502762430938,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.7535911602209945
+      },
+      "label": "win=45 er=0.45 k=1",
+      "labelled_days": 905,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 45,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.6875,
+        "detector_transitions": 32,
+        "false_alarm_rate": 0.65625,
+        "false_alarms": 21,
+        "matched": 11,
+        "mean_lag_days": 8.727272727272727,
+        "median_lag_days": 13.0,
+        "missed": 5,
+        "oracle_transitions": 16,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 13.0d \u00b7 falsas alarmas 66% (21/32) \u00b7 cobertura 69%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.03349673202614379,
+        "ALTA_VOL_SIN_DIRECCION": 0.18709150326797386,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.7794117647058824
+      },
+      "label": "win=45 er=0.45 k=3",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 45,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.5625,
+        "detector_transitions": 20,
+        "false_alarm_rate": 0.55,
+        "false_alarms": 11,
+        "matched": 9,
+        "mean_lag_days": 13.0,
+        "median_lag_days": 16.0,
+        "missed": 7,
+        "oracle_transitions": 16,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 16.0d \u00b7 falsas alarmas 55% (11/20) \u00b7 cobertura 56%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.03349673202614379,
+        "ALTA_VOL_SIN_DIRECCION": 0.26552287581699346,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.7009803921568627
+      },
+      "label": "win=45 er=0.45 k=5",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 45,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.4375,
+        "detector_transitions": 16,
+        "false_alarm_rate": 0.5625,
+        "false_alarms": 9,
+        "matched": 7,
+        "mean_lag_days": 17.142857142857142,
+        "median_lag_days": 18.0,
+        "missed": 9,
+        "oracle_transitions": 16,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 18.0d \u00b7 falsas alarmas 56% (9/16) \u00b7 cobertura 44%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.04330065359477124,
+        "ALTA_VOL_SIN_DIRECCION": 0.2622549019607843,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6944444444444444
+      },
+      "label": "win=45 er=0.45 k=8",
+      "labelled_days": 1224,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 45,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 45
+      },
+      "quality": {
+        "coverage": 0.4375,
+        "detector_transitions": 14,
+        "false_alarm_rate": 0.5,
+        "false_alarms": 7,
+        "matched": 7,
+        "mean_lag_days": 12.285714285714286,
+        "median_lag_days": 19.0,
+        "missed": 9,
+        "oracle_transitions": 16,
+        "worst_lag_days": 28
+      },
+      "summary": "retardo mediano 19.0d \u00b7 falsas alarmas 50% (7/14) \u00b7 cobertura 44%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.13580246913580246,
+        "ALTA_VOL_SIN_DIRECCION": 0.13333333333333333,
+        "BAJISTA": 0.07530864197530865,
+        "LATERAL": 0.6555555555555556
+      },
+      "label": "win=60 er=0.25 k=1",
+      "labelled_days": 810,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 60,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.42857142857142855,
+        "detector_transitions": 47,
+        "false_alarm_rate": 0.8723404255319149,
+        "false_alarms": 41,
+        "matched": 6,
+        "mean_lag_days": 5.166666666666667,
+        "median_lag_days": 10.5,
+        "missed": 8,
+        "oracle_transitions": 14,
+        "worst_lag_days": 27
+      },
+      "summary": "retardo mediano 10.5d \u00b7 falsas alarmas 87% (41/47) \u00b7 cobertura 43%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.14310344827586208,
+        "ALTA_VOL_SIN_DIRECCION": 0.14913793103448275,
+        "BAJISTA": 0.05172413793103448,
+        "LATERAL": 0.6560344827586206
+      },
+      "label": "win=60 er=0.25 k=3",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 60,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.2857142857142857,
+        "detector_transitions": 29,
+        "false_alarm_rate": 0.8620689655172413,
+        "false_alarms": 25,
+        "matched": 4,
+        "mean_lag_days": 7.5,
+        "median_lag_days": 11.5,
+        "missed": 10,
+        "oracle_transitions": 14,
+        "worst_lag_days": 28
+      },
+      "summary": "retardo mediano 11.5d \u00b7 falsas alarmas 86% (25/29) \u00b7 cobertura 29%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.14396551724137932,
+        "ALTA_VOL_SIN_DIRECCION": 0.20172413793103447,
+        "BAJISTA": 0.05,
+        "LATERAL": 0.6043103448275862
+      },
+      "label": "win=60 er=0.25 k=5",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 60,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.35714285714285715,
+        "detector_transitions": 21,
+        "false_alarm_rate": 0.7619047619047619,
+        "false_alarms": 16,
+        "matched": 5,
+        "mean_lag_days": 15.4,
+        "median_lag_days": 18.0,
+        "missed": 9,
+        "oracle_transitions": 14,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 18.0d \u00b7 falsas alarmas 76% (16/21) \u00b7 cobertura 36%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.14051724137931035,
+        "ALTA_VOL_SIN_DIRECCION": 0.2043103448275862,
+        "BAJISTA": 0.04396551724137931,
+        "LATERAL": 0.6112068965517241
+      },
+      "label": "win=60 er=0.25 k=8",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.15121951219512195,
+        "ALTA_VOL_SIN_DIRECCION": 0.25170731707317073,
+        "BAJISTA": 0.17560975609756097,
+        "LATERAL": 0.4214634146341463
+      },
+      "params": {
+        "efficiency_threshold": 0.25,
+        "efficiency_window": 60,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.21428571428571427,
+        "detector_transitions": 13,
+        "false_alarm_rate": 0.7692307692307693,
+        "false_alarms": 10,
+        "matched": 3,
+        "mean_lag_days": 8.666666666666666,
+        "median_lag_days": 21.0,
+        "missed": 11,
+        "oracle_transitions": 14,
+        "worst_lag_days": 21
+      },
+      "summary": "retardo mediano 21.0d \u00b7 falsas alarmas 77% (10/13) \u00b7 cobertura 21%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.08271604938271605,
+        "ALTA_VOL_SIN_DIRECCION": 0.18395061728395062,
+        "BAJISTA": 0.0024691358024691358,
+        "LATERAL": 0.7308641975308642
+      },
+      "label": "win=60 er=0.35 k=1",
+      "labelled_days": 810,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 60,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.35714285714285715,
+        "detector_transitions": 30,
+        "false_alarm_rate": 0.8333333333333334,
+        "false_alarms": 25,
+        "matched": 5,
+        "mean_lag_days": 12.2,
+        "median_lag_days": 21.0,
+        "missed": 9,
+        "oracle_transitions": 14,
+        "worst_lag_days": 28
+      },
+      "summary": "retardo mediano 21.0d \u00b7 falsas alarmas 83% (25/30) \u00b7 cobertura 36%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.10948275862068965,
+        "ALTA_VOL_SIN_DIRECCION": 0.18448275862068966,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.7060344827586207
+      },
+      "label": "win=60 er=0.35 k=3",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 60,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.35714285714285715,
+        "detector_transitions": 18,
+        "false_alarm_rate": 0.7222222222222222,
+        "false_alarms": 13,
+        "matched": 5,
+        "mean_lag_days": 13.8,
+        "median_lag_days": 22.0,
+        "missed": 9,
+        "oracle_transitions": 14,
+        "worst_lag_days": 29
+      },
+      "summary": "retardo mediano 22.0d \u00b7 falsas alarmas 72% (13/18) \u00b7 cobertura 36%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.10948275862068965,
+        "ALTA_VOL_SIN_DIRECCION": 0.2353448275862069,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6551724137931034
+      },
+      "label": "win=60 er=0.35 k=5",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 60,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.2857142857142857,
+        "detector_transitions": 16,
+        "false_alarm_rate": 0.75,
+        "false_alarms": 12,
+        "matched": 4,
+        "mean_lag_days": 9.75,
+        "median_lag_days": 20.0,
+        "missed": 10,
+        "oracle_transitions": 14,
+        "worst_lag_days": 24
+      },
+      "summary": "retardo mediano 20.0d \u00b7 falsas alarmas 75% (12/16) \u00b7 cobertura 29%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.06465517241379311,
+        "ALTA_VOL_SIN_DIRECCION": 0.2810344827586207,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6543103448275862
+      },
+      "label": "win=60 er=0.35 k=8",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.12682926829268293,
+        "ALTA_VOL_SIN_DIRECCION": 0.23609756097560974,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6370731707317073
+      },
+      "params": {
+        "efficiency_threshold": 0.35,
+        "efficiency_window": 60,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.21428571428571427,
+        "detector_transitions": 12,
+        "false_alarm_rate": 0.75,
+        "false_alarms": 9,
+        "matched": 3,
+        "mean_lag_days": 10.0,
+        "median_lag_days": 25.0,
+        "missed": 11,
+        "oracle_transitions": 14,
+        "worst_lag_days": 27
+      },
+      "summary": "retardo mediano 25.0d \u00b7 falsas alarmas 75% (9/12) \u00b7 cobertura 21%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.018518518518518517,
+        "ALTA_VOL_SIN_DIRECCION": 0.20617283950617285,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.7753086419753087
+      },
+      "label": "win=60 er=0.45 k=1",
+      "labelled_days": 810,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 60,
+        "persistence_days": 1,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.3125,
+        "detector_transitions": 27,
+        "false_alarm_rate": 0.8148148148148148,
+        "false_alarms": 22,
+        "matched": 5,
+        "mean_lag_days": 17.8,
+        "median_lag_days": 21.0,
+        "missed": 11,
+        "oracle_transitions": 16,
+        "worst_lag_days": 30
+      },
+      "summary": "retardo mediano 21.0d \u00b7 falsas alarmas 81% (22/27) \u00b7 cobertura 31%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.009482758620689655,
+        "ALTA_VOL_SIN_DIRECCION": 0.2508620689655172,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.7396551724137931
+      },
+      "label": "win=60 er=0.45 k=3",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 60,
+        "persistence_days": 3,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.125,
+        "detector_transitions": 15,
+        "false_alarm_rate": 0.8666666666666667,
+        "false_alarms": 13,
+        "matched": 2,
+        "mean_lag_days": 23.0,
+        "median_lag_days": 23.0,
+        "missed": 14,
+        "oracle_transitions": 16,
+        "worst_lag_days": 29
+      },
+      "summary": "retardo mediano 23.0d \u00b7 falsas alarmas 87% (13/15) \u00b7 cobertura 12%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.01206896551724138,
+        "ALTA_VOL_SIN_DIRECCION": 0.2991379310344828,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6887931034482758
+      },
+      "label": "win=60 er=0.45 k=5",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 60,
+        "persistence_days": 5,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.125,
+        "detector_transitions": 10,
+        "false_alarm_rate": 0.8,
+        "false_alarms": 8,
+        "matched": 2,
+        "mean_lag_days": 22.0,
+        "median_lag_days": 22.0,
+        "missed": 14,
+        "oracle_transitions": 16,
+        "worst_lag_days": 25
+      },
+      "summary": "retardo mediano 22.0d \u00b7 falsas alarmas 80% (8/10) \u00b7 cobertura 12%"
+    },
+    {
+      "detector_shares": {
+        "ALCISTA": 0.01206896551724138,
+        "ALTA_VOL_SIN_DIRECCION": 0.2982758620689655,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.6896551724137931
+      },
+      "label": "win=60 er=0.45 k=8",
+      "labelled_days": 1160,
+      "objective": null,
+      "oracle_shares": {
+        "ALCISTA": 0.10439024390243902,
+        "ALTA_VOL_SIN_DIRECCION": 0.30341463414634146,
+        "BAJISTA": 0.0,
+        "LATERAL": 0.5921951219512195
+      },
+      "params": {
+        "efficiency_threshold": 0.45,
+        "efficiency_window": 60,
+        "persistence_days": 8,
+        "volatility_percentile": 0.7,
+        "volatility_reference_days": 365,
+        "volatility_window": 60
+      },
+      "quality": {
+        "coverage": 0.1875,
+        "detector_transitions": 8,
+        "false_alarm_rate": 0.625,
+        "false_alarms": 5,
+        "matched": 3,
+        "mean_lag_days": 7.0,
+        "median_lag_days": 22.0,
+        "missed": 13,
+        "oracle_transitions": 16,
+        "worst_lag_days": 28
+      },
+      "summary": "retardo mediano 22.0d \u00b7 falsas alarmas 62% (5/8) \u00b7 cobertura 19%"
+    }
+  ],
+  "transition_budget_multiple": 3.0
+}

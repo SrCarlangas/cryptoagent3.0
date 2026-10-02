@@ -138,6 +138,22 @@ def main() -> None:
     parser.add_argument("--decisions", type=int, default=100, help="how many decisions to replay")
     parser.add_argument("--step-days", type=int, default=2, help="days between decisions")
     parser.add_argument("--model", default=DEFAULT_MODEL)
+    parser.add_argument(
+        "--bound-seed",
+        type=int,
+        default=20261001,
+        help="Seed for --provider random. One seed is one pass; sweep it before concluding.",
+    )
+    parser.add_argument(
+        "--provider",
+        default="ollama",
+        choices=("ollama", "oracle", "random"),
+        help=(
+            "ollama runs the real model. oracle and random are research-only BOUNDS: the "
+            "ceiling a perfect brain could reach inside this architecture, and the null a "
+            "coin flip reaches. Both compute the decision, cost nothing, and cannot trade."
+        ),
+    )
     parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT)
     parser.add_argument("--policy", default="data/models/local-exposure-agent-v1.json")
     parser.add_argument("--index", default="data/models/history-index.json")
@@ -184,7 +200,24 @@ def main() -> None:
     # The client is driven directly rather than through LLMTradingAgent because the
     # backtest must control the day cutoff when building state, which live code has
     # no reason to do.
-    client = OllamaClient(args.endpoint, args.model)
+    decision_days = list(range(start_day, end_day, args.step_days))
+    client: Any
+    if args.provider == "ollama":
+        client = OllamaClient(args.endpoint, args.model)
+    else:
+        # Research-only bounds. They compute a decision instead of generating one, so they
+        # cost nothing and run in seconds. The oracle is ACAUSAL: it reads the forward return
+        # of the interval it is deciding, which makes it an upper bound on what a perfect
+        # brain could score inside this architecture -- never a strategy, and never reachable
+        # from a path that can place an order.
+        from bound_clients import OracleClient, RandomClient
+
+        if args.provider == "oracle":
+            client = OracleClient(closes, decision_days, args.step_days)
+        else:
+            client = RandomClient(
+                closes, decision_days, args.step_days, seed=args.bound_seed
+            )
     params = RealtimeParams(
         allocation_fraction=D("0.95"),
         round_trip_cost_bps=D(str(args.fee_per_side * 2 * 10_000)),
@@ -240,7 +273,6 @@ def main() -> None:
     # Same persistence rule as production, so the backtest measures the system that runs.
     tracker = RegimeTracker(regime=1)
 
-    decision_days = list(range(start_day, end_day, args.step_days))
     print(
         f"replaying {len(decision_days)} decisions, step {args.step_days}d, "
         f"model {args.model}, think={args.think}",

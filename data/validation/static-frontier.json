@@ -1,0 +1,204 @@
+{
+  "buy_and_hold": {
+    "band": 1.0,
+    "fee_per_side": 0.002,
+    "fees_paid_pct": 0.0,
+    "fraction": 1.0,
+    "max_drawdown_pct": 83.94268700556078,
+    "net_return_pct": 1654.8136765664929,
+    "rebalances": 0
+  },
+  "dataset_id": "sha256:c475ef34e42f948abd4ed3c3e3dbddc213b026ecdb9dc64b3cd8b6b41a58cfc7",
+  "drawdown_cap": 0.25,
+  "points": [
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 0.7695403004950919,
+      "fraction": 0.2,
+      "max_drawdown_pct": 24.123804612278924,
+      "net_return_pct": 160.22532157810997,
+      "rebalances": 46
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 1.687790784604336,
+      "fraction": 0.3,
+      "max_drawdown_pct": 34.313690471949684,
+      "net_return_pct": 291.06876274285366,
+      "rebalances": 78
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 2.423012462096797,
+      "fraction": 0.35,
+      "max_drawdown_pct": 42.67226345613846,
+      "net_return_pct": 371.2496036765194,
+      "rebalances": 91
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 2.217680050525229,
+      "fraction": 0.4,
+      "max_drawdown_pct": 47.16471484939129,
+      "net_return_pct": 411.84606048537063,
+      "rebalances": 83
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 3.378840547170843,
+      "fraction": 0.5,
+      "max_drawdown_pct": 56.21000791815551,
+      "net_return_pct": 620.236258661734,
+      "rebalances": 98
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 4.404592130110102,
+      "fraction": 0.6,
+      "max_drawdown_pct": 62.86193500111096,
+      "net_return_pct": 893.7032796873334,
+      "rebalances": 102
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 2.3229459552241423,
+      "fraction": 0.8,
+      "max_drawdown_pct": 74.90050063563358,
+      "net_return_pct": 1367.1116279038447,
+      "rebalances": 45
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 0.0,
+      "fraction": 1.0,
+      "max_drawdown_pct": 83.94268700556078,
+      "net_return_pct": 1654.8136765664929,
+      "rebalances": 0
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 0.38536523412399964,
+      "fraction": 0.2,
+      "max_drawdown_pct": 24.083142518489176,
+      "net_return_pct": 160.95751072045638,
+      "rebalances": 46
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 0.8461346089536805,
+      "fraction": 0.3,
+      "max_drawdown_pct": 34.24647664371836,
+      "net_return_pct": 292.89384414511017,
+      "rebalances": 78
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 1.2154206972065071,
+      "fraction": 0.35,
+      "max_drawdown_pct": 42.63332557255392,
+      "net_return_pct": 373.8216938787207,
+      "rebalances": 91
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 1.1121720662366004,
+      "fraction": 0.4,
+      "max_drawdown_pct": 47.11967879133911,
+      "net_return_pct": 414.4517202490195,
+      "rebalances": 83
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 1.6958988109011697,
+      "fraction": 0.5,
+      "max_drawdown_pct": 56.1711343395913,
+      "net_return_pct": 624.6969518414074,
+      "rebalances": 98
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 2.2423665820241445,
+      "fraction": 0.6,
+      "max_drawdown_pct": 62.82319679934416,
+      "net_return_pct": 910.5700838422322,
+      "rebalances": 104
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 1.188914670196527,
+      "fraction": 0.8,
+      "max_drawdown_pct": 74.88523308022017,
+      "net_return_pct": 1372.7713397267653,
+      "rebalances": 45
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.001,
+      "fees_paid_pct": 0.0,
+      "fraction": 1.0,
+      "max_drawdown_pct": 83.92433170187813,
+      "net_return_pct": 1656.672207304535,
+      "rebalances": 0
+    },
+    {
+      "band": 0.02,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 4.727622038371892,
+      "fraction": 0.35,
+      "max_drawdown_pct": 41.03877308179722,
+      "net_return_pct": 347.4903046228071,
+      "rebalances": 451
+    },
+    {
+      "band": 0.05,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 2.423012462096797,
+      "fraction": 0.35,
+      "max_drawdown_pct": 42.67226345613846,
+      "net_return_pct": 371.2496036765194,
+      "rebalances": 91
+    },
+    {
+      "band": 0.1,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 1.3324499431978696,
+      "fraction": 0.35,
+      "max_drawdown_pct": 43.18217095246648,
+      "net_return_pct": 394.2063834848817,
+      "rebalances": 26
+    },
+    {
+      "band": 0.2,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 0.5876051316408553,
+      "fraction": 0.35,
+      "max_drawdown_pct": 43.78423619200757,
+      "net_return_pct": 362.5118789181698,
+      "rebalances": 6
+    },
+    {
+      "band": 1.0,
+      "fee_per_side": 0.002,
+      "fees_paid_pct": 0.0,
+      "fraction": 0.35,
+      "max_drawdown_pct": 69.14539515406288,
+      "net_return_pct": 579.1847867982724,
+      "rebalances": 0
+    }
+  ]
+}

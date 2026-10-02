@@ -1,0 +1,99 @@
+{
+  "btc_hold": {
+    "fees_paid_pct": 0.4,
+    "label": "comprar y mantener BTCUSDT",
+    "max_drawdown_pct": 76.62925431645935,
+    "mean_held": 1.0,
+    "net_return_pct": 192.54482779734073,
+    "rebalances": 1
+  },
+  "btc_risk_matched_pct": 192.54,
+  "folds": [
+    {
+      "beat_risk_matched": true,
+      "btc_hold_pct": 62.26,
+      "btc_risk_matched_pct": 62.26,
+      "chosen": "momento 30d top8",
+      "fold": 1,
+      "oos_drawdown_pct": 59.48,
+      "oos_return_pct": 2024.14,
+      "test_end": "2021-12-31"
+    },
+    {
+      "beat_risk_matched": false,
+      "btc_hold_pct": -64.21,
+      "btc_risk_matched_pct": -64.21,
+      "chosen": "momento 30d top3",
+      "fold": 2,
+      "oos_drawdown_pct": 82.69,
+      "oos_return_pct": -80.41,
+      "test_end": "2022-12-31"
+    },
+    {
+      "beat_risk_matched": true,
+      "btc_hold_pct": 153.72,
+      "btc_risk_matched_pct": 153.72,
+      "chosen": "momento 90d top3",
+      "fold": 3,
+      "oos_drawdown_pct": 40.07,
+      "oos_return_pct": 210.19,
+      "test_end": "2023-12-31"
+    },
+    {
+      "beat_risk_matched": false,
+      "btc_hold_pct": 120.8,
+      "btc_risk_matched_pct": 120.8,
+      "chosen": "momento 30d top8",
+      "fold": 4,
+      "oos_drawdown_pct": 54.28,
+      "oos_return_pct": 10.01,
+      "test_end": "2024-12-30"
+    },
+    {
+      "beat_risk_matched": false,
+      "btc_hold_pct": -6.36,
+      "btc_risk_matched_pct": -6.36,
+      "chosen": "momento 90d top3",
+      "fold": 5,
+      "oos_drawdown_pct": 52.52,
+      "oos_return_pct": -8.09,
+      "test_end": "2025-12-30"
+    }
+  ],
+  "pooled_drawdown_pct": 80.41,
+  "pooled_return_pct": 1204.88,
+  "survivorship_bias": "not eliminated; hand-picked universe biases results UP",
+  "universe": [
+    "ADAUSDT",
+    "ALGOUSDT",
+    "ATOMUSDT",
+    "AVAXUSDT",
+    "BCHUSDT",
+    "BNBUSDT",
+    "BTCUSDT",
+    "DASHUSDT",
+    "DOGEUSDT",
+    "DOTUSDT",
+    "EOSUSDT",
+    "ETCUSDT",
+    "ETHUSDT",
+    "FILUSDT",
+    "FTTUSDT",
+    "ICPUSDT",
+    "IOTAUSDT",
+    "LINKUSDT",
+    "LTCUSDT",
+    "LUNAUSDT",
+    "MATICUSDT",
+    "NEOUSDT",
+    "ONTUSDT",
+    "QTUMUSDT",
+    "SOLUSDT",
+    "TRXUSDT",
+    "VETUSDT",
+    "XLMUSDT",
+    "XRPUSDT",
+    "ZECUSDT"
+  ],
+  "verdict": "LA ROTACION TRANSVERSAL BATE A BTC AL MISMO RIESGO"
+}
