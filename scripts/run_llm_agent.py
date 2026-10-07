@@ -27,6 +27,7 @@ from btc_decision_agent.application.execution_intents import ExecutionIntentStor
 from btc_decision_agent.application.llm_agent import (
     DEFAULT_ENDPOINT,
     DEFAULT_MODEL,
+    DEFAULT_TIMEOUT_S,
     LLMAgentEngine,
     build_agent,
 )
@@ -66,6 +67,16 @@ def main() -> None:
         default=30,
         help="how often the agent re-deliberates. Protective layers stay live on "
         "every market event regardless of this",
+    )
+    parser.add_argument(
+        "--llm-timeout-seconds",
+        type=float,
+        default=DEFAULT_TIMEOUT_S,
+        help="how long ONE call to the model may take before it is abandoned. Size it from "
+        "research/llm_latency_probe.py on the host that runs the model, not from preference: "
+        "at the previous hard-coded 600s this host timed out 12 times and the agent ran on "
+        "its numeric fallback for ~21 hours. The cadence must clear 2x this value, because a "
+        "deliberation that wants to trade costs two sequential calls",
     )
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--endpoint", default=DEFAULT_ENDPOINT)
@@ -113,6 +124,7 @@ def main() -> None:
             model=args.model,
             endpoint=args.endpoint,
             horizon_hours=args.outcome_horizon_hours,
+            timeout_s=args.llm_timeout_seconds,
         )
     except (KeyError, TypeError, ValueError, OSError) as error:
         raise SystemExit(f"could not build the agent: {error}") from error

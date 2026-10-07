@@ -60,6 +60,16 @@ _DEFAULT_TRAILING_STOP = D("0.025")
 _DEFAULT_TRAILING_ACTIVATION = D("0.01")
 _DEFAULT_BREAK_EVEN_ACTIVATION = D("0.005")
 _DEFAULT_BREAK_EVEN_LOCK = D("0.0025")
+_BREAK_EVEN_COST_MULTIPLE = D("3")
+"""How many round trips the break-even ratchet must lock in before it may arm.
+
+Not a tuned parameter: it is the point at which the ratchet survives its own cost. At
+1x the lock exactly pays the spread and nets zero; the multiple is the margin that makes
+arming worth doing at all. With the default 20 bps round trip this requires a lock above
+0.60%, which the per-regime playbook scales from measured volatility and the hard-coded
+0.25% default does not reach -- so the default now declines to arm instead of
+guaranteeing a loss.
+"""
 _DEFAULT_MIN_COVERAGE = D("0.65")
 _DEFAULT_MIN_NOTIONAL = D("10")
 _ADJUSTMENT_DUST = D("0.01")
@@ -991,7 +1001,9 @@ class ProtectiveDecisionEngine:
         params = self.effective_params
         initial = entry * (D("1") - params.stop_loss_fraction)
         high = self._state.high_since_entry or price
-        if high >= entry * (D("1") + params.break_even_activation_fraction):
+        if high >= entry * (
+            D("1") + params.break_even_activation_fraction
+        ) and self._break_even_lock_is_economic(params):
             initial = max(
                 initial,
                 entry * (D("1") + params.break_even_lock_fraction),
@@ -1001,6 +1013,22 @@ class ProtectiveDecisionEngine:
             return initial
         trailing = high * (D("1") - params.trailing_stop_fraction)
         return max(initial, trailing)
+
+    def _break_even_lock_is_economic(self, params: RealtimeParams) -> bool:
+        """Does arming the break-even ratchet lock in more than it costs to exit?
+
+        Measured, not assumed. The engine shipped a 0.25% lock against a 0.20% round
+        trip, so the ratchet "protected" 0.05% of equity -- four fifths of what it locked
+        went straight to the spread. On nine years of hourly BTC, once a 0.5% activation
+        is reached the price returns to entry+0.25% about 99% of the time within a week
+        (`research/stop_noise_sizing.py`), so this near-certainly fires and turns an open
+        position into a rounding error. Both live exits were this, not a decision.
+
+        The rule is arithmetic rather than a tuned threshold: a ratchet that locks less
+        than the cost of using it cannot make money, so it must not arm at all.
+        """
+        round_trip = params.round_trip_cost_bps / D("10000")
+        return params.break_even_lock_fraction > round_trip * _BREAK_EVEN_COST_MULTIPLE
 
     def evaluate(
         self, evidence: EvidenceSnapshot, position: ReconciledPosition

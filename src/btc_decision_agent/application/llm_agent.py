@@ -104,6 +104,20 @@ FIRST_RETRY_DELAY = timedelta(minutes=1)
 Short enough that a transient blip costs one minute of the agent's judgement rather than
 a full cadence interval, and long enough that a real outage does not become a retry storm
 against a model that is usually failing precisely because it is overloaded."""
+DEFAULT_TIMEOUT_S = 600.0
+"""Client timeout for ONE call to the model.
+
+Sized by measurement, not preference, and it was wrong. This host is aarch64 with no GPU and
+pages a 30B mixture-of-experts model against 23 GB of RAM, and a deliberation that wants to
+move the book costs TWO calls -- a cheap pass, then a reasoning pass with num_predict=2500.
+At 600 s the second call timed out twelve times, and because a failed deliberation leaves the
+numeric fallback holding the wheel, the live agent ran without its LLM for about 21 hours
+while reporting `FALLBACK_QUANT_HOLD` on 1,537 decisions.
+
+Raising it is only safe up to the cadence: a call still running when the next deliberation
+falls due would overlap, so `LLMAgentEngine` asserts the relationship instead of trusting the
+operator to keep two independent flags consistent. Measure this host with
+`research/llm_latency_probe.py` before changing it."""
 AGENT_VERSION = "LLM-EXPOSURE-AGENT-V1"
 
 VERDICT_SCHEMA: dict[str, Any] = {
@@ -213,7 +227,7 @@ class OllamaClient:
         endpoint: str = DEFAULT_ENDPOINT,
         model: str = DEFAULT_MODEL,
         *,
-        timeout_s: float = 600.0,
+        timeout_s: float = DEFAULT_TIMEOUT_S,
     ) -> None:
         self.endpoint = endpoint
         self.model = model
@@ -489,6 +503,22 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         super().__init__(params)
         self.agent = agent
         self.cadence = cadence
+        # A deliberation still running when the next one falls due would overlap: two
+        # requests against the single bottleneck that is already the reason calls time out.
+        # Asserted rather than documented, because the timeout and the cadence are set from
+        # different places (a client default and a CLI flag) and nothing else would notice
+        # them drifting into an impossible combination.
+        worst_call_s = getattr(agent.client, "timeout_s", None)
+        if worst_call_s is not None:
+            # A deliberation that wants to move the book costs TWO sequential calls, so the
+            # cadence has to clear both, not one.
+            needed = timedelta(seconds=float(worst_call_s) * 2)
+            if cadence < needed:
+                raise ValueError(
+                    "cadence must leave room for two sequential model calls: "
+                    f"cadence {cadence.total_seconds():.0f}s < 2 x timeout "
+                    f"{float(worst_call_s):.0f}s = {needed.total_seconds():.0f}s"
+                )
         self._last_verdict_at: datetime | None = None
         self._last_verdict: AgentVerdict | None = None
         self._last_explanation: dict[str, Any] = {}
@@ -581,6 +611,7 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         evidence: EvidenceSnapshot,
         *,
         is_long: bool,
+        cause: str = "",
     ) -> RealtimeDecision:
         """Turn a fallback opinion into an action, WITHOUT letting it open a position.
 
@@ -601,6 +632,12 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
         and being in cash is the one position that cannot lose money.
         """
         reason = f"FALLBACK_QUANT_{fallback.decision.value}"
+        if cause:
+            # The journal used ONE code for two opposite situations: a model that FAILED and
+            # a model that is simply still thinking. Diagnosing the 21-hour fallback meant
+            # reading Ollama's own access log to tell them apart, because the agent's own
+            # journal could not. The cause is now in the reason code itself.
+            reason = f"{reason}_{cause}"
         if fallback.decision == TradeDecision.SELL:
             return RealtimeDecision(
                 Action.EXIT_LONG, reason, evidence, True, agent_decision=fallback
@@ -695,7 +732,9 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 "p_long": fallback.action_probabilities[ExposureAction.TARGET_LONG.value],
             }
             _LOGGER.warning("LLM no disponible (%s); usando modelo cuantitativo", failure)
-            return self._fallback_decision(fallback, evidence, is_long=is_long)
+            return self._fallback_decision(
+                fallback, evidence, is_long=is_long, cause="MODELO_CAIDO"
+            )
 
         if finished is not None:
             self._last_verdict = finished
@@ -729,7 +768,9 @@ class LLMAgentEngine(ProtectiveDecisionEngine):
                 ),
                 "p_long": fallback.action_probabilities[ExposureAction.TARGET_LONG.value],
             }
-            return self._fallback_decision(fallback, evidence, is_long=is_long)
+            return self._fallback_decision(
+                fallback, evidence, is_long=is_long, cause="AUN_DELIBERANDO"
+            )
 
         if finished is None:
             # Acting on a verdict already applied would re-order on every event.
@@ -996,12 +1037,13 @@ def build_agent(
     model: str = DEFAULT_MODEL,
     endpoint: str = DEFAULT_ENDPOINT,
     horizon_hours: int = 24,
+    timeout_s: float = DEFAULT_TIMEOUT_S,
 ) -> LLMTradingAgent:
     return LLMTradingAgent(
         policy=RegimeMixturePolicy.load(policy_path),
         history=HistoryIndex(index_path),
         memory=AgentMemory(memory_path, horizon_hours=horizon_hours),
-        client=OllamaClient(endpoint, model),
+        client=OllamaClient(endpoint, model, timeout_s=timeout_s),
     )
 
 

@@ -1110,6 +1110,317 @@ comprar-y-mantener-con-techo por más de su error estándar.
       primer cierre del dataset subestima la antigüedad real de los pares anteriores al inicio
       de los datos, lo que sesga la señal **hacia cero**, no hacia inventarla.
 
+- [x] **F.29 DIAGNÓSTICO del agente vivo: las "decisiones que perdían" NO eran decisiones.**
+      Disparado por una captura del historial de órdenes de Binance: las ventas aparecían como
+      **`Stop Loss Market`**, no como decisiones, y sus disparadores estaban **al precio de
+      mercado**. Verificación aritmética antes de medir nada:
+
+      | entrada | `entry × 1,0025` | disparador real |
+      |---|---|---|
+      | 84.814,74 | **85.026,78** | `<= 85.026,77` |
+      | 84.670,18 | **84.881,86** | `<= 84.881,85` |
+
+      Coinciden al céntimo: era el **bloqueo break-even a +0,25 %**, no criterio del agente.
+
+- [x] **F.30 El bloqueo break-even perdía dinero por ARITMÉTICA, no por mala suerte.**
+      `research/stop_noise_sizing.py` sobre 79.477 barras horarias (2017-08 → 2026-09):
+
+      | parámetro vivo | P(toque por ruido) 24 h | 7 d |
+      |---|---|---|
+      | bloqueo break-even 0,25 % | **100 %** | 100 % |
+      | activación break-even 0,5 % | **99,50 %** | 100 % |
+      | activación trailing 1 % | 94,80 % | 100 % |
+      | trailing 2,5 % | 57,48 % | 98,47 % |
+      | stop duro 3 % | 46,93 % | **96,25 %** |
+
+      Y lo decisivo: **una vez armado el bloqueo, se dispara el 99 % de las veces** en 7 días.
+      Aseguraba 0,25 % mientras la ida y vuelta cuesta 0,20 % → **neto 0,05 %**, el 80 % se lo
+      comía el diferencial. Las cinco distancias están **por debajo del retroceso mediano** del
+      activo en sus propios horizontes: medían microestructura, no información.
+
+- [x] **F.31 CRONOLOGÍA: el defecto estaba arreglado en el código pero no en el proceso vivo.**
+      El bloqueo break-even fijó el stop **solo** el 25-sep (98 decisiones) y el 1-oct (115), y
+      **cero veces desde el 2-oct**. Commit `dd6be4f` (25-sep) lo metió bajo el playbook; el
+      fichero llegó al servidor el **27-sep 17:38**; pero el proceso siguió con el código viejo
+      en memoria y **volvió a disparar el 1-oct**. Solo se cargó cuando reinicié el servicio el
+      **2-oct 18:04**, de forma incidental, para correr el puntuador de anuncios.
+      **Lección operativa: un arreglo en el fichero no existe hasta que el proceso lo recarga.**
+
+- [x] **F.32 SEGUNDO defecto, de robustez: deriva de reloj tumbaba el servicio.**
+      No eran 3 reinicios sino **12**, con **9 caídas, 5 solo el 7-oct**. Causa exacta:
+      `binance demo HTTP 400: {"code":-1021,"msg":"Timestamp for this request is outside of the
+      recvWindow."}`. El adaptador firmaba con `int(time.time()*1000)` —el **reloj local sin
+      compensar**— y solo reintentaba en 418/429, así que un −1021 llegaba como HTTP 400 no
+      reintentable, salía de `account_balance()` por la reconciliación de posición y **mataba el
+      proceso**. Arreglado en `src/btc_decision_agent/adapters/binance_execution.py`:
+      compensación contra `/api/v3/time` (cacheada, re-medida al recibir −1021) y reintento
+      **acotado a ese código**, no a todo HTTP 400, para que una orden inválida siga fallando
+      ruidosamente.
+
+- [x] **F.33 TERCER defecto, en mi propio instrumento: la razón de captura mentía de signo.**
+      Con retornos negativos, agente −1,12 % contra nulo −0,98 % da **1,15x**, que se lee como
+      "supera al nulo" cuando en realidad **perdió más**. Corregido en
+      `research/live_performance.py`: ahora informa la **diferencia con signo** y solo muestra la
+      razón cuando ambos lados son ganancias.
+
+- [x] **F.34 VALIDACIÓN FUERA DE MUESTRA del arreglo, contra los dos nulos.**
+      `research/stop_geometry_validation.py`. Stop probado contra **mínimos** de barra con orden
+      intrabar adverso (un mínimo que toca el stop cuenta como salida aunque la barra también
+      marque máximo), comisiones adversas en ambas patas.
+
+      | geometría | **FUERA DE MUESTRA** (2017→2024) | desarrollo (2024→2026) | caída OOS |
+      |---|---|---|---|
+      | viva (rota), bloqueo 0,25 % | **−3,02 %** | −9,91 % | 22,45 % |
+      | **arreglada**, bloqueo no arma | **+32,62 %** | **−2,66 %** | 17,85 % |
+      | ruido-medido (duro 10 %, trail 8 %) | +610,73 % | −23,51 % | **65,02 %** |
+
+      El arreglo **mejora en AMBOS segmentos** (+35,64 pp fuera de muestra, +7,25 pp en
+      desarrollo), que es la firma de un defecto corregido y no de un ajuste. **ADOPTADO.**
+
+- [x] **F.35 Intento RECHAZADO: la geometría dimensionada por ruido.** Rinde +610,73 % fuera de
+      muestra, muy por encima de todo lo demás, y **la rechazo**: su caída es **65,02 %**, que
+      viola el techo del 25 % del mandato. No se adopta un resultado que incumple la
+      restricción declarada por muy bueno que sea el retorno.
+
+- [x] **F.36 VEREDICTO: el arreglo es real y SIGUE sin batir a no hacer nada.**
+      Fuera de muestra, comprar y mantener dio **+2.189,89 %** con caída 83,91 %; desapalancado
+      al mismo riesgo que la geometría arreglada, el nulo rinde **+465,95 %** frente a los
+      +32,62 % del agente: **−433,33 pp**. Ninguna de las tres geometrías supera al nulo al mismo
+      riesgo en ningún segmento. Es la **sexta** confirmación del mismo hecho. Lo que el arreglo
+      compra es **dejar de destruir valor**, no ventaja.
+
+- [x] **F.37 CORREGIDO: el agente decidía sin su LLM. El parámetro mal dimensionado era el
+      TIMEOUT, no la cadencia.** Mi propio diagnóstico previo atribuía el fallo a que el modelo
+      no alcanzaba "la cadencia de 5 s"; **era incorrecto**. La arquitectura ya es **no
+      bloqueante** (deliberación en hilo aparte, el mercado se sigue vigilando) y la cadencia ya
+      era de **30 min**, más larga que el timeout. El mensaje real del journal:
+      `LLM no disponible (modelo inalcanzable: TimeoutError('timed out'))`, **12 veces** → 1.537
+      decisiones con `FALLBACK_QUANT_HOLD` en 26 h, porque un fallo deja el respaldo numérico al
+      mando hasta la siguiente deliberación con éxito.
+
+      **Medido** con `research/llm_latency_probe.py` (llamada barata, `think=False`):
+
+      | muestra | total | cola | prompt | generación | tokens |
+      |---|---|---|---|---|---|
+      | 1 | **120,4 s** | 95,2 s | 0,12 s | 25,1 s | 250 |
+      | 2 | **317,5 s** | 292,8 s | 0,11 s | 24,6 s | 250 |
+
+      El hallazgo: **el cómputo es estable (~25 s) y la COLA domina, variando 3x (95→292 s)**.
+      La contención es la causa, no la velocidad del modelo. Y produccción hace **dos llamadas
+      secuenciales** por deliberación que quiere mover el libro: barata (`num_predict=900`) y
+      razonada (`think=True`, `num_predict=2500`), y el timeout aplica **por llamada**.
+
+      **Aplicado:** `--llm-timeout-seconds` ahora existe (antes `600.0` estaba **fijo en el
+      código**, imposible de dimensionar sin editar fuente) y el servicio corre con
+      **timeout 1200 s y cadencia 45 min**, verificado en vivo: `cadence=45min`, 0 errores.
+      Guarda nueva en `LLMAgentEngine`: **rechaza** una cadencia que no cubra 2 × timeout, con
+      los tres números en el mensaje. El par anterior (600 s × 2 = 1200 s contra 1800 s) **sí
+      cabía**, lo que confirma por aserción que no era un problema de cadencia.
+
+      **RESERVA honesta:** no logré medir la ruta **razonada**. La sonda murió dos veces sin
+      rastro de OOM con la memoria a 0 GB libres, y **seguir sondeando compite con el agente
+      vivo por el mismo modelo**, que es exactamente la causa del problema. El 1200 s sale de
+      2× el timeout que demostradamente falló y de la varianza de cola medida (3x), no de una
+      medición directa de esa ruta. **Reduce el riesgo de timeout; no está demostrado que lo
+      elimine.**
+
+      *No toqué `num_predict`:* ambas muestras generaron **250 tokens** y pararon solas, así
+      que el esquema estructurado ya corta mucho antes del tope de 2500 y bajarlo no habría
+      cambiado la latencia.
+
+- [x] **F.38 ¿Qué modelo local es el mejor para este agente? Medido en la máquina, no en un
+      ranking. Y el resultado CONTRADICE lo que sugería el índice público.**
+
+      **Primero: LMArena no puede responder esta pregunta.** Lo consulté (413 modelos, 8,6M de
+      votos) y falla por tres razones estructurales: (1) su cima es **100 % propietaria**
+      (Claude Opus 4.6 1505, Gemini 4 Argon 1525), vetada por la regla de cero tokens de
+      terceros; (2) **no publica parámetros ni RAM**, y la restricción vinculante aquí son
+      23 GB en 4 núcleos aarch64 **sin GPU**; (3) **los modelos que caben aquí no están en el
+      ranking**, porque un arena necesita una API alojada y los Qwen3.5 sub-10B no tienen
+      hosting serverless. Peor: su Elo premia **prosa larga y agradable** — el propio Arena
+      ofrece un control de "Style Control" para restar ese efecto — y este agente **solo emite
+      cinco campos bajo esquema JSON**, donde la verbosidad es latencia pura.
+
+      **Criterios declarados antes de medir, por orden:** cabe con holgura, parsea el esquema,
+      responde dentro del presupuesto, está calibrado, es consistente a temperatura 0.
+      **NO se rankea por acierto de mercado:** la ventaja direccional de este proyecto está
+      medida en **cero seis veces**, así que ordenar modelos por si aciertan el próximo
+      movimiento de BTC sería ordenarlos por ruido.
+
+      `research/model_bakeoff.py`, 3 escenarios × 2 repeticiones, **con el agente vivo parado**
+      para que los tres compitan en igualdad:
+
+      | | **actual** `qwen3:30b-a3b` | `qwen3.5:9b` | `qwen3.5:4b` |
+      |---|---|---|---|
+      | RAM | 19,05 GB | 6,55 GB | **3,32 GB** |
+      | parseadas | 6/6 | 6/6 | 6/6 |
+      | violaciones | 0 | 0 | 0 |
+      | inestables | 0 | 0 | 0 |
+      | latencia **mediana** | **42,0 s** | 97,1 s | 47,0 s |
+      | peor latencia | 241,6 s | **119,9 s** | **68,7 s** |
+      | índice público (Artificial Analysis) | 8 | 32 | 27 |
+
+      **El índice público predijo mal el resultado.** El modelo actual, con índice 8, es el
+      **más rápido en mediana** (42 s) y el **mejor calibrado** de los tres. Razón medida: es
+      MoE con **3,3B activos**, frente a 9B densos del 9b — el MoE ahorra cómputo, y en CPU el
+      cómputo es lo que manda. Mi reserva previa («en cómputo por token el 9B es peor, no
+      mejor») **se confirmó**.
+
+      **Los 826 s de producción eran CONTENCIÓN, no lentitud del modelo:** a solas con la
+      máquina el mismo modelo responde en 42 s. Lo que causa la contención es que ocupe 19 de
+      23 GB.
+
+      **Calibración, donde el actual gana claramente:**
+
+      | escenario | actual | 9b | 4b |
+      |---|---|---|---|
+      | alcista (prompt: +18 % a 30d) | conv 0,56 · mov +0,18 % | conv 0,10 · mov −2,5 % | conv 0,15 · **mov +18,0 %** |
+      | bajista (prompt: −28 %) | **conv 0,85 · mov −15,0 %** | conv 0,15 · mov −18,5 % | conv 0,15 · mov −28,0 % |
+      | lateral (prompt: +0,6 %) | conv 0,525 · mov +0,6 % | conv 0,10 · **mov −25,0 %** | conv 0,0 · mov 0,0 % |
+
+      El **9b predijo −25 % en un escenario de consolidación declarada**, que es una magnitud
+      inventada y peligrosa para un dimensionador. El **4b fue prudente hasta la inacción**:
+      EFECTIVO en los tres con convicción 0,0-0,15, incluido el alcista claro.
+
+- [x] **F.39 HALLAZGO INESPERADO: el modelo actual COPIA al modelo cuantitativo en vez de
+      razonar.** En **4 de 6** respuestas su convicción es una copia **exacta** de la `P(long)`
+      que el prompt le entregó (0,56→0,56 y 0,525→0,525), y en **2 de 6** el movimiento
+      esperado copia literalmente el retorno a 30 días del enunciado (+0,6 %→+0,6 %). En el
+      escenario alcista escribió **+0,18 %** donde el prompt decía **+18 %**: un error de
+      unidad de dos órdenes de magnitud.
+
+      Esto **da una explicación mecánica a las seis mediciones de timing en cero**: si el LLM
+      repite la probabilidad del modelo cuantitativo, no aporta información independiente, y su
+      correlación de timing tiene que salir exactamente la del modelo que copia. No prueba que
+      sea la única causa, pero es la primera explicación *medida* del fenómeno.
+
+- [x] **F.40 TRES defectos propios en el instrumento, encontrados y corregidos durante F.38.**
+
+      1. **Falso positivo que casi descalificó un modelo.** Mi juez marcó dos respuestas del
+         9b como «propone ponerse corto», que el mandato prohíbe. El texto real decía
+         *«riesgo significativo de corrección a corto **plazo**»* — un horizonte temporal.
+         Buscaba la palabra «corto» a secas. Corregido para exigir verbos de cortar y excluir
+         los modismos de horizonte; **20 pruebas** en `tests/test_model_bakeoff.py` incluyendo
+         el texto literal que me engañó. Con el juez corregido el 9b tiene **cero violaciones**.
+      2. **Restauración del servicio que mentía.** Un `trap EXIT` simple imprimió éxito
+         mientras el journal no registraba arranque, y **dejó el agente parado dos veces**. La
+         v2 que grepeaba el journal produjo el error opuesto: **falsa alarma** de «requiere
+         atención humana» con el agente activo y decidiendo. La v3 verifica **evidencia de
+         vida** (activo + activación posterior a la parada + está escribiendo decisiones).
+      3. **El informe se perdía al morir.** El bakeoff murió **dos veces** por presión de
+         memoria y se llevó mediciones ya completadas. Ahora escribe tras **cada** modelo.
+
+      Que muriera dos veces **es un dato sobre la máquina**, no un incidente: 23 GB compartidos
+      con el agente en sombra, Redis, Timescale, Vault, Grafana, Jaeger, Prometheus y dos
+      paneles.
+
+- [ ] **F.41 PENDIENTE — recomendación, y por qué NO es la obvia.** El caso para cambiar de
+      modelo es **más débil** de lo que sugería el índice público: el actual es el más rápido en
+      mediana y el mejor calibrado. Lo que sí resuelve un cambio es la **contención** (19 de
+      23 GB → 0 libres y swap en uso), que es la causa real de los 826 s en producción.
+      El candidato con mejor balance es **`qwen3.5:4b`** (3,32 GB, peor caso 68,7 s, 0
+      violaciones, consistente), aceptando que es más prudente. **Descartado `qwen3.5:9b`**: más
+      lento que el actual y peor calibrado. Requiere decisión de Carlos; no se ha cambiado nada.
+
+- [x] **F.42 La hipótesis de la COPIA, mía, REFUTADA sobre 312 deliberaciones reales.**
+      En el bakeoff vi que en 4 de 6 escenarios la convicción del LLM igualaba la `p_largo`
+      que el prompt le entrega, y propuse investigarlo como prioridad sobre cambiar de modelo.
+      Medido en la memoria del agente (`research/llm_independence.py`, 312 deliberaciones,
+      24-sep → 7-oct), donde `quant_p_long` y `conviction` están guardados lado a lado:
+
+      | | |
+      |---|---|
+      | copias **exactas** de `p_largo` | **1 de 312 = 0,3 %** |
+      | dentro de ±0,01 | 3 de 312 = 1,0 % |
+      | diferencia media | **+0,1856** |
+      | mayor desacuerdo | +0,2947 |
+
+      **No copia.** Lo que hace es desviarse **sistemáticamente +0,19 por encima** de su
+      asesor, siempre en la misma dirección. Seis escenarios elegidos a mano no eran evidencia
+      sobre la población; lo registro como refutado.
+
+      *Verificado antes de medir:* la convicción se parsea del LLM (`llm_agent.py:285`), no la
+      sustituye el código, así que lo observado era comportamiento real del modelo.
+
+- [x] **F.43 Lo que apareció en su lugar es PEOR: la decisión es casi una CONSTANTE.**
+
+      | | |
+      |---|---|
+      | valores distintos de convicción usados | **5** (0,58 · 0,70 · 0,75 · 0,80 · 0,85) |
+      | convicción modal | **0,75 en 257 de 312 = 82,4 %** |
+      | rango usado | [0,58 · 0,85] — **nunca baja de 0,58** |
+      | exposición modal | **INVERTIDO en 311 de 312 = 99,7 %** |
+      | pronósticos **negativos** | **0 de 312 = 0,0 %** |
+      | rango del pronóstico | [+0,50 % · +12,00 %] |
+
+      **Cero pronósticos negativos en 13 días que incluyen caídas de BTC.** Y el prompt
+      advierte exactamente de esto: *«si declaras casi siempre el mismo numero, ese numero ha
+      dejado de informar y el tamaño deja de responder a lo que ves»*. No es un estándar
+      externo: es su propia instrucción, incumplida y medida.
+
+      **Esto explica MECÁNICAMENTE las seis mediciones de correlación de timing en cero.** Una
+      convicción que no varía no escala nada, y una dirección constante no es una decisión: un
+      agente que dice lo mismo siempre **es** comprar-y-mantener, y su correlación con el
+      momento de mercado tiene que ser cero. Es la primera explicación *medida* del fenómeno,
+      no solo su constatación.
+
+      *Reserva:* 312 deliberaciones en 13 días, y el agente solo vio **2 de 4 regímenes**
+      (régimen 3 en 299, régimen 0 en 12). No se puede afirmar que la constancia persista en un
+      bajista profundo, porque no lo ha visto.
+
+      **Consecuencia para F.41:** cambiar de modelo **no arregla esto**. El 4b fue prudente
+      hasta la inacción y el 9b mal calibrado; ninguno ataca la causa. El problema no es qué
+      modelo decide, sino que **lo que emite no varía con la evidencia**.
+
+- [x] **F.44 ARREGLADA la ceguera que impedía corregir la constancia. No es ingeniería de
+      prompt: es un número sin su nulo.**
+
+      Antes de tocar nada verifiqué si la constancia era corregible por código o si estaría
+      ajustando texto a gusto. **El bucle de retroalimentación ya existía** y mostraba al
+      modelo contraste real por bucket de convicción. Pero tenía un defecto medible:
+
+      **El acierto se mostraba SIN el nulo contra el que juzgarlo.** El agente eligió
+      INVERTIDO en el 99,7 % de las decisiones, así que *«acertaste 51 %»* es esencialmente la
+      frecuencia con que subió BTC. Este proyecto se niega a reportar un número sin su
+      comparador en todas partes **menos en la retroalimentación del propio agente**, que era
+      justo donde más importaba.
+
+      Lo que el modelo ve **ahora**, con sus datos reales:
+
+      | convicción | casos | acierto | **ventaja sobre su tasa base (44 %)** |
+      |---|---|---|---|
+      | 0,5-0,7 | 1 | 100 % | +56 % *(un caso: ruido)* |
+      | 0,7-0,85 | 51 | 51 % | **+7 %** |
+      | 0,85-1,0 | 29 | 31 % | **−13 %** |
+
+      Sus convicciones **más altas rinden PEOR que estar siempre dentro**. Esa es la
+      información que le faltaba: antes veía «31 %» sin saber que su propio nulo era 44 %.
+
+      Y añadí la medición que no existía: **la dispersión de su propia convicción**. El prompt
+      ya le decía *«si declaras casi siempre el mismo número, ese número ha dejado de
+      informar»*, pero **nada lo medía**. Ahora lee: *«declaraste 0,75 en el 82 % de tus 312
+      decisiones; usaste 5 valores distintos en [0,58 · 0,85]»* más una alerta explícita.
+
+      Umbral `DEGENERATE_CONVICTION_SHARE = 0.5` fijado **por argumento, no por ajuste**:
+      cuando el mismo valor se declara *más veces que no*, la mejor descripción de la salida
+      del agente es esa constante. Exactamente la mitad **no** es "casi siempre", y una alerta
+      que salta con una distribución merely concentrada se convierte en ruido que el modelo
+      aprende a ignorar.
+
+      **Defecto en mi propio arreglo, encontrado y corregido:** calculaba la dispersión solo
+      sobre las **81 resueltas** (42 % modal), descartando 231 de 312 observaciones y
+      **subestimando la degeneración a la mitad** — la alerta no habría disparado sobre un
+      agente que se repetía claramente. La dispersión no necesita resultados. Corregido a las
+      312, y con ello la alerta sí dispara. Prueba dedicada que lo fija.
+
+      **LÍMITE HONESTO, y es el que importa:** esto **quita la ceguera, no arregla la
+      constancia**. Que el modelo responda al ver su propia degeneración es una pregunta
+      empírica que este cambio **no responde**. Lo que sí garantiza es que la información
+      necesaria para corregirse está delante de él y medida. Habrá que volver a correr
+      `research/llm_independence.py` dentro de unos días para saber si cambió algo.
+
+      Desplegado y reiniciado: `active`, 0 reinicios, 0 errores, 677 pruebas.
+
 ---
 
 ## Hipótesis ya refutadas — no reintentar

@@ -77,17 +77,40 @@ class TestCurrentStopBehaviour:
         # Default stop_loss_fraction is 3%.
         assert engine.active_stop(D("80000")) == D("80000") * D("0.97")
 
-    def test_break_even_lock_raises_the_floor_once_slightly_in_profit(self) -> None:
+    def test_break_even_lock_is_refused_when_it_locks_less_than_it_costs(self) -> None:
+        """Changed deliberately: the default lock may no longer arm, and this is why.
+
+        The shipped default locked entry+0.25% while a round trip costs 0.20%, so the
+        ratchet secured 0.05% of equity. On nine years of hourly BTC, once the 0.5%
+        activation is touched the price returns to entry+0.25% about 99% of the time
+        within a week (`research/stop_noise_sizing.py`), so it very nearly always fires.
+        BOTH live exits on the DEMO account were this, not a decision by the agent.
+
+        The previous version of this test asserted the stop WAS raised to entry*1.0025.
+        It was named a characterisation of current behaviour, and that behaviour was the
+        defect, so the assertion is inverted rather than preserved.
+        """
         engine = self._engine()
-        # Default break-even activation +0.5%, lock +0.25%.
-        self._long_at(engine, "80000", "80400")  # +0.5%
-        assert engine.active_stop(D("80400")) == D("80000") * D("1.0025")
+        self._long_at(engine, "80000", "80400")  # +0.5%, activation reached
+        assert engine.active_stop(D("80400")) == D("80000") * D("0.97"), (
+            "with an uneconomic lock the stop must stay at the hard floor"
+        )
+
+    def test_break_even_lock_still_arms_when_it_clears_its_own_cost(self) -> None:
+        """The ratchet is not disabled, only required to pay for itself."""
+        engine = self._engine(
+            break_even_lock_fraction=D("0.01"), break_even_activation_fraction=D("0.015")
+        )
+        self._long_at(engine, "80000", "81200")  # +1.5%, activation reached
+        assert engine.active_stop(D("81200")) == D("80000") * D("1.01")
 
     def test_trailing_engages_only_after_the_activation_threshold(self) -> None:
         engine = self._engine()
         # +0.9% high: past break-even (+0.5%) but short of trailing activation (+1%).
         self._long_at(engine, "80000", "80720")
-        assert engine.active_stop(D("80720")) == D("80000") * D("1.0025")
+        assert engine.active_stop(D("80720")) == D("80000") * D("0.97"), (
+            "below trailing activation and with no economic lock, the hard stop governs"
+        )
 
     def test_trailing_follows_the_high_once_active(self) -> None:
         engine = self._engine()
@@ -96,10 +119,29 @@ class TestCurrentStopBehaviour:
         assert engine.active_stop(D("88000")) == D("88000") * D("0.975")
 
     def test_the_stop_never_falls_back_below_its_floor(self) -> None:
+        """The ratchet invariant itself, which the change must NOT weaken.
+
+        Tested with an economic lock so the invariant is exercised rather than skipped:
+        a trailing stop that would sit below the locked floor must not drag it down.
+        """
+        engine = self._engine(
+            break_even_lock_fraction=D("0.01"), break_even_activation_fraction=D("0.015")
+        )
+        self._long_at(engine, "80000", "81200")  # trail (79,170) is below the lock (80,800)
+        stop = engine.active_stop(D("81200"))
+        assert stop is not None and stop >= D("80000") * D("1.01")
+
+    def test_the_stop_is_monotone_in_the_high_water_mark(self) -> None:
+        """A higher high may never produce a LOWER stop, at any params."""
         engine = self._engine()
-        self._long_at(engine, "80000", "80900")  # trail would be below break-even lock
-        stop = engine.active_stop(D("80900"))
-        assert stop is not None and stop >= D("80000") * D("1.0025")
+        previous: D | None = None
+        for high in ("80000", "80400", "81000", "84000", "88000", "95000"):
+            self._long_at(engine, "80000", high)
+            stop = engine.active_stop(D(high))
+            assert stop is not None
+            if previous is not None:
+                assert stop >= previous, f"stop fell as the high rose to {high}"
+            previous = stop
 
     def test_a_wider_stop_fraction_moves_the_initial_stop_down(self) -> None:
         # The property the playbook depends on: stop geometry follows params.

@@ -1,0 +1,125 @@
+{
+  "dataset_id": "sha256:c475ef34e42f948abd4ed3c3e3dbddc213b026ecdb9dc64b3cd8b6b41a58cfc7",
+  "segments": {
+    "FUERA DE MUESTRA (2017-08 -> ~2024)": {
+      "bars": 63581,
+      "buy_and_hold_pct": 2189.894664335794,
+      "buy_and_hold_drawdown_pct": 83.90598442375504,
+      "geometries": [
+        {
+          "geometry": "vivo (roto): lock 0.25%",
+          "net_return_pct": -3.024997580321942,
+          "max_drawdown_pct": 22.44817416181165,
+          "trades": 89,
+          "stopped_out": 89,
+          "fees_paid_pct": 17.80000000000001,
+          "risk_matched_null_pct": 585.8835595416037,
+          "edge_vs_null_pct": -588.9085571219257,
+          "beats_usdt": false
+        },
+        {
+          "geometry": "arreglado: lock no arma",
+          "net_return_pct": 32.62455614348949,
+          "max_drawdown_pct": 17.85303402262383,
+          "trades": 89,
+          "stopped_out": 89,
+          "fees_paid_pct": 17.80000000000001,
+          "risk_matched_null_pct": 465.95322391903886,
+          "edge_vs_null_pct": -433.3286677755494,
+          "beats_usdt": true
+        },
+        {
+          "geometry": "ruido-medido: duro 10%, trail 8%",
+          "net_return_pct": 610.7317948449268,
+          "max_drawdown_pct": 65.02269988915043,
+          "trades": 89,
+          "stopped_out": 80,
+          "fees_paid_pct": 17.80000000000001,
+          "risk_matched_null_pct": 1697.0525347610912,
+          "edge_vs_null_pct": -1086.3207399161645,
+          "beats_usdt": true
+        }
+      ]
+    },
+    "ventana de desarrollo (~2024 -> 2026-09)": {
+      "bars": 15896,
+      "buy_and_hold_pct": -23.462347856270316,
+      "buy_and_hold_drawdown_pct": 53.74206479139391,
+      "geometries": [
+        {
+          "geometry": "vivo (roto): lock 0.25%",
+          "net_return_pct": -9.912359290562778,
+          "max_drawdown_pct": 15.108367762204136,
+          "trades": 23,
+          "stopped_out": 23,
+          "fees_paid_pct": 4.600000000000003,
+          "risk_matched_null_pct": -6.595909207307918,
+          "edge_vs_null_pct": -3.3164500832548596,
+          "beats_usdt": false
+        },
+        {
+          "geometry": "arreglado: lock no arma",
+          "net_return_pct": -2.658245953132965,
+          "max_drawdown_pct": 23.910725677283946,
+          "trades": 23,
+          "stopped_out": 23,
+          "fees_paid_pct": 4.600000000000003,
+          "risk_matched_null_pct": -10.438783204811433,
+          "edge_vs_null_pct": 7.780537251678467,
+          "beats_usdt": false
+        },
+        {
+          "geometry": "ruido-medido: duro 10%, trail 8%",
+          "net_return_pct": -23.51310155333404,
+          "max_drawdown_pct": 41.01721659019125,
+          "trades": 23,
+          "stopped_out": 15,
+          "fees_paid_pct": 4.600000000000003,
+          "risk_matched_null_pct": -17.907019528753917,
+          "edge_vs_null_pct": -5.606082024580122,
+          "beats_usdt": false
+        }
+      ]
+    },
+    "TODO": {
+      "bars": 79477,
+      "buy_and_hold_pct": 1655.0154350972307,
+      "buy_and_hold_drawdown_pct": 83.90598442375504,
+      "geometries": [
+        {
+          "geometry": "vivo (roto): lock 0.25%",
+          "net_return_pct": -1.9372508638829444,
+          "max_drawdown_pct": 22.44817416181165,
+          "trades": 111,
+          "stopped_out": 111,
+          "fees_paid_pct": 22.200000000000017,
+          "risk_matched_null_pct": 442.78218034982984,
+          "edge_vs_null_pct": -444.71943121371277,
+          "beats_usdt": false
+        },
+        {
+          "geometry": "arreglado: lock no arma",
+          "net_return_pct": 41.07448131593225,
+          "max_drawdown_pct": 19.10357535208807,
+          "trades": 111,
+          "stopped_out": 111,
+          "fees_paid_pct": 22.200000000000017,
+          "risk_matched_null_pct": 376.8111689575458,
+          "edge_vs_null_pct": -335.73668764161357,
+          "beats_usdt": true
+        },
+        {
+          "geometry": "ruido-medido: duro 10%, trail 8%",
+          "net_return_pct": 729.745908957596,
+          "max_drawdown_pct": 65.02269988915043,
+          "trades": 111,
+          "stopped_out": 95,
+          "fees_paid_pct": 22.200000000000017,
+          "risk_matched_null_pct": 1282.5494234684402,
+          "edge_vs_null_pct": -552.8035145108441,
+          "beats_usdt": true
+        }
+      ]
+    }
+  }
+}

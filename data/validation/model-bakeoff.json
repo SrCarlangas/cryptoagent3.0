@@ -1,0 +1,97 @@
+{
+  "qwen3:30b-a3b": {
+    "verdicts": [
+      {
+        "scenario": "alcista_claro",
+        "repeat": 1,
+        "elapsed_s": 42.326728228479624,
+        "queued_s": 25.642539228479624,
+        "verdict": {
+          "exposicion_objetivo": "EFECTIVO",
+          "postura": "NEUTRAL",
+          "conviccion": 0.56,
+          "movimiento_esperado_pct": 0.18,
+          "razon": "El precio est\u00e1 12% sobre la media de 200 d\u00edas, lo que sugiere sobrecompra. El retorno de 30d es +18%, pero la volatilidad anualizada es alta (34%). El modelo cuantitativo indica un r\u00e9gimen alcista fuerte (P(long)=0.56), pero la restricci\u00f3n de techo de ca\u00edda del 25% y la posici\u00f3n actual en efectivo (0% en BTC) sugieren mantener la neutralidad para evitar riesgos en un mercado vol\u00e1til."
+        },
+        "problems": []
+      },
+      {
+        "scenario": "alcista_claro",
+        "repeat": 2,
+        "elapsed_s": 41.605871468782425,
+        "queued_s": 25.401477468782424,
+        "verdict": {
+          "exposicion_objetivo": "EFECTIVO",
+          "postura": "NEUTRAL",
+          "conviccion": 0.56,
+          "movimiento_esperado_pct": 0.18,
+          "razon": "El precio est\u00e1 12% sobre la media de 200 d\u00edas, lo que sugiere sobrecompra. El retorno de 30d es +18%, pero la volatilidad anualizada es alta (34%). El modelo cuantitativo indica un r\u00e9gimen alcista fuerte (P(long)=0.56), pero la restricci\u00f3n de techo de ca\u00edda del 25% y la posici\u00f3n actual en efectivo (0% en BTC) sugieren mantener la neutralidad para evitar riesgos en un mercado vol\u00e1til."
+        },
+        "problems": []
+      },
+      {
+        "scenario": "bajista_claro",
+        "repeat": 1,
+        "elapsed_s": 38.24020752683282,
+        "queued_s": 19.15530252683282,
+        "verdict": {
+          "exposicion_objetivo": "EFECTIVO",
+          "postura": "BAJISTA",
+          "conviccion": 0.85,
+          "movimiento_esperado_pct": -15.0,
+          "razon": "El precio est\u00e1 22% por debajo de la media de 200 d\u00edas, con un retorno negativo del 28% en 30 d\u00edas y una volatilidad alta (71%). El modelo cuantitativo indica un r\u00e9gimen bajista profundo con una probabilidad de largo de 0.42 y un retorno estructural negativo de -210 bps. Dado que la posici\u00f3n actual est\u00e1 invertida en un 95% en BTC, se recomienda reducir la exposici\u00f3n a efectivo para mitigar el riesgo de una ca\u00edda adicional, considerando el techo de ca\u00edda del 25% y la restricci\u00f3n de no poder operar en corto."
+        },
+        "problems": []
+      },
+      {
+        "scenario": "bajista_claro",
+        "repeat": 2,
+        "elapsed_s": 45.78570393100381,
+        "queued_s": 26.86418593100381,
+        "verdict": {
+          "exposicion_objetivo": "EFECTIVO",
+          "postura": "BAJISTA",
+          "conviccion": 0.85,
+          "movimiento_esperado_pct": -15.0,
+          "razon": "El precio est\u00e1 22% por debajo de la media de 200 d\u00edas, con un retorno negativo del 28% en 30 d\u00edas y una volatilidad alta (71%). El modelo cuantitativo indica un r\u00e9gimen bajista profundo con una probabilidad de largo de 0.42 y un retorno estructural negativo de -210 bps. Dado que la posici\u00f3n actual est\u00e1 invertida en un 95% en BTC, se recomienda reducir la exposici\u00f3n a efectivo para mitigar el riesgo de una ca\u00edda adicional, considerando el techo de ca\u00edda del 25% y la restricci\u00f3n de no poder operar en corto."
+        },
+        "problems": []
+      },
+      {
+        "scenario": "lateral_ruido",
+        "repeat": 1,
+        "elapsed_s": 38.384970400482416,
+        "queued_s": 19.020081400482415,
+        "verdict": {
+          "exposicion_objetivo": "EFECTIVO",
+          "postura": "BAJISTA",
+          "conviccion": 0.525,
+          "movimiento_esperado_pct": 0.6,
+          "razon": "El movimiento esperado de +0.6% en 30d no cubre el coste de rotacion de 20 bps (0.2%). Ademas, el modelo cuantitativo indica un regimen de consolidacion (regimen 2) con P(long)=0.525, lo que sugiere una ligera tendencia alcista pero insuficiente para justificar mantener la posicion invertida. La volatilidad anualizada del 29% y el techo de caida del 25% tambien apuntan a una estrategia mas conservadora. Por lo tanto, se recomienda reducir la exposicion a efectivo para minimizar riesgos."
+        },
+        "problems": []
+      },
+      {
+        "scenario": "lateral_ruido",
+        "repeat": 2,
+        "elapsed_s": 241.59345979988575,
+        "queued_s": 223.00843279988575,
+        "verdict": {
+          "exposicion_objetivo": "EFECTIVO",
+          "postura": "BAJISTA",
+          "conviccion": 0.525,
+          "movimiento_esperado_pct": 0.6,
+          "razon": "El movimiento esperado de +0.6% en 30d no cubre el coste de rotacion de 20 bps (0.2%). Ademas, el modelo cuantitativo indica un regimen de consolidacion (regimen 2) con P(long)=0.525, lo que sugiere una ligera tendencia alcista pero insuficiente para justificar mantener la posicion invertida. La volatilidad anualizada del 29% y el techo de caida del 25% tambien apuntan a una estrategia mas conservadora. Por lo tanto, se recomienda reducir la exposicion a efectivo para minimizar riesgos."
+        },
+        "problems": []
+      }
+    ],
+    "parsed": 6,
+    "attempts": 6,
+    "median_latency_s": 41.966299848631024,
+    "max_latency_s": 241.59345979988575,
+    "median_queue_s": 25.522008348631026,
+    "violations": [],
+    "unstable_scenarios": []
+  }
+}

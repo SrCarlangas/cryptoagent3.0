@@ -35,6 +35,7 @@ from __future__ import annotations
 import json
 import math
 import sqlite3
+from collections import Counter
 from collections.abc import Sequence
 from contextlib import closing
 from dataclasses import dataclass
@@ -48,6 +49,16 @@ from btc_decision_agent.application.llm_tools import EXPOSURE_INVESTED
 D = Decimal
 SCHEMA_VERSION = "llm-agent-memory/1.0.0"
 DEFAULT_PATH = "data/live/llm-agent-memory.sqlite3"
+
+DEGENERATE_CONVICTION_SHARE = 0.5
+"""Modal share above which the stated conviction is treated as a constant.
+
+Strictly greater than half, by argument rather than by tuning: once the same value is
+declared MORE OFTEN THAN NOT, the single best description of the agent's output is that
+constant, and a number that describes the output better than the evidence does has stopped
+informing. Exactly half is not "almost always", and a warning that fires on a merely
+concentrated distribution becomes noise the model learns to ignore.
+"""
 
 MIN_SAMPLES_FOR_SUPPORT = 8
 """Below this a pattern is a coincidence, not a finding."""
@@ -332,15 +343,41 @@ class AgentMemory:
         ]
 
     def calibration(self) -> dict[str, Any]:
-        """Stated conviction versus realised hit rate, bucketed.
+        """Stated conviction versus realised hit rate, bucketed, AGAINST ITS OWN NULL.
 
         Overconfidence is the failure mode most likely to cost money here, and it is
         invisible unless measured against outcomes.
+
+        Two things were missing and both were measured as defects on 312 live
+        deliberations (`research/llm_independence.py`):
+
+        1. A hit rate was reported with NO NULL beside it. The agent chose INVERTIDO in
+           99.7% of decisions, so "acertaste 51%" is very nearly just the rate at which
+           BTC rose -- indistinguishable from the unconditional base rate, and therefore
+           not evidence that conviction informs anything. This project refuses to report a
+           number without its comparator everywhere else; the agent's own feedback loop
+           was the one place that did. Each bucket now carries the LIFT over the agent's
+           own unconditional hit rate, which is the null that needs beating.
+        2. Nothing measured whether the agent USES its conviction range. It declared 0.75
+           in 82.4% of decisions and never went below 0.58, while the prompt tells it that
+           "si declaras casi siempre el mismo numero, ese numero ha dejado de informar".
+           The instruction existed; the measurement did not. `dispersion` adds it.
+
+        Honest limit: this removes the blindness. Whether the model responds to being shown
+        its own degeneracy is an empirical question this change does NOT answer.
         """
         with closing(self._connect()) as conn:
             rows = conn.execute(
                 "SELECT conviction, realized_pct FROM decisions "
                 "WHERE resolved=1 AND conviction IS NOT NULL"
+            ).fetchall()
+            # Dispersion is about what the agent DECLARED, which needs no outcome. Scoping
+            # it to resolved decisions threw away 231 of 312 live observations and halved
+            # the measured degeneracy: 42% modal share on the resolved subset against
+            # 82.4% on everything the agent had actually said. The warning would not have
+            # fired on an agent that was plainly repeating itself.
+            declared_rows = conn.execute(
+                "SELECT conviction FROM decisions WHERE conviction IS NOT NULL"
             ).fetchall()
         buckets: dict[str, list[float]] = {"0.5-0.7": [], "0.7-0.85": [], "0.85-1.0": []}
         for row in rows:
@@ -352,16 +389,53 @@ class AgentMemory:
                 buckets["0.7-0.85"].append(realized)
             else:
                 buckets["0.85-1.0"].append(realized)
-        out: dict[str, Any] = {"total_resueltas": len(rows), "buckets": {}}
+
+        overall = [float(row["realized_pct"] or 0.0) for row in rows]
+        base_rate = (
+            sum(1 for value in overall if value > 0) / len(overall) if overall else None
+        )
+        out: dict[str, Any] = {
+            "total_resueltas": len(rows),
+            "tasa_base_propia": base_rate,
+            "buckets": {},
+            "dispersion": self._conviction_dispersion(
+                [float(row["conviction"]) for row in declared_rows]
+            ),
+        }
         for name, values in buckets.items():
             if not values:
                 continue
+            hit = sum(1 for v in values if v > 0) / len(values)
             out["buckets"][name] = {
                 "casos": len(values),
-                "acierto": sum(1 for v in values if v > 0) / len(values),
+                "acierto": hit,
                 "resultado_medio_pct": sum(values) / len(values),
+                # Lift over the agent's OWN unconditional rate. Near zero means this
+                # bucket's conviction level predicted nothing the agent did not already
+                # get by always being in the market.
+                "ventaja_sobre_tasa_base": (hit - base_rate) if base_rate is not None else None,
             }
         return out
+
+    @staticmethod
+    def _conviction_dispersion(declared: list[float]) -> dict[str, Any]:
+        """Is the stated conviction varying, or is it effectively a constant?
+
+        A conviction that does not move cannot scale a position: the sizing stops
+        responding to the evidence while still looking like it responds.
+        """
+        if not declared:
+            return {"n": 0}
+        counts = Counter(round(value, 2) for value in declared)
+        modal_value, modal_count = counts.most_common(1)[0]
+        return {
+            "n": len(declared),
+            "valores_distintos": len(counts),
+            "valor_modal": modal_value,
+            "cuota_modal": modal_count / len(declared),
+            "minimo": min(counts),
+            "maximo": max(counts),
+        }
 
     def measured_patterns(self) -> list[MeasuredPattern]:
         """Regularities grouped by (regime, chosen exposure), gated by statistics.
@@ -467,16 +541,53 @@ def render_memory_block(memory: AgentMemory, features: Sequence[float]) -> str:
 
     calibration = memory.calibration()
     if calibration["buckets"]:
+        base_rate = calibration.get("tasa_base_propia")
         lines.append("  tu calibracion (conviccion declarada vs acierto real):")
+        if base_rate is not None:
+            lines.append(
+                f"    TU TASA BASE: acertaste {base_rate:.0%} de TODAS tus decisiones. "
+                "Ese es el numero a batir."
+            )
+            lines.append(
+                "    Como elegiste estar invertido casi siempre, tu tasa base es "
+                "basicamente la frecuencia con que subio BTC. Un acierto igual a tu tasa "
+                "base NO es merito tuyo: es el mercado."
+            )
         for name, data in calibration["buckets"].items():
+            lift = data.get("ventaja_sobre_tasa_base")
+            lift_text = f", ventaja sobre tu tasa base {lift:+.0%}" if lift is not None else ""
             lines.append(
                 f"    conviccion {name}: {data['casos']} casos, acertaste "
-                f"{data['acierto']:.0%}, resultado medio {data['resultado_medio_pct']:+.2f}%"
+                f"{data['acierto']:.0%}, resultado medio "
+                f"{data['resultado_medio_pct']:+.2f}%{lift_text}"
             )
         lines.append(
             "    Si tu acierto es mucho menor que tu conviccion, estas sobreconfiado: "
             "baja la conviccion y exige mas evidencia antes de cambiar exposicion."
         )
+        lines.append(
+            "    Si la VENTAJA de tus convicciones altas no es mayor que la de las bajas, "
+            "tu conviccion no esta midiendo nada y el tamano que mueve es arbitrario."
+        )
+
+        dispersion = calibration.get("dispersion") or {}
+        if dispersion.get("n"):
+            share = float(dispersion["cuota_modal"])
+            lines.append("  tu uso del rango de conviccion (medido, no una opinion):")
+            lines.append(
+                f"    declaraste {dispersion['valor_modal']} en el {share:.0%} de tus "
+                f"{dispersion['n']} decisiones; usaste "
+                f"{dispersion['valores_distintos']} valores distintos en "
+                f"[{dispersion['minimo']}, {dispersion['maximo']}]"
+            )
+            if share > DEGENERATE_CONVICTION_SHARE:
+                lines.append(
+                    "    ATENCION: estas declarando casi siempre el mismo numero. Por "
+                    "definicion ese numero ya no distingue entre evidencia buena y mala, "
+                    "y el tamano de la posicion ha dejado de responder a lo que ves. Si "
+                    "esta situacion no es mejor ni peor que la habitual, dilo con una "
+                    "conviccion baja en vez de repetir tu numero de siempre."
+                )
     return "\n".join(lines)
 
 

@@ -1,0 +1,127 @@
+{
+  "source": "data/live/llm-agent-memory.sqlite3",
+  "todas": {
+    "n": 312,
+    "exact_copies": 1,
+    "exact_copy_rate": 0.003205128205128205,
+    "near_copies": {
+      "0.01": 3,
+      "0.05": 3
+    },
+    "mean_gap": 0.18561282051282052,
+    "median_gap": 0.18174999999999997,
+    "stdev_gap": 0.038092041548309835,
+    "largest_disagreement": 0.29469999999999996,
+    "direction_overrides": 1,
+    "direction_override_rate": 0.003205128205128205,
+    "exposure_mix": {
+      "INVERTIDO": 311,
+      "EN LIQUIDEZ": 1
+    },
+    "most_common_convictions": [
+      [
+        0.75,
+        257
+      ],
+      [
+        0.85,
+        35
+      ],
+      [
+        0.7,
+        13
+      ],
+      [
+        0.8,
+        4
+      ],
+      [
+        0.58,
+        3
+      ]
+    ]
+  },
+  "razonadas": {
+    "n": 2,
+    "exact_copies": 1,
+    "exact_copy_rate": 0.5,
+    "near_copies": {
+      "0.01": 2,
+      "0.05": 2
+    },
+    "mean_gap": 4.999999999999449e-05,
+    "median_gap": 4.999999999999449e-05,
+    "stdev_gap": 7.071067811864696e-05,
+    "largest_disagreement": 9.999999999998899e-05,
+    "direction_overrides": 0,
+    "direction_override_rate": 0.0,
+    "exposure_mix": {
+      "INVERTIDO": 2
+    },
+    "most_common_convictions": [
+      [
+        0.58,
+        2
+      ]
+    ]
+  },
+  "baratas": {
+    "n": 310,
+    "exact_copies": 0,
+    "exact_copy_rate": 0.0,
+    "near_copies": {
+      "0.01": 1,
+      "0.05": 1
+    },
+    "mean_gap": 0.18681,
+    "median_gap": 0.18179999999999996,
+    "stdev_gap": 0.03515802048652262,
+    "largest_disagreement": 0.29469999999999996,
+    "direction_overrides": 1,
+    "direction_override_rate": 0.0032258064516129032,
+    "exposure_mix": {
+      "INVERTIDO": 309,
+      "EN LIQUIDEZ": 1
+    },
+    "most_common_convictions": [
+      [
+        0.75,
+        257
+      ],
+      [
+        0.85,
+        35
+      ],
+      [
+        0.7,
+        13
+      ],
+      [
+        0.8,
+        4
+      ],
+      [
+        0.58,
+        1
+      ]
+    ]
+  },
+  "degeneracion": {
+    "distinct_convictions": 5,
+    "modal_conviction": 0.75,
+    "modal_conviction_share": 0.8237179487179487,
+    "conviction_range": [
+      0.58,
+      0.85
+    ],
+    "modal_exposure": "INVERTIDO",
+    "modal_exposure_share": 0.9967948717948718,
+    "negative_forecasts": 0,
+    "forecast_count": 312,
+    "forecast_range": [
+      0.5,
+      12.0
+    ],
+    "distinct_forecasts": 10
+  }
+}

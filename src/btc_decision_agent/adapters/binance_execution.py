@@ -45,6 +45,12 @@ _DEMO_REST = "https://demo-api.binance.com"
 _TESTNET_REST = "https://testnet.binance.vision"
 _RECV_WINDOW_MS = 5000
 _USER_AGENT = "btc-decision-agent-demo/0.1"
+_TIMESTAMP_OUTSIDE_RECV_WINDOW = '"code":-1021'
+"""Binance's code for a signed request whose timestamp fell outside `recvWindow`.
+
+Matched on the body because the HTTP status is a generic 400, which must stay fatal for
+every other cause.
+"""
 
 
 @dataclass(frozen=True)
@@ -83,6 +89,8 @@ class BinanceDemoExecutionAdapter(ExecutionPort):
         assert_non_real_venue(self.config.venue)
         self.enabled = enabled
         self._context = ssl.create_default_context(cafile=certifi.where())
+        self._time_offset_ms: int | None = None
+        """Cached local-clock correction against the venue. See `_server_time_offset_ms`."""
 
     def venue(self) -> ExecutionVenue:
         return self.config.venue
@@ -99,6 +107,38 @@ class BinanceDemoExecutionAdapter(ExecutionPort):
     def _sign(self, secret: str, query: str) -> str:
         return hmac.new(secret.encode(), query.encode(), hashlib.sha256).hexdigest()
 
+    def _server_time_offset_ms(self, *, force: bool = False) -> int:
+        """Milliseconds to add to the local clock to match Binance's.
+
+        Signed requests carry a timestamp and Binance rejects any that falls outside
+        `recvWindow`, so a host clock that drifts a few seconds makes EVERY signed call
+        fail with -1021. This host drifted enough to crash the service nine times, five
+        of them in a single day, because the resulting HTTP 400 was not retryable and
+        propagated out of `account_balance()` through position reconciliation and killed
+        the process.
+
+        The offset is cached: re-measuring on every call would double the request count
+        against a rate-limited venue. `force=True` re-measures, which is what a -1021
+        response means -- the cached offset is stale.
+        """
+        if force:
+            self._time_offset_ms = None
+        cached = self._time_offset_ms
+        if cached is not None:
+            return int(cached)
+        try:
+            payload = self._request("GET", "/api/v3/time", {}, signed=False)
+            # Measured AFTER the response so the round trip is already paid; this biases
+            # the offset slightly early, which is the safe direction: an early timestamp
+            # stays inside recvWindow, a late one is rejected outright.
+            offset = int(payload["serverTime"]) - int(time.time() * 1000)
+        except (RuntimeError, KeyError, TypeError, ValueError):
+            # Never let clock discovery be the thing that breaks trading. Falling back to
+            # zero reproduces the previous behaviour rather than inventing a correction.
+            offset = 0
+        self._time_offset_ms = offset
+        return offset
+
     def _request(self, method: str, path: str, params: dict[str, str], *, signed: bool) -> Any:
         if not self.enabled:
             raise RuntimeError("execution adapter is disabled by default; explicit opt-in required")
@@ -112,7 +152,8 @@ class BinanceDemoExecutionAdapter(ExecutionPort):
         for attempt in range(self.config.max_retries):
             query_params = dict(params)
             if signed:
-                query_params["timestamp"] = str(int(time.time() * 1000))
+                offset = self._server_time_offset_ms()
+                query_params["timestamp"] = str(int(time.time() * 1000) + offset)
                 query_params["recvWindow"] = str(_RECV_WINDOW_MS)
                 unsigned_query = urllib.parse.urlencode(query_params)
                 query_params["signature"] = self._sign(secret, unsigned_query)
@@ -129,6 +170,18 @@ class BinanceDemoExecutionAdapter(ExecutionPort):
                 body = error.read().decode(errors="replace")
                 if error.code in {418, 429} and attempt < self.config.max_retries - 1:
                     time.sleep(min(2**attempt, 8))
+                    last_error = error
+                    continue
+                # -1021 is a stale clock, not a bad instruction: the SAME request signed
+                # against a re-measured offset is expected to succeed. Scoped to this one
+                # code on purpose -- a blanket retry on HTTP 400 would silently re-send a
+                # genuinely invalid order instead of failing loudly.
+                if (
+                    _TIMESTAMP_OUTSIDE_RECV_WINDOW in body
+                    and signed
+                    and attempt < self.config.max_retries - 1
+                ):
+                    self._server_time_offset_ms(force=True)
                     last_error = error
                     continue
                 raise RuntimeError(f"binance demo HTTP {error.code}: {body}") from error
